@@ -1,0 +1,26 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Messages{% endblock %}
+{% block body %}
+<h1>Messages</h1>
+<div class="msgs">
+{% for i in inquiries %}
+  <article class="msg {{ 'done' if i.handled else '' }}">
+    <header>
+      <span class="kind">{{ i.kind }}</span>
+      <strong>{{ i.name or 'someone' }}</strong>
+      <a href="mailto:{{ i.email }}">{{ i.email }}</a>
+      {% if i.title %}<span class="sub">about {{ i.title }}</span>{% endif %}
+      <span class="sub">{{ i.created_at[:16].replace('T',' ') }}</span>
+    </header>
+    <p>{{ i.body }}</p>
+    {% if not i.handled %}
+      <form method="post" action="{{ url_for('site.admin_inq_handled', inq_id=i.id) }}">
+        <button class="link" type="submit">mark handled</button>
+      </form>
+    {% endif %}
+  </article>
+{% else %}
+  <p class="empty">No messages.</p>
+{% endfor %}
+</div>
+{% endblock %}

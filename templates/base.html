@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ cfg.site_title }}{% endblock %}</title>
+<meta name="description" content="{% block desc %}{{ cfg.tagline }}{% endblock %}">
+<meta property="og:title" content="{{ self.title() }}">
+<meta property="og:description" content="{{ self.desc() }}">
+<meta property="og:type" content="website">
+{% if noindex %}<meta name="robots" content="noindex, nofollow">{% endif %}
+{% block og %}{% endblock %}
+<link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/icon-32.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-180.png') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Karla:wght@400;500;700&family=Mrs+Saint+Delafield&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=39">
+</head>
+<script>
+/* Flagged before first paint so the fallback fade never flickers in on a
+   browser that was going to do the cross-document transition itself. */
+if(!('startViewTransition' in document)) document.documentElement.className += ' no-vt';
+</script>
+<body class="{% block bodyclass %}{% endblock %}">
+{# The backdrop bleeds the whole page -- fixed behind masthead, content and
+   footer. Not on the home page: that one paints its own dark entry. #}
+{% if not self.bodyclass() and cfg.page_bg in ("quiet","rosette","rose") %}{% if cfg.page_bg == "quiet" and pagekey %}{% include "_pagebg_quiet_" ~ pagekey ~ ".html" %}{% else %}{% include "_pagebg_" ~ cfg.page_bg ~ ".html" %}{% endif %}{% endif %}
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="masthead">
+  <a class="wordmark" href="{{ url_for('site.index') }}" aria-label="{{ cfg.site_title }}">
+    <picture>
+      <source type="image/webp" srcset="{{ url_for('static', filename='img/mark-128.webp') }} 128w, {{ url_for('static', filename='img/mark-256.webp') }} 256w" sizes="56px">
+      <img class="mark" src="{{ url_for('static', filename='img/mark-128.jpg') }}" alt="" width="56" height="56">
+    </picture>
+    <span class="wordmark-txt">
+      {% if wordmark.pre %}<span class="wordmark-pre" aria-hidden="true">{{ wordmark.pre }}</span>{% endif %}
+      {# The drawn signature is generated for one name. Rename the shop in the
+         admin and it falls back to the webfont rather than signing the wrong
+         name -- rerun make_signature.py to get the drawing back. #}
+      {% if signature_name and signature_name == wordmark.name %}{% include "_signature.html" %}
+      {% else %}<span class="wordmark-name">{{ wordmark.name }}</span>{% endif %}
+    </span>
+  </a>
+  <nav>
+    {% for key, label, href in [
+         ("work",    "Work",    url_for('site.index')),
+         ("about",   "About",   url_for('site.about')),
+         ("contact", "Contact", url_for('site.contact'))] %}
+    <a href="{{ href }}"{% if nav == key %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+</header>
+
+<main id="main">
+{% with msgs = get_flashed_messages() %}
+  {% if msgs %}<div class="flash">{% for m in msgs %}<p>{{ m }}</p>{% endfor %}</div>{% endif %}
+{% endwith %}
+{% block body %}{% endblock %}
+</main>
+{% block after %}{% endblock %}
+
+<footer class="foot">
+  <p class="fine">&copy; {{ cfg.site_title }}. All images and paintings remain the property of the artist.</p>
+</footer>
+<script>
+/* The name signs itself when you click the logo, and only then. Clicking the
+   wordmark while already on the home page has nowhere to navigate to, so the
+   click is spent on the signature instead; from any other page the click still
+   goes home and the signature is replayed once it lands. */
+(function(){
+  var a = document.querySelector('.wordmark');
+  if (!a || !a.querySelector('.wordmark-sig')) return;
+
+  function sign(){
+    a.classList.remove('signing');
+    void a.offsetWidth;            // force a reflow so the animation restarts
+    a.classList.add('signing');
+  }
+
+  try{
+    if (sessionStorage.getItem('abm-replay')){
+      sessionStorage.removeItem('abm-replay');
+      sign();
+    }
+  }catch(e){}
+
+  a.addEventListener('click', function(e){
+    var here = location.pathname.replace(/\/$/, '');
+    var there = a.pathname.replace(/\/$/, '');
+    if (here === there && !location.hash){
+      e.preventDefault();          // already home: nothing to load, so just sign
+      sign();
+      return;
+    }
+    try{ sessionStorage.setItem('abm-replay','1'); }catch(e2){}
+  });
+})();
+</script>
+</body>
+</html>

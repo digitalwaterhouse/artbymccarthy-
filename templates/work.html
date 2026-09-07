@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}{{ w.title }} &mdash; {{ cfg.site_title }}{% endblock %}
+{% block desc %}{{ w.medium }}{% if w.dims %}, {{ w.dims }}{% endif %}{% endblock %}
+{% block og %}{% if w.images %}<meta property="og:image" content="{{ img_url(w.images[0].base,'m','jpg') }}">{% endif %}{% endblock %}
+{% block body %}
+<article class="work">
+  <div class="plates">
+    {% for im in w.images %}
+      <figure>
+        <picture>
+          <source type="image/webp" srcset="{{ img_url(im.base,'m') }} 1400w, {{ img_url(im.base,'l') }} 2400w" sizes="(max-width: 900px) 94vw, 62vw">
+          <img src="{{ img_url(im.base,'l','jpg') }}" alt="{{ im.alt or w.title }}"{% if not loop.first %} loading="lazy"{% endif %}>
+        </picture>
+        {% if im.kind != 'full' %}<figcaption>{{ 'Detail' if im.kind == 'detail' else 'Shown in a room' }}</figcaption>{% endif %}
+      </figure>
+    {% else %}
+      <div class="noimg tall">no photograph yet</div>
+    {% endfor %}
+  </div>
+
+  <aside class="facts">
+    <h1>{{ w.title }}</h1>
+    <dl>
+      {% if w.year %}<dt>Year</dt><dd>{{ w.year }}</dd>{% endif %}
+      {% if w.medium %}<dt>Medium</dt><dd>{{ w.medium }}</dd>{% endif %}
+      {% if w.dims %}<dt>Size</dt><dd>{{ w.dims }}</dd>{% endif %}
+      <dt>Framing</dt><dd>{{ 'Framed' if w.framed else 'Unframed' }}{{ ', ready to hang' if w.ready_to_hang else '' }}</dd>
+      {% if w.signed_where %}<dt>Signed</dt><dd>{{ w.signed_where }}</dd>{% endif %}
+    </dl>
+
+    {% if w.story %}<p class="story">{{ w.story }}</p>{% endif %}
+
+    <div class="buy">
+      {% if w.status == 'sold' %}
+        <p class="soldline"><span class="reddot"></span> Sold{% if w.sold_at %} &middot; {{ w.sold_at[:4] }}{% endif %}</p>
+        <p class="fine">Similar work may be available &mdash; <a href="{{ url_for('site.commissions') }}">ask about a commission</a>.</p>
+      {% elif w.status == 'nfs' %}
+        <p class="soldline">Not for sale</p>
+      {% elif w.status == 'reserved' %}
+        <p class="soldline">Reserved &mdash; a sale is in progress.</p>
+      {% elif w.price_cents %}
+        <p class="price">{{ w.price }}</p>
+        <form method="post" action="{{ url_for('site.buy', slug=w.slug) }}">
+          <button class="cta" type="submit">
+            {% if stripe_on and w.ship_band != 'quote' %}Purchase{% else %}Enquire to purchase{% endif %}
+          </button>
+        </form>
+        <p class="fine">
+          {% if w.ship_band == 'quote' %}Shipping quoted individually for a piece this size.
+          {% elif w.ship_band == 'rolled' %}Ships rolled in a tube, to be stretched on arrival.
+          {% else %}Shipping calculated at checkout. Insured, tracked, and packed with corner protection.{% endif %}
+          Includes a signed certificate of authenticity.
+        </p>
+      {% else %}
+        <form method="post" action="{{ url_for('site.buy', slug=w.slug) }}">
+          <button class="cta" type="submit">Enquire</button>
+        </form>
+      {% endif %}
+    </div>
+  </aside>
+</article>
+
+{% if near %}
+{# Step through the run you were browsing. The ends wrap, so the arrows never
+   go dead; the count says where you are. #}
+<nav class="stepper" aria-label="More work">
+  <a class="step" href="{{ url_for('site.work', slug=near.prev.slug) }}" rel="prev">
+    <span class="step-dir">&larr; Previous</span>
+    <span class="step-t">{{ near.prev.title }}</span>
+  </a>
+  <span class="step-count">{{ near.index }} of {{ near.total }}</span>
+  <a class="step step-next" href="{{ url_for('site.work', slug=near.next.slug) }}" rel="next">
+    <span class="step-dir">Next &rarr;</span>
+    <span class="step-t">{{ near.next.title }}</span>
+  </a>
+</nav>
+<script>
+/* Arrow keys too, the way the gallery viewer works. Ignored while typing. */
+document.addEventListener('keydown', function(e){
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  var t = e.target.tagName;
+  if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+  var sel = e.key === 'ArrowLeft' ? '[rel=prev]' : e.key === 'ArrowRight' ? '[rel=next]' : null;
+  if (!sel) return;
+  var a = document.querySelector('.stepper a' + sel);
+  if (a) location.href = a.href;
+});
+</script>
+{% endif %}
+
+<script type="application/ld+json">
+{{ {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": w.title,
+  "description": (w.medium or "") ~ ((", " ~ w.dims) if w.dims else ""),
+  "offers": {
+    "@type": "Offer",
+    "priceCurrency": cfg.currency|upper,
+    "price": (w.price_cents / 100) if w.price_cents else 0,
+    "availability": "https://schema.org/InStock" if w.status == "available" else "https://schema.org/SoldOut"
+  }
+}|tojson }}
+</script>
+{% endblock %}

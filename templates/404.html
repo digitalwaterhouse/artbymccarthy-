@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Not found &mdash; {{ cfg.site_title }}{% endblock %}
+{% block body %}
+<section class="prose narrow">
+  <h1>Not found</h1>
+  <p>That page isn't here. <a href="{{ url_for('site.index') }}">See the work</a>.</p>
+</section>
+{% endblock %}

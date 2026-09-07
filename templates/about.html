@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}About &mdash; {{ cfg.site_title }}{% endblock %}
+{% block body %}
+{# Copy on the left, the artist on the right. The portrait is deliberately
+   narrower than the paintings get anywhere else on the site -- the work is the
+   loud thing here, not the person who made it. #}
+<section class="about{% if not cfg.about_image %} noportrait{% endif %}">
+{# The page's backdrop, chosen in the admin. It is the vocabulary of the work
+   itself -- torn paper, concentric circles, stitch marks -- kept clear of the
+   left-hand copy column so nothing ever sits under a line of text. #}
+  <div class="prose">
+    <h1>About</h1>
+    {% if cfg.about %}
+      {% for p in cfg.about.split("\n") %}{% if p.strip() %}<p>{{ p }}</p>{% endif %}{% endfor %}
+    {% else %}
+      <p class="empty">The About text is set in the admin.</p>
+    {% endif %}
+  </div>
+
+  {% if cfg.about_image %}
+  <figure class="portrait">
+    <picture>
+      <source type="image/webp" srcset="{{ img_url(cfg.about_image,'s') }} 600w, {{ img_url(cfg.about_image,'m') }} 1400w" sizes="(max-width: 860px) 76vw, 23rem">
+      <img src="{{ img_url(cfg.about_image,'m','jpg') }}" alt="{{ cfg.about_caption or cfg.site_title }}" loading="lazy">
+    </picture>
+    {% if cfg.about_caption %}<figcaption>{{ cfg.about_caption }}</figcaption>{% endif %}
+  </figure>
+  {% endif %}
+</section>
+{% endblock %}

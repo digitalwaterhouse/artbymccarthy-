@@ -1,0 +1,15 @@
+# Secrets. On Render these are environment variables in the dashboard, never
+# in the repo.
+.env
+
+# Live data: the SQLite database and every uploaded painting photo. On Render
+# this directory is the mount point for the persistent disk, so it must NOT be
+# tracked or a deploy would overwrite the gallery with whatever was committed.
+data/
+
+# Source photo for the landing-page collage, kept out of the app tree.
+IMG_6748.jpeg
+
+__pycache__/
+*.pyc
+*.bak*

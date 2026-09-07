@@ -1,0 +1,32 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Orders{% endblock %}
+{% block body %}
+<h1>Orders</h1>
+<table class="grid-t">
+  <thead><tr><th>When</th><th>Painting</th><th>Buyer</th><th>Ship to</th><th class="num">Total</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for o in orders %}
+    <tr>
+      <td class="sub">{{ o.created_at[:10] }}</td>
+      <td>{{ o.title or '&mdash;'|safe }}</td>
+      <td>{{ o.buyer_name or '' }}<span class="sub">{{ o.buyer_email or '' }}</span></td>
+      <td class="addr">{{ o.ship_line1 or '' }}{% if o.ship_line2 %}, {{ o.ship_line2 }}{% endif %}
+          <span class="sub">{{ o.ship_city or '' }} {{ o.ship_state or '' }} {{ o.ship_zip or '' }}</span></td>
+      <td class="num">{% if o.amount_cents %}${{ '%.2f'|format(o.amount_cents/100) }}{% endif %}</td>
+      <td>
+        {% if o.status == 'shipped' %}
+          shipped<span class="sub">{{ o.tracking or '' }}</span>
+        {% else %}
+          <form method="post" action="{{ url_for('site.admin_shipped', order_id=o.id) }}" class="inline">
+            <input name="tracking" placeholder="tracking no." size="14">
+            <button class="link" type="submit">mark shipped</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="empty">No orders yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

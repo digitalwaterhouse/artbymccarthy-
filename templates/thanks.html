@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} &mdash; {{ cfg.site_title }}{% endblock %}
+{% block body %}
+<section class="prose narrow">
+  <h1>{{ heading }}</h1>
+  <p>{{ msg }}</p>
+  <p><a href="{{ url_for('site.index') }}">Back to the work</a></p>
+</section>
+{% endblock %}

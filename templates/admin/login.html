@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Studio sign in</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=4">
+</head><body class="admin">
+<main class="adminmain narrowbox">
+  <h1>Studio</h1>
+  {% if err %}<p class="err">{{ err }}</p>{% endif %}
+  <form class="stack" method="post">
+    <label>Password <input type="password" name="password" autofocus required></label>
+    <button class="cta" type="submit">Sign in</button>
+  </form>
+</main></body></html>

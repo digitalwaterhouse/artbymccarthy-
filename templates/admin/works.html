@@ -1,0 +1,48 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Work{% endblock %}
+{% block body %}
+<div class="adminhead">
+  <h1>Work</h1>
+  <a class="cta" href="{{ url_for('site.admin_work') }}">Add a painting</a>
+</div>
+
+{% if orders or inquiries %}
+<div class="alerts">
+  {% if orders %}<a href="{{ url_for('site.admin_orders') }}">{{ orders|length }} recent order(s)</a>{% endif %}
+  {% if inquiries %}<a href="{{ url_for('site.admin_inquiries') }}">{{ inquiries|length }} unread message(s)</a>{% endif %}
+</div>
+{% endif %}
+
+<table class="grid-t">
+  <thead><tr><th></th><th>Title</th><th>Size</th><th>Price</th><th>Status</th><th>Ships</th><th></th></tr></thead>
+  <tbody>
+  {% for w in works %}
+    <tr>
+      <td class="thumb">{% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}</td>
+      <td><a href="{{ url_for('site.admin_work', work_id=w.id) }}">{{ w.title }}</a>
+          <span class="sub">{{ w.year or '' }} {{ w.medium or '' }}</span></td>
+      <td>{{ w.dims or '&mdash;'|safe }}</td>
+      <td class="num">{{ w.price or '&mdash;'|safe }}</td>
+      <td>
+        <form method="post" action="{{ url_for('site.admin_status', work_id=w.id) }}" class="inline">
+          <select name="status" onchange="this.form.submit()">
+            {% for s in ['available','reserved','sold','nfs'] %}
+              <option value="{{ s }}" {% if w.status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </td>
+      <td>{{ w.ship_band }}</td>
+      <td class="right">
+        <form method="post" action="{{ url_for('site.admin_delete', work_id=w.id) }}"
+              onsubmit="return confirm('Delete {{ w.title }} and its photographs? This cannot be undone.')">
+          <button class="link danger" type="submit">delete</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="empty">Nothing listed yet. Add the first painting.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

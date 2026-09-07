@@ -1,0 +1,73 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ w.title if w else 'New painting' }}{% endblock %}
+{% block body %}
+<div class="adminhead">
+  <h1>{{ w.title if w else 'New painting' }}</h1>
+  {% if w %}<a href="{{ url_for('site.work', slug=w.slug) }}">view on the site</a>{% endif %}
+</div>
+
+<form class="formgrid" method="post" enctype="multipart/form-data">
+  <label class="wide">Title <input name="title" value="{{ w.title if w else '' }}" required></label>
+  <label>Year <input name="year" value="{{ w.year if w and w.year else '' }}" inputmode="numeric"></label>
+  <label>Medium <input name="medium" value="{{ w.medium if w else '' }}" placeholder="Oil on canvas"></label>
+
+  <label>Height (in) <input name="h_in" value="{{ w.h_in if w and w.h_in else '' }}" inputmode="decimal"></label>
+  <label>Width (in) <input name="w_in" value="{{ w.w_in if w and w.w_in else '' }}" inputmode="decimal"></label>
+  <label>Depth (in) <input name="d_in" value="{{ w.d_in if w and w.d_in else '' }}" inputmode="decimal"></label>
+
+  <label>Price <input name="price" value="{{ '%.2f'|format(w.price_cents/100) if w and w.price_cents else '' }}" inputmode="decimal" placeholder="1800"></label>
+  <label>Status
+    <select name="status">
+      {% for s in ['available','reserved','sold','nfs'] %}
+        <option value="{{ s }}" {% if w and w.status == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Shipping band
+    <select name="ship_band">
+      {% for b in ['small','medium','large','rolled','quote'] %}
+        <option value="{{ b }}" {% if w and w.ship_band == b %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Signed <input name="signed_where" value="{{ w.signed_where if w else '' }}" placeholder="Lower right, front"></label>
+  <label class="check"><input type="checkbox" name="framed" {% if w and w.framed %}checked{% endif %}> Framed</label>
+  <label class="check"><input type="checkbox" name="ready_to_hang" {% if not w or w.ready_to_hang %}checked{% endif %}> Ready to hang</label>
+
+  <label class="wide">About this piece <textarea name="story" rows="4">{{ w.story if w else '' }}</textarea></label>
+  <label>Sort order <input name="sort" value="{{ w.sort if w else 0 }}" inputmode="numeric"></label>
+  <label>Web address <input name="slug" value="{{ w.slug if w else '' }}" placeholder="made from the title"></label>
+
+  <fieldset class="wide">
+    <legend>Add photographs</legend>
+    <label>Which kind?
+      <select name="kind">
+        <option value="full">The whole painting</option>
+        <option value="detail">A detail crop</option>
+        <option value="scale">On a wall, for scale</option>
+      </select>
+    </label>
+    <input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple>
+    <p class="sub">JPEG, PNG or WebP. Resized on upload; location data is stripped.</p>
+  </fieldset>
+
+  <div class="wide"><button class="cta" type="submit">Save</button></div>
+</form>
+
+{% if w and w.images %}
+<h2>Photographs</h2>
+<div class="shots">
+  {% for im in w.images %}
+    <figure>
+      <img src="{{ img_url(im.base,'s','jpg') }}" alt="">
+      <figcaption>{{ im.kind }}</figcaption>
+      <form method="post" action="{{ url_for('site.admin_image_delete', image_id=im.id) }}">
+        <input type="hidden" name="back" value="{{ url_for('site.admin_work', work_id=w.id) }}">
+        <button class="link danger" type="submit">remove</button>
+      </form>
+    </figure>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

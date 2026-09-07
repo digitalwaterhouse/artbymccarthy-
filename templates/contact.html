@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Contact &mdash; {{ cfg.site_title }}{% endblock %}
+{% block body %}
+{# Contact and Commissions are one page with two panes. The toggle is a pair of
+   radio inputs, not script: with JavaScript off the tabs still switch, which
+   matters when the panes are the only way to reach either form. Arriving at
+   /commissions opens the commission pane. #}
+<section class="enq">
+  <input class="tabin" type="radio" name="mode" id="mode-message"
+         {% if mode != 'commission' %}checked{% endif %}>
+  <input class="tabin" type="radio" name="mode" id="mode-commission"
+         {% if mode == 'commission' %}checked{% endif %}>
+
+  <div class="tabs" role="tablist">
+    <label for="mode-message">Send a message</label>
+    <label for="mode-commission">Commission a piece</label>
+  </div>
+
+  <div class="pane pane-message">
+    <div class="prose">
+      <h1>Contact</h1>
+      <p>Questions about a piece, shipping somewhere unusual, or where the work will be
+         showing next &mdash; write and it reaches the studio directly.</p>
+    </div>
+    <form class="panel" method="post" action="{{ url_for('site.contact') }}">
+      <div class="stack">
+        <label>Your name <input name="name" required></label>
+        <label>Email <input type="email" name="email" required></label>
+        <label>Message <textarea name="body" rows="6" required></textarea></label>
+        <button class="cta" type="submit">Send</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="pane pane-commission">
+    <div class="prose">
+      <h1>Commissions</h1>
+      {% if cfg.commission_note %}
+        {% for p in cfg.commission_note.split("\n") %}{% if p.strip() %}<p>{{ p }}</p>{% endif %}{% endfor %}
+      {% else %}
+        <p>Tell me the size, the room, and roughly what you have in mind. I'll come back with
+           a price and a timeline before anything is committed.</p>
+      {% endif %}
+    </div>
+    <form class="panel" method="post" action="{{ url_for('site.commissions') }}">
+      <h2>Start a conversation</h2>
+      <p class="fine">No obligation, and nothing is owed until you have a price and a
+         timeline in hand.</p>
+      <div class="stack">
+        <label>Your name <input name="name" required></label>
+        <label>Email <input type="email" name="email" required></label>
+        <label>What do you have in mind? <textarea name="body" rows="6" required></textarea></label>
+        <button class="cta" type="submit">Send</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

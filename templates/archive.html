@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Archive &mdash; {{ cfg.site_title }}{% endblock %}
+{% block desc %}Paintings that have found homes.{% endblock %}
+{% block body %}
+<section class="intro">
+  <h1>Archive</h1>
+  <p class="lede">Work that has sold. Kept here because a painting does not stop existing when it leaves the studio.</p>
+</section>
+{% if works %}
+<div class="grid">
+  {% for w in works %}
+  <a class="tile sold" href="{{ url_for('site.work', slug=w.slug) }}">
+    {% if w.images %}
+      <picture>
+        <source type="image/webp" srcset="{{ img_url(w.images[0].base,'s') }} 600w, {{ img_url(w.images[0].base,'m') }} 1400w" sizes="(max-width: 700px) 92vw, 30vw">
+        <img src="{{ img_url(w.images[0].base,'m','jpg') }}" alt="{{ w.title }}" loading="lazy">
+      </picture>
+    {% endif %}
+    <div class="cap">
+      <span class="t">{{ w.title }}{% if w.year %}, {{ w.year }}{% endif %}</span>
+      <span class="p dot">Sold</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty">Nothing here yet.</p>
+{% endif %}
+{% endblock %}

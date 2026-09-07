@@ -1,0 +1,18 @@
+{% extends "admin/_layout.html" %}
+{% block title %}List{% endblock %}
+{% block body %}
+<div class="adminhead">
+  <h1>Mailing list <span class="sub">{{ subs|length }}</span></h1>
+  <a class="cta" href="{{ url_for('site.admin_subscribers_csv') }}">Export CSV</a>
+</div>
+<table class="grid-t">
+  <thead><tr><th>Email</th><th>From</th><th>Added</th></tr></thead>
+  <tbody>
+  {% for s in subs %}
+    <tr><td>{{ s.email }}</td><td class="sub">{{ s.source }}</td><td class="sub">{{ s.created_at[:10] }}</td></tr>
+  {% else %}
+    <tr><td colspan="3" class="empty">Nobody yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

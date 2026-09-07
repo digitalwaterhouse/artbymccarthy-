@@ -1,0 +1,83 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Settings{% endblock %}
+{% block body %}
+<h1>Settings</h1>
+<form class="formgrid" method="post" enctype="multipart/form-data">
+  <label class="wide">Site title <input name="site_title" value="{{ cfg.site_title }}"></label>
+  <label class="wide">Tagline <input name="tagline" value="{{ cfg.tagline }}"></label>
+  <label class="wide">About text <textarea name="about" rows="8">{{ cfg.about }}</textarea></label>
+  <label class="wide">Commissions note <textarea name="commission_note" rows="10">{{ cfg.commission_note }}</textarea></label>
+  <p class="sub wide">Shown above the enquiry form on the Commissions page. A blank line starts a new paragraph, same as the About text.</p>
+  <label>Contact email <input name="artist_email" value="{{ cfg.artist_email }}"></label>
+
+  <fieldset class="wide">
+    <legend>Landing page</legend>
+    {% if cfg.hero_image %}
+    <div class="shots">
+      <figure>
+        <img src="{{ img_url(cfg.hero_image,'s','jpg') }}" alt="Current landing photograph">
+        <figcaption>On the front page now</figcaption>
+      </figure>
+    </div>
+    {% endif %}
+    <label class="wide">Photograph
+      <input type="file" name="hero_photo" accept="image/jpeg,image/png,image/webp">
+    </label>
+    <p class="sub">The one piece the front page opens with. It does not have to be for sale.
+      Leave empty and the newest photographed work is used instead.</p>
+    {% if cfg.hero_image %}
+    <label class="check"><input type="checkbox" name="clear_hero" value="1"> Remove it and fall back to the newest work</label>
+    {% endif %}
+    <label class="wide">Headline <input name="hero_title" value="{{ cfg.hero_title }}" placeholder="{{ cfg.tagline }}"></label>
+    <label class="wide">Line under the headline <input name="hero_sub" value="{{ cfg.hero_sub }}"></label>
+    <label class="wide">Caption for the photograph <input name="hero_caption" value="{{ cfg.hero_caption }}" placeholder="Title, year, medium"></label>
+  </fieldset>
+
+  <fieldset class="wide">
+    <legend>About page</legend>
+    {% if cfg.about_image %}
+    <div class="shots">
+      <figure>
+        <img src="{{ img_url(cfg.about_image,'s','jpg') }}" alt="Current portrait">
+        <figcaption>On the About page now</figcaption>
+      </figure>
+    </div>
+    {% endif %}
+    <label class="wide">Portrait
+      <input type="file" name="about_photo" accept="image/jpeg,image/png,image/webp">
+    </label>
+    <p class="sub">A photograph of the artist, shown beside the About text.</p>
+    {% if cfg.about_image %}
+    <label class="check"><input type="checkbox" name="clear_about" value="1"> Remove the portrait</label>
+    {% endif %}
+    <label class="wide">Caption under the portrait <input name="about_caption" value="{{ cfg.about_caption }}"></label>
+  </fieldset>
+
+  <label class="wide">Background design
+    <select name="page_bg">
+      {% for v, lbl in [("quiet","Barely there"),("rosette","Engine-turned rosette"),("rose","Rose curve"),("none","None")] %}
+      <option value="{{ v }}"{% if cfg.page_bg == v %} selected{% endif %}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <p class="sub wide">Applies to the About, Commissions and Contact pages.</p>
+
+  <fieldset class="wide">
+    <legend>Shipping rates, in dollars</legend>
+    <div class="rates">
+      {% for band, label in [("small","Small"),("medium","Medium"),("large","Large"),("rolled","Rolled")] %}
+      <label>{{ label }}
+        <span class="money">
+          <input name="ship_{{ band }}" value="{{ dollars(cfg['ship_' ~ band ~ '_cents']) }}"
+                 inputmode="decimal" placeholder="0.00">
+        </span>
+      </label>
+      {% endfor %}
+    </div>
+    <p class="sub">Leave one blank to keep the rate it already has.</p>
+    <p class="sub">A work set to the "quote" band shows an enquiry form instead of a checkout.</p>
+  </fieldset>
+
+  <div class="wide"><button class="cta" type="submit">Save</button></div>
+</form>
+{% endblock %}
