@@ -721,9 +721,16 @@ body.home{
    Borrowed wholesale in shape from the Bayview gallery -- dark stage, arrows,
    filmstrip, keys and swipe. What differs is the caption: in a shop it has to
    read like a gallery label and get you to the work's own page. */
+/* UP THE PAGE, not in the bottom corner (2026-09-09, Paul). The gallery is
+   what the site is for, and its button was sitting where a chat bubble or a
+   cookie bar goes — the corner people have learned to ignore. Vertically
+   CENTRED rather than pinned below the masthead: the masthead wraps to two
+   rows on a phone, so any fixed top offset either collides with the nav there
+   or floats uselessly low on a desktop. The middle of the right edge is the
+   one position that cannot collide with the header at any width. */
 .gal-fab{
   position:fixed; right:max(16px,env(safe-area-inset-right));
-  bottom:max(16px,env(safe-area-inset-bottom)); z-index:900;
+  top:50%; transform:translateY(-50%); z-index:900;
   display:inline-flex; align-items:center; gap:9px;
   background:var(--ground); color:#EDF1F0; border:1px solid rgba(237,241,240,.2);
   border-radius:100px; padding:13px 20px; cursor:pointer;
@@ -732,10 +739,10 @@ body.home{
   transition:transform .2s, box-shadow .2s, border-color .2s;
 }
 .gal-fab svg{width:19px; height:19px; flex:0 0 auto; color:var(--turq)}
-.gal-fab:hover{transform:translateY(-2px); border-color:var(--turq); box-shadow:0 14px 36px rgba(6,14,20,.5)}
+.gal-fab:hover{transform:translateY(calc(-50% - 2px)); border-color:var(--turq); box-shadow:0 14px 36px rgba(6,14,20,.5)}
 body:has(#galleryModal:not([hidden])) .gal-fab{display:none}
 @media (max-width:600px){.gal-fab{padding:14px; gap:0} .gal-fab-label{display:none}}
-@media (prefers-reduced-motion:reduce){.gal-fab{transition:none} .gal-fab:hover{transform:none}}
+@media (prefers-reduced-motion:reduce){.gal-fab{transition:none} .gal-fab:hover{transform:translateY(-50%)}}
 
 .gm-overlay{
   position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;

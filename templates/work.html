@@ -80,6 +80,11 @@ document.addEventListener('keydown', function(e){
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   var t = e.target.tagName;
   if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+  /* The viewer is on every page now, and it binds the same two keys. While it
+     is open it owns them: without this, an arrow press advanced the slide AND
+     navigated the page underneath it to the next painting. */
+  var gm = document.getElementById('galleryModal');
+  if (gm && !gm.hidden) return;
   var sel = e.key === 'ArrowLeft' ? '[rel=prev]' : e.key === 'ArrowRight' ? '[rel=next]' : null;
   if (!sel) return;
   var a = document.querySelector('.stepper a' + sel);

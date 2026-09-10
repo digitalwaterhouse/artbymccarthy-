@@ -11,7 +11,7 @@ import io
 import functools
 
 from flask import (Flask, Blueprint, render_template, request, redirect,
-                   has_request_context,
+                   has_request_context, g,
                    url_for, session, abort, send_from_directory, jsonify,
                    Response, flash)
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -93,8 +93,12 @@ def inject():
     # under Work, and /commissions is the Contact page wearing another URL.
     nav = {"index": "work", "work": "work", "archive": "work",
            "about": "about", "contact": "contact"}.get(ep, "")
+    # slides/has_archive go to every template because the viewer is included
+    # from base.html now rather than from the landing page alone.
+    slides = viewer_slides()
     return {"cfg": c, "prefix": PREFIX, "stripe_on": payments.enabled(),
             "noindex": NOINDEX, "wordmark": wordmark(c["site_title"]),
+            "slides": slides, "has_archive": getattr(g, "_has_archive", False),
             "signature_name": signature_name(), "pagekey": key, "nav": nav, "endpoint": ep}
 
 
@@ -168,6 +172,27 @@ def _price_cents(v):
 
 
 # ---------------------------------------------------------------- public
+def viewer_slides():
+    """Every photographed piece, as the viewer's slide list.
+
+    Cached on `g` because the context processor hands this to EVERY page and
+    the landing page wants the same list for its own hero fallback — without
+    the cache, rendering the home page would read the whole gallery twice.
+
+    Sold work is included on purpose: a sold painting is the best argument for
+    the next one. Drafts are not, because list_works excludes them.
+    """
+    if not has_request_context():
+        return []
+    if not hasattr(g, "_slides"):
+        works = gallery.list_works(status="for_sale")
+        sold = gallery.list_works(status="sold")
+        g._slides = ([_viewer_entry(w, "available") for w in works if w["images"]]
+                     + [_viewer_entry(w, "archive") for w in sold if w["images"]])
+        g._has_archive = bool(sold)
+    return g._slides
+
+
 def _viewer_entry(w, group):
     """One slide in the cinematic viewer. Kept to the fields the caption needs
     so the payload sitting in the page stays small."""
@@ -188,10 +213,8 @@ def index():
     gallery.release_expired()
     works = gallery.list_works(status="for_sale")
     sold = gallery.list_works(status="sold")
-    # The viewer shows everything with a photograph -- sold work included,
-    # because a sold painting is the best argument for the next one.
-    slides = ([_viewer_entry(w, "available") for w in works if w["images"]]
-              + [_viewer_entry(w, "archive") for w in sold if w["images"]])
+    # The slide list comes from viewer_slides() via the context processor now,
+    # so it is built once per request and shared with every other page.
     c = cfg()
     hero = {
         "base": c.get("hero_image") or "",
@@ -203,8 +226,7 @@ def index():
         first = next((w for w in works + sold if w["images"]), None)
         if first:
             hero["base"] = first["images"][0]["base"]
-    return render_template("index.html", works=works, slides=slides, hero=hero,
-                           has_archive=bool(sold))
+    return render_template("index.html", works=works, hero=hero)
 
 
 @site.route("/archive")

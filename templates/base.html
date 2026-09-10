@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Karla:wght@400;500;700&family=Mrs+Saint+Delafield&display=swap">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=40">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=41">
 </head>
 <script>
 /* Flagged before first paint so the fallback fade never flickers in on a
@@ -60,6 +60,7 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
 {% block body %}{% endblock %}
 </main>
 {% block after %}{% endblock %}
+{% if slides %}{% include "_gallery.html" %}{% endif %}
 
 <footer class="foot">
   <p class="fine">&copy; {{ cfg.site_title }}. All images and paintings remain the property of the artist.</p>
