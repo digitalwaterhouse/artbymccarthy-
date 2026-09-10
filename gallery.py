@@ -23,7 +23,11 @@ PHOTO_DIR = os.path.join(BASE, "data", "photos")
 SIZES = [("s", 600), ("m", 1400), ("l", 2400)]
 
 SHIP_BANDS = ["small", "medium", "large", "rolled", "quote"]
-STATUSES = ["available", "reserved", "sold", "nfs"]
+# draft is UNPUBLISHED: the work exists, photographs can be uploaded and the
+# story written over several evenings, and none of it is on the wall until
+# the status changes. Everything else in this list is public.
+STATUSES = ["available", "reserved", "sold", "nfs", "draft"]
+PUBLIC_STATUSES = [s for s in STATUSES if s != "draft"]
 
 DEFAULT_SETTINGS = {
     "site_title": "Art by McCarthy",
@@ -81,6 +85,39 @@ def settings():
     out = dict(DEFAULT_SETTINGS)
     out.update({r["key"]: r["value"] for r in rows})
     return out
+
+
+def admin_password_is_set():
+    """Has she set her own password, or is the site still on the env one?"""
+    return bool(settings().get("admin_pass_hash"))
+
+
+def set_admin_password(pw):
+    from werkzeug.security import generate_password_hash
+    save_settings({"admin_pass_hash": generate_password_hash(pw)})
+
+
+def check_admin_password(pw, env_password=""):
+    """True if this password opens /admin.
+
+    WHY THERE ARE TWO. The password used to live only in ADMIN_PASS on the
+    host, which meant the artist could not change her own password without
+    asking whoever administers the server — the wrong dependency for a site she
+    owns. Hers is stored here as a hash and takes precedence.
+
+    The environment password KEEPS WORKING as a recovery path. That is a
+    deliberate second key rather than an oversight: if she forgets hers, the
+    alternative is an admin with database access, at which point the recovery
+    path exists anyway and is merely undocumented. Revoke it by clearing
+    ADMIN_PASS on the host once she has set her own.
+    """
+    from werkzeug.security import check_password_hash
+    if not pw:
+        return False
+    stored = settings().get("admin_pass_hash") or ""
+    if stored and check_password_hash(stored, pw):
+        return True
+    return bool(env_password) and pw == env_password
 
 
 def save_settings(d):
@@ -147,7 +184,14 @@ def dims(w):
     return s + " in"
 
 
-def list_works(status=None, include_nfs=True):
+def list_works(status=None, include_nfs=True, include_draft=False):
+    """The works, in the order the wall shows them.
+
+    include_draft is FALSE by default and that default is the safety. The
+    unfiltered call is what the sitemap uses, and a drafted painting listed
+    there invites Google to index a page that is not meant to exist yet. Only
+    the admin asks for drafts, and it asks explicitly.
+    """
     sql = "SELECT * FROM works"
     args = []
     if status == "for_sale":
@@ -159,6 +203,8 @@ def list_works(status=None, include_nfs=True):
         args.append(status)
     if status == "for_sale" and include_nfs:
         sql = "SELECT * FROM works WHERE status IN ('available','reserved','nfs')"
+    elif status is None and not include_draft:
+        sql += " WHERE status <> 'draft'"
     sql += " ORDER BY sort, id DESC"
     with connect() as conn:
         return _hydrate(conn, conn.execute(sql, args).fetchall())
@@ -233,6 +279,69 @@ def delete_work(work_id):
         conn.execute("DELETE FROM images WHERE work_id=?", (work_id,))
         conn.execute("DELETE FROM works WHERE id=?", (work_id,))
     return True
+
+
+# ------------------------------------------------------------------ ordering
+# The order the paintings hang in is an artistic decision, and it used to be
+# made by typing numbers into a `sort` field. These move one item one place and
+# leave the arithmetic to the machine.
+#
+# EVERY MOVE RENUMBERS FIRST. Rows arrive with sort=0 from before this existed,
+# and ties break on id, so there is nothing to swap until the current display
+# order is written down as 1..N. Renumbering in the SAME order the list is read
+# in means the visible order does not change — it just becomes expressible.
+
+def _renumber(conn, table, where, args, order):
+    rows = conn.execute("SELECT id FROM %s %s ORDER BY %s" % (table, where, order),
+                        args).fetchall()
+    for i, r in enumerate(rows, start=1):
+        conn.execute("UPDATE %s SET sort=? WHERE id=?" % table, (i, r["id"]))
+    return [r["id"] for r in rows]
+
+
+def _swap(conn, table, ids, item_id, direction):
+    """Move one id one place. Returns False at the ends rather than wrapping.
+
+    Wrapping would mean pressing "up" on the first item silently sends it to
+    the bottom, which reads as the button having done something random.
+    """
+    if item_id not in ids:
+        return False
+    i = ids.index(item_id)
+    j = i - 1 if direction == "up" else i + 1
+    if j < 0 or j >= len(ids):
+        return False
+    conn.execute("UPDATE %s SET sort=? WHERE id=?" % table, (j + 1, ids[i]))
+    conn.execute("UPDATE %s SET sort=? WHERE id=?" % table, (i + 1, ids[j]))
+    return True
+
+
+def move_work(work_id, direction):
+    """One place up or down the wall.
+
+    Ordered across ALL works, drafts and sold included, rather than within the
+    filtered view: there is one wall order and the public lists are windows on
+    it. Moving inside a filtered list would reshuffle pieces the person moving
+    them cannot see.
+    """
+    with connect() as conn:
+        ids = _renumber(conn, "works", "", (), "sort, id DESC")
+        return _swap(conn, "works", ids, work_id, direction)
+
+
+def move_image(image_id, direction):
+    """One place through a work's photographs.
+
+    The FIRST photograph is the one the wall, the archive and the share card
+    all use, so this is also how the lead image is chosen — which is why it
+    matters that it is not "delete everything and re-upload in order".
+    """
+    with connect() as conn:
+        row = conn.execute("SELECT work_id FROM images WHERE id=?", (image_id,)).fetchone()
+        if row is None:
+            return False
+        ids = _renumber(conn, "images", "WHERE work_id=?", (row["work_id"],), "sort, id")
+        return _swap(conn, "images", ids, image_id, direction)
 
 
 def set_status(work_id, status):

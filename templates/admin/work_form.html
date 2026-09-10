@@ -18,7 +18,7 @@
   <label>Price <input name="price" value="{{ '%.2f'|format(w.price_cents/100) if w and w.price_cents else '' }}" inputmode="decimal" placeholder="1800"></label>
   <label>Status
     <select name="status">
-      {% for s in ['available','reserved','sold','nfs'] %}
+      {% for s in ['available','reserved','sold','nfs','draft'] %}
         <option value="{{ s }}" {% if w and w.status == s %}selected{% endif %}>{{ s }}</option>
       {% endfor %}
     </select>
@@ -57,15 +57,31 @@
 
 {% if w and w.images %}
 <h2>Photographs</h2>
+<p class="sub">The first one is the picture the site leads with — on the wall, in the
+   archive and on anything shared to social media. Use the arrows to choose it.</p>
 <div class="shots">
   {% for im in w.images %}
-    <figure>
+    <figure{% if loop.first %} class="lead"{% endif %}>
       <img src="{{ img_url(im.base,'s','jpg') }}" alt="">
-      <figcaption>{{ im.kind }}</figcaption>
-      <form method="post" action="{{ url_for('site.admin_image_delete', image_id=im.id) }}">
-        <input type="hidden" name="back" value="{{ url_for('site.admin_work', work_id=w.id) }}">
-        <button class="link danger" type="submit">remove</button>
-      </form>
+      <figcaption>{{ im.kind }}{% if loop.first %} · leads{% endif %}</figcaption>
+      <div class="shot-acts">
+        <form method="post" action="{{ url_for('site.admin_move_image', image_id=im.id) }}" class="inline">
+          <input type="hidden" name="dir" value="up">
+          <input type="hidden" name="back" value="{{ url_for('site.admin_work', work_id=w.id) }}">
+          <button class="link mover" type="submit" title="Move earlier"
+                  aria-label="Move this photograph earlier"{% if loop.first %} disabled{% endif %}>&larr;</button>
+        </form>
+        <form method="post" action="{{ url_for('site.admin_move_image', image_id=im.id) }}" class="inline">
+          <input type="hidden" name="dir" value="down">
+          <input type="hidden" name="back" value="{{ url_for('site.admin_work', work_id=w.id) }}">
+          <button class="link mover" type="submit" title="Move later"
+                  aria-label="Move this photograph later"{% if loop.last %} disabled{% endif %}>&rarr;</button>
+        </form>
+        <form method="post" action="{{ url_for('site.admin_image_delete', image_id=im.id) }}" class="inline">
+          <input type="hidden" name="back" value="{{ url_for('site.admin_work', work_id=w.id) }}">
+          <button class="link danger" type="submit">remove</button>
+        </form>
+      </div>
     </figure>
   {% endfor %}
 </div>

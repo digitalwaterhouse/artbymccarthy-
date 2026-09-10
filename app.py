@@ -216,7 +216,10 @@ def archive():
 def work(slug):
     gallery.release_expired()
     w = gallery.get_work(slug=slug)
-    if not w:
+    # A draft is unpublished, and that has to hold for a direct link too: the
+    # slug is guessable from the title and she will be writing these while the
+    # site is live. Signed in it still renders, which is how she previews one.
+    if not w or (w["status"] == "draft" and not session.get("admin")):
         abort(404)
     return render_template("work.html", w=w, near=gallery.neighbours(w))
 
@@ -376,7 +379,9 @@ def sitemap():
 def admin_login():
     err = None
     if request.method == "POST":
-        if ADMIN_PASS and request.form.get("password") == ADMIN_PASS:
+        # Hers first, the host's ADMIN_PASS as recovery — see
+        # gallery.check_admin_password for why both are accepted.
+        if gallery.check_admin_password(request.form.get("password") or "", ADMIN_PASS):
             session["admin"] = True
             session.permanent = True
             return redirect(request.args.get("next") or url_for("site.admin_works"))
@@ -394,7 +399,7 @@ def admin_logout():
 @admin_required
 def admin_works():
     gallery.release_expired()
-    return render_template("admin/works.html", works=gallery.list_works(),
+    return render_template("admin/works.html", works=gallery.list_works(include_draft=True),
                            orders=gallery.list_orders()[:5],
                            inquiries=[i for i in gallery.list_inquiries() if not i["handled"]])
 
@@ -442,6 +447,42 @@ def admin_status(work_id):
     if st in gallery.STATUSES:
         gallery.set_status(work_id, st)
     return redirect(request.form.get("back") or url_for("site.admin_works"))
+
+
+@site.route("/admin/work/<int:work_id>/move", methods=["POST"])
+@admin_required
+def admin_move_work(work_id):
+    gallery.move_work(work_id, request.form.get("dir"))
+    # Back to the row that moved rather than the top of the page: reordering
+    # happens in runs of several presses, and losing your place after each one
+    # turns a two-minute job into a chore.
+    return redirect((request.form.get("back") or url_for("site.admin_works"))
+                    + "#w%d" % work_id)
+
+
+@site.route("/admin/image/<int:image_id>/move", methods=["POST"])
+@admin_required
+def admin_move_image(image_id):
+    gallery.move_image(image_id, request.form.get("dir"))
+    return redirect(request.form.get("back") or url_for("site.admin_works"))
+
+
+@site.route("/admin/password", methods=["POST"])
+@admin_required
+def admin_password():
+    current = request.form.get("current") or ""
+    new = request.form.get("new") or ""
+    again = request.form.get("again") or ""
+    if not gallery.check_admin_password(current, ADMIN_PASS):
+        flash("That current password didn't match, so nothing was changed.")
+    elif len(new) < 10:
+        flash("Pick a longer password — at least 10 characters.")
+    elif new != again:
+        flash("The two new passwords didn't match, so nothing was changed.")
+    else:
+        gallery.set_admin_password(new)
+        flash("Password changed. Use the new one next time you sign in.")
+    return redirect(url_for("site.admin_settings"))
 
 
 @site.route("/admin/work/<int:work_id>/delete", methods=["POST"])

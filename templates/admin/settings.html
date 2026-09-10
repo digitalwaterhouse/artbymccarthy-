@@ -80,4 +80,14 @@
 
   <div class="wide"><button class="cta" type="submit">Save</button></div>
 </form>
+
+<h2>Your password</h2>
+<p class="sub">This is the password for signing in here. Changing it takes effect
+   immediately and does not affect anything else on the site.</p>
+<form method="post" action="{{ url_for('site.admin_password') }}" class="formgrid">
+  <label>Current password <input type="password" name="current" autocomplete="current-password" required></label>
+  <label>New password <input type="password" name="new" autocomplete="new-password" minlength="10" required></label>
+  <label>New password again <input type="password" name="again" autocomplete="new-password" minlength="10" required></label>
+  <div class="wide"><button class="cta" type="submit">Change password</button></div>
+</form>
 {% endblock %}

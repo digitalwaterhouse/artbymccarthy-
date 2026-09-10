@@ -13,11 +13,27 @@
 </div>
 {% endif %}
 
+<p class="sub">The arrows set the order the paintings hang in on the site.
+   A <strong>draft</strong> is not on the wall at all — use it while you are still
+   photographing or writing about a piece.</p>
+
 <table class="grid-t">
-  <thead><tr><th></th><th>Title</th><th>Size</th><th>Price</th><th>Status</th><th>Ships</th><th></th></tr></thead>
+  <thead><tr><th></th><th></th><th>Title</th><th>Size</th><th>Price</th><th>Status</th><th>Ships</th><th></th></tr></thead>
   <tbody>
   {% for w in works %}
-    <tr>
+    <tr id="w{{ w.id }}"{% if w.status == 'draft' %} class="is-draft"{% endif %}>
+      <td class="movers">
+        <form method="post" action="{{ url_for('site.admin_move_work', work_id=w.id) }}" class="inline">
+          <input type="hidden" name="dir" value="up">
+          <button class="link mover" type="submit" title="Move up"
+                  aria-label="Move {{ w.title }} up"{% if loop.first %} disabled{% endif %}>&uarr;</button>
+        </form>
+        <form method="post" action="{{ url_for('site.admin_move_work', work_id=w.id) }}" class="inline">
+          <input type="hidden" name="dir" value="down">
+          <button class="link mover" type="submit" title="Move down"
+                  aria-label="Move {{ w.title }} down"{% if loop.last %} disabled{% endif %}>&darr;</button>
+        </form>
+      </td>
       <td class="thumb">{% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}</td>
       <td><a href="{{ url_for('site.admin_work', work_id=w.id) }}">{{ w.title }}</a>
           <span class="sub">{{ w.year or '' }} {{ w.medium or '' }}</span></td>
@@ -26,7 +42,7 @@
       <td>
         <form method="post" action="{{ url_for('site.admin_status', work_id=w.id) }}" class="inline">
           <select name="status" onchange="this.form.submit()">
-            {% for s in ['available','reserved','sold','nfs'] %}
+            {% for s in ['available','reserved','sold','nfs','draft'] %}
               <option value="{{ s }}" {% if w.status == s %}selected{% endif %}>{{ s }}</option>
             {% endfor %}
           </select>
@@ -41,7 +57,7 @@
       </td>
     </tr>
   {% else %}
-    <tr><td colspan="7" class="empty">Nothing listed yet. Add the first painting.</td></tr>
+    <tr><td colspan="8" class="empty">Nothing listed yet. Add the first painting.</td></tr>
   {% endfor %}
   </tbody>
 </table>
