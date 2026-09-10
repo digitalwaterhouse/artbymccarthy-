@@ -7,13 +7,13 @@
   <tbody>
   {% for o in orders %}
     <tr>
-      <td class="sub">{{ o.created_at[:10] }}</td>
-      <td>{{ o.title or '&mdash;'|safe }}</td>
-      <td>{{ o.buyer_name or '' }}<span class="sub">{{ o.buyer_email or '' }}</span></td>
-      <td class="addr">{{ o.ship_line1 or '' }}{% if o.ship_line2 %}, {{ o.ship_line2 }}{% endif %}
+      <td class="sub" data-label="When">{{ o.created_at[:10] }}</td>
+      <td data-label="Painting">{{ o.title or '&mdash;'|safe }}</td>
+      <td data-label="Buyer">{{ o.buyer_name or '' }}<span class="sub">{{ o.buyer_email or '' }}</span></td>
+      <td class="addr" data-label="Ship to">{{ o.ship_line1 or '' }}{% if o.ship_line2 %}, {{ o.ship_line2 }}{% endif %}
           <span class="sub">{{ o.ship_city or '' }} {{ o.ship_state or '' }} {{ o.ship_zip or '' }}</span></td>
-      <td class="num">{% if o.amount_cents %}${{ '%.2f'|format(o.amount_cents/100) }}{% endif %}</td>
-      <td>
+      <td class="num" data-label="Total">{% if o.amount_cents %}${{ '%.2f'|format(o.amount_cents/100) }}{% endif %}</td>
+      <td data-label="Status">
         {% if o.status == 'shipped' %}
           shipped<span class="sub">{{ o.tracking or '' }}</span>
         {% else %}

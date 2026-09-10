@@ -550,27 +550,57 @@ body.admin{background:#F3F4F2; font-size:15px}
 .alerts{display:flex; gap:14px; margin-bottom:16px; font-size:14px}
 .err{background:#FBE9E7; border:1px solid #E0B4AE; padding:9px 12px}
 
-.grid-t{width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line)}
-.grid-t th,.grid-t td{padding:9px 11px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle}
-.grid-t thead th{font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:500}
+/* ---------- the working surface ----------
+   Still not the shop: this is a tool, and it should never be mistaken for the
+   gallery. But "plain" had become "unstyled", and on a phone the tables ran
+   off the side of the screen. The palette below is the site's own tokens --
+   slate for actions, turquoise for the live edge, the sold red only for sold
+   -- so the studio looks related to the shop without imitating it. */
+.grid-t{
+  width:100%; border-collapse:collapse; background:var(--paper);
+  border:1px solid var(--line); border-radius:3px; overflow:hidden;
+}
+.grid-t th,.grid-t td{padding:11px 13px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle}
+.grid-t tbody tr:last-child td{border-bottom:0}
+.grid-t tbody tr:hover{background:#FBFBF9}
+.grid-t thead th{
+  font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted);
+  font-weight:600; background:#F7F7F4; border-bottom:1px solid var(--rule);
+}
 .grid-t td.num{text-align:right; font-variant-numeric:tabular-nums}
 .grid-t td.right{text-align:right}
-.grid-t .thumb{width:62px}
-.grid-t .thumb img{width:54px; height:54px; object-fit:cover}
+.grid-t .thumb{width:66px}
+.grid-t .thumb img{width:56px; height:56px; object-fit:cover; border-radius:2px; display:block}
 .sub{display:block; color:var(--muted); font-size:12.5px}
 .addr{max-width:15rem}
 .inline{display:inline-flex; gap:6px; align-items:center}
-.grid-t select,.inline input{padding:5px 7px; font-size:13.5px; width:auto}
-.link{background:none; border:0; color:var(--accent); cursor:pointer; font:500 13.5px "Karla",sans-serif; padding:0}
+/* 16px minimum on every control that can be focused. Below it, iOS zooms the
+   whole page in on focus and leaves it there -- which is most of what "renders
+   badly on mobile" turned out to mean. */
+.grid-t select,.inline input{padding:8px 9px; font-size:16px; width:auto; max-width:100%}
+.link{
+  background:none; border:0; color:var(--accent); cursor:pointer;
+  font:600 13.5px "Karla",sans-serif; padding:6px 2px; min-height:34px;
+  text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px;
+}
+.link:hover{color:var(--ink)}
 .link.danger{color:#A3372B}
 
-.formgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; background:#fff; padding:18px; border:1px solid var(--line)}
+.formgrid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px;
+  background:var(--paper); padding:clamp(14px,3vw,22px); border:1px solid var(--line);
+  border-radius:3px;
+}
 .formgrid .wide{grid-column:1/-1}
-.formgrid fieldset{grid-column:1/-1; border:1px solid var(--line); padding:14px}
-.formgrid legend{font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); padding:0 6px}
-.formgrid .check{flex-direction:row; align-items:center; gap:8px; color:var(--ink)}
-.formgrid .check input{width:auto}
-.rates{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px}
+.formgrid fieldset{grid-column:1/-1; border:1px solid var(--line); border-radius:3px; padding:16px; margin:0}
+.formgrid legend{
+  font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent);
+  padding:0 7px; font-weight:600;
+}
+.formgrid .check{flex-direction:row; align-items:center; gap:9px; color:var(--ink); min-height:40px}
+.formgrid .check input{width:auto; min-width:20px; min-height:20px}
+.formgrid input,.formgrid select,.formgrid textarea{box-sizing:border-box; max-width:100%}
+.rates{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px}
 /* A dollar sign sitting inside the field, so the unit is visible while typing
    and not only in the legend above. */
 .money{position:relative; display:block}
@@ -579,29 +609,79 @@ body.admin{background:#F3F4F2; font-size:15px}
   color:var(--muted); font-size:15px; pointer-events:none;
 }
 .money input{padding-left:24px}
-.shots{display:flex; flex-wrap:wrap; gap:14px; margin-top:14px}
-.shots figure{margin:0; background:#fff; border:1px solid var(--line); padding:8px; width:150px}
-.shots img{width:100%; height:110px; object-fit:cover}
+.shots{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; margin-top:14px}
+.shots figure{margin:0; background:var(--paper); border:1px solid var(--line); border-radius:3px; padding:8px}
+.shots img{width:100%; height:120px; object-fit:cover; border-radius:2px; display:block}
 .shots figcaption{font-size:12px; color:var(--muted); padding:6px 0}
 
-/* Ordering controls. The arrows are deliberately quiet and only get weight on
-   hover: they sit on every row of a page whose subject is the paintings, and a
-   column of dark chevrons reads as more important than the titles beside it. */
-.movers{width:26px; padding-right:0 !important; white-space:nowrap; line-height:1}
-.mover{font-size:15px; line-height:1; padding:1px 3px; color:var(--muted)}
-.mover:hover:not([disabled]){color:var(--accent)}
+/* Ordering controls. Quiet until you reach for them: they sit on every row of
+   a page whose subject is the paintings, and a column of dark chevrons reads
+   as more important than the titles beside it. The touch target is bigger than
+   the glyph -- this is used on a phone, one-handed, standing in a studio. */
+.movers{width:34px; padding-right:0 !important; white-space:nowrap; line-height:1}
+.mover{
+  font-size:16px; line-height:1; padding:7px 8px; color:var(--muted);
+  min-height:34px; min-width:32px; text-decoration:none; border-radius:2px;
+}
+.mover:hover:not([disabled]){color:var(--accent); background:#F1F3F2}
 .mover[disabled]{opacity:.22; cursor:default}
 .movers .inline{display:block}
 /* A draft is not on the wall, and the row says so at a glance rather than
    making you read the status menu. */
-.grid-t tr.is-draft{background:repeating-linear-gradient(135deg,#fff,#fff 9px,#faf7f2 9px,#faf7f2 18px)}
-.grid-t tr.is-draft td:nth-child(3) a::after{content:"draft"; font-size:10.5px; letter-spacing:.07em;
-  text-transform:uppercase; color:var(--muted); border:1px solid var(--rule); padding:1px 5px; margin-left:8px;
-  vertical-align:middle}
+.grid-t tr.is-draft{background:repeating-linear-gradient(135deg,#fff,#fff 9px,#F7F4EE 9px,#F7F4EE 18px)}
+.grid-t tr.is-draft td[data-label="Title"] a::after{
+  content:"draft"; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--plum); border:1px solid var(--plum); border-radius:2px;
+  padding:2px 6px; margin-left:9px; vertical-align:middle; white-space:nowrap;
+}
 /* The lead photograph is the one the whole site uses; mark it where the choice
    is made rather than explaining it in prose alone. */
-.shots figure.lead{outline:2px solid var(--accent); outline-offset:-1px}
-.shot-acts{display:flex; align-items:center; gap:8px; justify-content:space-between}
+.shots figure.lead{outline:2px solid var(--turq); outline-offset:-1px}
+.shots figure.lead figcaption{color:var(--accent); font-weight:600}
+.shot-acts{display:flex; align-items:center; gap:8px; justify-content:space-between; flex-wrap:wrap}
+
+/* ---------- the studio on a phone ----------
+   A six-column table cannot be read at 390px, and the old rule was that there
+   was no rule: the table simply ran off the side and took the page's
+   horizontal scroll with it. Each row becomes a card, and every cell carries
+   its column name in data-label because the heading row is gone. */
+@media (max-width:760px){
+  .grid-t,.grid-t tbody,.grid-t tr,.grid-t td{display:block; width:100%}
+  .grid-t{border:0; background:none; border-radius:0; overflow:visible}
+  .grid-t thead{display:none}
+  .grid-t tbody tr{
+    background:var(--paper); border:1px solid var(--line); border-radius:4px;
+    padding:12px 14px; margin:0 0 12px; box-shadow:0 1px 2px rgba(23,26,24,.04);
+  }
+  .grid-t tbody tr:hover{background:var(--paper)}
+  .grid-t td,.grid-t tbody tr:last-child td{border-bottom:0; padding:5px 0}
+  .grid-t td[data-label]:not([data-label=""])::before{
+    content:attr(data-label) " "; display:inline-block; min-width:5.2rem;
+    color:var(--muted); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+    font-weight:600; vertical-align:baseline;
+  }
+  /* A work with no photograph yet has an empty thumbnail cell; in card
+     layout that is a stray gap rather than a column. */
+  .grid-t td:empty{display:none}
+  .grid-t td.num,.grid-t td.right{text-align:left}
+  /* The thumbnail leads the card and the row controls close it, so the middle
+     reads as a plain list of facts. */
+  .grid-t td.thumb{width:auto; padding-bottom:8px}
+  .grid-t td.thumb img{width:88px; height:88px}
+  .grid-t td.movers{width:auto; padding-top:10px}
+  .movers .inline{display:inline-block; margin-right:6px}
+  .grid-t td.right{padding-top:8px; border-top:1px solid var(--line); margin-top:8px}
+  .grid-t select{width:100%; max-width:none}
+  .grid-t .inline{display:flex; flex-wrap:wrap; width:100%}
+  .grid-t .inline input{flex:1 1 8rem}
+  .adminhead{flex-wrap:wrap; gap:10px}
+  .adminhead .cta{width:100%; text-align:center}
+  .alerts{flex-direction:column; gap:8px}
+  .formgrid{grid-template-columns:1fr}
+  .shots{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+  .msg header{gap:6px 12px}
+}
+
 .msgs{display:flex; flex-direction:column; gap:12px}
 .msg{background:#fff; border:1px solid var(--line); padding:13px 15px}
 .msg.done{opacity:.55}
@@ -721,16 +801,17 @@ body.home{
    Borrowed wholesale in shape from the Bayview gallery -- dark stage, arrows,
    filmstrip, keys and swipe. What differs is the caption: in a shop it has to
    read like a gallery label and get you to the work's own page. */
-/* UP THE PAGE, not in the bottom corner (2026-09-09, Paul). The gallery is
-   what the site is for, and its button was sitting where a chat bubble or a
-   cookie bar goes — the corner people have learned to ignore. Vertically
-   CENTRED rather than pinned below the masthead: the masthead wraps to two
-   rows on a phone, so any fixed top offset either collides with the nav there
-   or floats uselessly low on a desktop. The middle of the right edge is the
-   one position that cannot collide with the header at any width. */
+/* OFF THE BOTTOM CORNER, BUT NOT MID-SCREEN (2026-09-09, Paul, in two passes).
+   It began in the corner where chat bubbles and cookie bars live — the one
+   place people have trained themselves not to look. Dead centre was too far:
+   it sat over the middle of the artwork. This is the compromise, measured from
+   the BOTTOM so it stays put on a short screen, and high enough to read as part
+   of the page rather than as a widget stuck to the glass. Anchored to the
+   bottom rather than the top on purpose: the masthead wraps to two rows on a
+   phone, so any top offset either collides with the nav or floats low. */
 .gal-fab{
   position:fixed; right:max(16px,env(safe-area-inset-right));
-  top:50%; transform:translateY(-50%); z-index:900;
+  bottom:clamp(72px,16vh,170px); z-index:900;
   display:inline-flex; align-items:center; gap:9px;
   background:var(--ground); color:#EDF1F0; border:1px solid rgba(237,241,240,.2);
   border-radius:100px; padding:13px 20px; cursor:pointer;
@@ -739,10 +820,10 @@ body.home{
   transition:transform .2s, box-shadow .2s, border-color .2s;
 }
 .gal-fab svg{width:19px; height:19px; flex:0 0 auto; color:var(--turq)}
-.gal-fab:hover{transform:translateY(calc(-50% - 2px)); border-color:var(--turq); box-shadow:0 14px 36px rgba(6,14,20,.5)}
+.gal-fab:hover{transform:translateY(-2px); border-color:var(--turq); box-shadow:0 14px 36px rgba(6,14,20,.5)}
 body:has(#galleryModal:not([hidden])) .gal-fab{display:none}
 @media (max-width:600px){.gal-fab{padding:14px; gap:0} .gal-fab-label{display:none}}
-@media (prefers-reduced-motion:reduce){.gal-fab{transition:none} .gal-fab:hover{transform:translateY(-50%)}}
+@media (prefers-reduced-motion:reduce){.gal-fab{transition:none} .gal-fab:hover{transform:none}}
 
 .gm-overlay{
   position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;

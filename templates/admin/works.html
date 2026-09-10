@@ -22,7 +22,7 @@
   <tbody>
   {% for w in works %}
     <tr id="w{{ w.id }}"{% if w.status == 'draft' %} class="is-draft"{% endif %}>
-      <td class="movers">
+      <td class="movers" data-label="">
         <form method="post" action="{{ url_for('site.admin_move_work', work_id=w.id) }}" class="inline">
           <input type="hidden" name="dir" value="up">
           <button class="link mover" type="submit" title="Move up"
@@ -34,12 +34,12 @@
                   aria-label="Move {{ w.title }} down"{% if loop.last %} disabled{% endif %}>&darr;</button>
         </form>
       </td>
-      <td class="thumb">{% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}</td>
-      <td><a href="{{ url_for('site.admin_work', work_id=w.id) }}">{{ w.title }}</a>
+      <td class="thumb" data-label="">{% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}</td>
+      <td data-label="Title"><a href="{{ url_for('site.admin_work', work_id=w.id) }}">{{ w.title }}</a>
           <span class="sub">{{ w.year or '' }} {{ w.medium or '' }}</span></td>
-      <td>{{ w.dims or '&mdash;'|safe }}</td>
-      <td class="num">{{ w.price or '&mdash;'|safe }}</td>
-      <td>
+      <td data-label="Size">{{ w.dims or '&mdash;'|safe }}</td>
+      <td class="num" data-label="Price">{{ w.price or '&mdash;'|safe }}</td>
+      <td data-label="Status">
         <form method="post" action="{{ url_for('site.admin_status', work_id=w.id) }}" class="inline">
           <select name="status" onchange="this.form.submit()">
             {% for s in ['available','reserved','sold','nfs','draft'] %}
@@ -48,8 +48,8 @@
           </select>
         </form>
       </td>
-      <td>{{ w.ship_band }}</td>
-      <td class="right">
+      <td data-label="Ships">{{ w.ship_band }}</td>
+      <td class="right" data-label="">
         <form method="post" action="{{ url_for('site.admin_delete', work_id=w.id) }}"
               onsubmit="return confirm('Delete {{ w.title }} and its photographs? This cannot be undone.')">
           <button class="link danger" type="submit">delete</button>

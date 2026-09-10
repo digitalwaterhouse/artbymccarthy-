@@ -9,7 +9,7 @@
   <thead><tr><th>Email</th><th>From</th><th>Added</th></tr></thead>
   <tbody>
   {% for s in subs %}
-    <tr><td>{{ s.email }}</td><td class="sub">{{ s.source }}</td><td class="sub">{{ s.created_at[:10] }}</td></tr>
+    <tr><td data-label="Email">{{ s.email }}</td><td class="sub" data-label="From">{{ s.source }}</td><td class="sub" data-label="Added">{{ s.created_at[:10] }}</td></tr>
   {% else %}
     <tr><td colspan="3" class="empty">Nobody yet.</td></tr>
   {% endfor %}
