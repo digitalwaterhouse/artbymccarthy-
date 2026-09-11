@@ -17,7 +17,7 @@
 
   <label>Price <input name="price" value="{{ '%.2f'|format(w.price_cents/100) if w and w.price_cents else '' }}" inputmode="decimal" placeholder="1800"></label>
   <label>Status
-    <select name="status">
+    <select class="st st-{{ w.status if w else 'available' }}" name="status">
       {% for s in ['available','reserved','sold','nfs','draft'] %}
         <option value="{{ s }}" {% if w and w.status == s %}selected{% endif %}>{{ status_label(s) }}</option>
       {% endfor %}

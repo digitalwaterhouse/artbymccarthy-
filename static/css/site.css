@@ -654,6 +654,19 @@ body.admin{background:#F3F4F2; font-size:15px}
    whole page in on focus and leaves it there -- which is most of what "renders
    badly on mobile" turned out to mean. */
 .grid-t select,.inline input{padding:8px 9px; font-size:16px; width:auto; max-width:100%}
+/* Status carries a colour, so a list of paintings answers "what can somebody
+   buy right now" without reading a word. Every hue is already in the palette
+   and RED IS STILL ONLY SOLD -- available takes the turquoise live edge,
+   reserved the gold, not-for-sale the plum because it is a decision rather
+   than a failure, and a draft is dashed because it is not published at all.
+   The class is rendered by the server from the stored status, so the border
+   is correct on load and correct again after the form posts. */
+select.st{border-left-width:4px}
+select.st-available{border-color:var(--turq)}
+select.st-reserved{border-color:var(--gold)}
+select.st-sold{border-color:var(--dot)}
+select.st-nfs{border-color:var(--plum)}
+select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .link{
   background:none; border:0; color:var(--accent); cursor:pointer;
   font:600 13.5px "Karla",sans-serif; padding:6px 2px; min-height:34px;

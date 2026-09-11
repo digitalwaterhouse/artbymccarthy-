@@ -30,7 +30,7 @@
       <td class="num" data-label="Price">{{ w.price or '&mdash;'|safe }}</td>
       <td data-label="Status">
         <form method="post" action="{{ url_for('site.admin_status', work_id=w.id) }}" class="inline">
-          <select name="status" onchange="this.form.submit()">
+          <select class="st st-{{ w.status }}" name="status" onchange="this.form.submit()">
             {% for s in ['available','reserved','sold','nfs','draft'] %}
               <option value="{{ s }}" {% if w.status == s %}selected{% endif %}>{{ status_label(s) }}</option>
             {% endfor %}
