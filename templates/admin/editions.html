@@ -16,7 +16,7 @@
       <td data-label="Title"><a href="{{ url_for('site.admin_work', work_id=w.id) }}">{{ w.title }}</a>
           <span class="sub">{{ w.year or '' }} {{ w.medium or '' }}</span></td>
       <td data-label="Edition">{{ w.edition }}</td>
-      <td data-label="Status">{{ w.status }}</td>
+      <td data-label="Status">{{ status_label(w.status) }}</td>
       <td class="num" data-label="Price">{{ w.price or '&mdash;'|safe }}</td>
     </tr>
   {% else %}

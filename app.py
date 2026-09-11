@@ -145,6 +145,7 @@ def day(iso):
 
 
 app.jinja_env.filters["day"] = day
+app.jinja_env.globals["status_label"] = gallery.status_label
 
 
 def notify(kind, name, email, body, work_title=None):

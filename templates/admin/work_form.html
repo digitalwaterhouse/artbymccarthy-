@@ -19,7 +19,7 @@
   <label>Status
     <select name="status">
       {% for s in ['available','reserved','sold','nfs','draft'] %}
-        <option value="{{ s }}" {% if w and w.status == s %}selected{% endif %}>{{ s }}</option>
+        <option value="{{ s }}" {% if w and w.status == s %}selected{% endif %}>{{ status_label(s) }}</option>
       {% endfor %}
     </select>
   </label>

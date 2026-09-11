@@ -28,6 +28,17 @@ SHIP_BANDS = ["small", "medium", "large", "rolled", "quote"]
 # the status changes. Everything else in this list is public.
 STATUSES = ["available", "reserved", "sold", "nfs", "draft"]
 PUBLIC_STATUSES = [s for s in STATUSES if s != "draft"]
+# What each status is CALLED in the studio. The stored values stay short and
+# stable -- they are in the database, in queries and in the CSV export -- while
+# these are what a person reads. "nfs" is real gallery usage, printed on
+# exhibition labels, but sitting lowercase between "available" and "sold" in a
+# dropdown it reads like a filesystem.
+STATUS_LABELS = {"available": "available", "reserved": "reserved",
+                 "sold": "sold", "nfs": "not for sale", "draft": "draft"}
+
+
+def status_label(status):
+    return STATUS_LABELS.get(status, status)
 
 DEFAULT_SETTINGS = {
     "site_title": "Art by McCarthy",
