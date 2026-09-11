@@ -555,7 +555,10 @@ body.admin{background:#F3F4F2; font-size:15px}
    width of the page to the tables, which are the only thing in here that is
    ever short of room. The section you are on is marked with a turquoise edge,
    so the nav says where you are and not just where you could go. */
-.adminshell{display:grid; grid-template-columns:206px minmax(0,1fr)}
+/* 206 -> 228px. The labels were already at their natural width; the icons
+   added 27px in front of them, and without the extra the longest word in
+   the rail (Opportunities) sat hard against the edge. */
+.adminshell{display:grid; grid-template-columns:228px minmax(0,1fr)}
 .adminside{
   /* align-self:start, NOT the grid default of stretch: a stretched item fills
      the row and sticky then has nothing left to travel through. */
@@ -586,6 +589,32 @@ body.admin{background:#F3F4F2; font-size:15px}
   transition:color .15s, background .15s, border-color .15s;
 }
 .adminside nav a:hover{color:#fff; background:rgba(255,255,255,.07)}
+/* ---------- section marks ----------
+   The glyph sits dimmer than its label at rest so the rail still reads as a
+   list of words rather than a row of pictures, and comes up to full strength
+   with the label on hover or when the section is the current one. */
+.adminside nav a{gap:11px}
+.adminside nav a svg{
+  width:17px; height:17px; flex:none; opacity:.62;
+  transition:opacity .15s;
+  /* The pulse scales about the glyph's own middle, not the corner. */
+  transform-origin:50% 50%;
+}
+.adminside nav a:hover svg,.adminside nav a.on svg,.adminside nav a.grp.open svg{opacity:1}
+.adminside nav a span{min-width:0}
+/* One beat, not a loop: a rail that throbs continuously is a rail nobody can
+   read past. It fires on hover and settles back, and it is scale only --
+   animating anything that reflows would shift the label beside it. */
+@keyframes navpulse{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.22)}
+  70%{transform:scale(.97)}
+  100%{transform:scale(1)}
+}
+.adminside nav a:hover svg{animation:navpulse .42s cubic-bezier(.34,1.56,.64,1)}
+@media (prefers-reduced-motion:reduce){
+  .adminside nav a:hover svg{animation:none}
+}
 /* Artwork is a group heading that is also a link. It never takes the turquoise
    edge itself -- that belongs to whichever child you are actually on, or the
    rail would mark two places at once. */
@@ -610,7 +639,7 @@ body.admin{background:#F3F4F2; font-size:15px}
 .adminside .util a:hover{color:#fff}
 .adminside .util a.out{color:#D79B93}
 .adminside :focus-visible{outline:2px solid var(--turq); outline-offset:-3px}
-/* A 206px rail out of a 390px screen is most of the screen, so on a phone it
+/* A 228px rail out of a 390px screen is most of the screen, so on a phone it
    lies back down as a bar and the current-section edge moves to the bottom. */
 @media (max-width:760px){
   .adminshell{grid-template-columns:1fr}
@@ -625,6 +654,10 @@ body.admin{background:#F3F4F2; font-size:15px}
     padding:12px 11px 9px; font-size:11.5px; letter-spacing:.06em;
     border-left:0; border-bottom:3px solid transparent;
   }
+  /* Laid down as a bar there is no width to spend on a glyph in front of every
+     word -- seven of them would push Settings off the end. The labels carry it
+     alone here, exactly as they did before the icons existed. */
+  .adminside nav a svg{display:none}
   .adminside nav a.on{border-bottom-color:var(--turq)}
   /* Laid down as a bar there is no room to indent, so the group heading and
      its three children read as one wrapping row of items. */

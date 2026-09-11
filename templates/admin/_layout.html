@@ -1,3 +1,28 @@
+{#- Section marks for the rail. Drawn inline rather than loaded: seven
+   17px glyphs are smaller than the request that would fetch them, and they
+   inherit currentColor so they light with the label instead of needing a
+   second colour rule. Stroked, never filled -- a filled glyph at this size
+   turns into a blob against the dark rail. -#}
+{%- macro icon(name) -%}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+{%- if name == 'artwork' -%}
+  <rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 16l5-5 4 4 3-3 6 5"/><circle cx="9" cy="9" r="1.4"/>
+{%- elif name == 'exhibitions' -%}
+  <path d="M12 3v3"/><rect x="4" y="6" width="7" height="7" rx="1"/><rect x="13" y="6" width="7" height="10" rx="1"/><path d="M3 20h18"/>
+{%- elif name == 'opportunities' -%}
+  <path d="M3 10v4a1 1 0 0 0 1 1h3l5 4V5L7 9H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6"/><path d="M20 7a7 7 0 0 1 0 10"/>
+{%- elif name == 'orders' -%}
+  <path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>
+{%- elif name == 'messages' -%}
+  <rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3.5 6.5L12 13l8.5-6.5"/>
+{%- elif name == 'contacts' -%}
+  <circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/>
+{%- elif name == 'settings' -%}
+  <path d="M4 7h10M18 7h2M4 12h2M10 12h10M4 17h8M16 17h4"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="14" cy="17" r="2"/>
+{%- endif -%}
+</svg>
+{%- endmacro -%}
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,7 +30,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}Studio{% endblock %} &mdash; {{ cfg.site_title }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=65">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=66">
 </head>
 <body class="admin">
 <div class="adminshell">
@@ -23,7 +48,7 @@
     {# Artwork is a group: the three ways into the catalogue sit under it, and
        the parent itself goes to Pieces because that is the one she opens. #}
     {% set art = ['admin_works','admin_work','admin_collections','admin_collection','admin_editions'] %}
-    <a class="grp{% if endpoint in art %} open{% endif %}" href="{{ url_for('site.admin_works') }}">Artwork</a>
+    <a class="grp{% if endpoint in art %} open{% endif %}" href="{{ url_for('site.admin_works') }}">{{ icon('artwork') }}<span>Artwork</span></a>
     <div class="subnav">
       {% for eps, label, href in [
            (['admin_works','admin_work'],             "Pieces",      url_for('site.admin_works')),
@@ -32,14 +57,14 @@
       <a href="{{ href }}"{% if endpoint in eps %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
       {% endfor %}
     </div>
-    {% for ep, label, href in [
-         ("admin_exhibitions", "Exhibitions", url_for('site.admin_exhibitions')),
-         ("admin_opportunities", "Opportunities", url_for('site.admin_opportunities')),
-         ("admin_orders",      "Orders",   url_for('site.admin_orders')),
-         ("admin_inquiries",   "Messages", url_for('site.admin_inquiries')),
-         ("admin_subscribers", "Contacts", url_for('site.admin_subscribers')),
-         ("admin_settings",    "Settings", url_for('site.admin_settings'))] %}
-    <a href="{{ href }}"{% if endpoint == ep or (ep == 'admin_exhibitions' and endpoint == 'admin_exhibition') or (ep == 'admin_opportunities' and endpoint in ['admin_opportunity','admin_packet']) %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
+    {% for ep, label, href, ic in [
+         ("admin_exhibitions", "Exhibitions", url_for('site.admin_exhibitions'), "exhibitions"),
+         ("admin_opportunities", "Opportunities", url_for('site.admin_opportunities'), "opportunities"),
+         ("admin_orders",      "Orders",   url_for('site.admin_orders'), "orders"),
+         ("admin_inquiries",   "Messages", url_for('site.admin_inquiries'), "messages"),
+         ("admin_subscribers", "Contacts", url_for('site.admin_subscribers'), "contacts"),
+         ("admin_settings",    "Settings", url_for('site.admin_settings'), "settings")] %}
+    <a href="{{ href }}"{% if endpoint == ep or (ep == 'admin_exhibitions' and endpoint == 'admin_exhibition') or (ep == 'admin_opportunities' and endpoint in ['admin_opportunity','admin_packet']) %} class="on" aria-current="page"{% endif %}>{{ icon(ic) }}<span>{{ label }}</span></a>
     {% endfor %}
   </nav>
   <div class="util">
