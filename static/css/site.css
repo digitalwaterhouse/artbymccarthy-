@@ -591,7 +591,7 @@ body.admin{background:#F3F4F2; font-size:15px}
    at 1600px the old left-aligned block left a third of the screen empty on
    the right and the tables looked like they had slipped. */
 .adminmain{padding:clamp(16px,3vw,30px); box-sizing:border-box;
-  width:min(1100px,100%); margin-inline:auto}
+  width:min(1240px,100%); margin-inline:auto}
 .adminmain.narrowbox{max-width:22rem; margin:12vh auto}
 .adminhead{display:flex; align-items:center; gap:16px; margin-bottom:18px}
 .adminhead h1{font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.7rem; margin:0; margin-right:auto}
