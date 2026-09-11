@@ -649,6 +649,8 @@ body.admin{background:#F3F4F2; font-size:15px}
    with the room. The thumbnail still sets the row height. */
 .grid-t.tight td{padding-top:7px; padding-bottom:7px; line-height:1.35}
 .grid-t.tight .sub{margin-top:1px}
+.grid-t.tight .thumb{width:54px}
+.grid-t.tight .thumb img{width:44px; height:44px}
 .grid-t td.num{text-align:right; font-variant-numeric:tabular-nums}
 .grid-t td.right{text-align:right}
 .grid-t .thumb{width:66px}
@@ -765,7 +767,8 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   /* The thumbnail leads the card and the row controls close it, so the middle
      reads as a plain list of facts. */
   .grid-t td.thumb{width:auto; padding-bottom:8px}
-  .grid-t td.thumb img{width:88px; height:88px}
+  .grid-t td.thumb img,.grid-t.tight td.thumb img{width:88px; height:88px}
+  .grid-t.tight td.thumb{width:auto}
   .grid-t td.right{padding-top:8px; border-top:1px solid var(--line); margin-top:8px}
   .grid-t select{width:100%; max-width:none}
   .grid-t .inline{display:flex; flex-wrap:wrap; width:100%}
