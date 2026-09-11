@@ -146,6 +146,7 @@ def day(iso):
 
 app.jinja_env.filters["day"] = day
 app.jinja_env.globals["status_label"] = gallery.status_label
+app.jinja_env.globals["exhibition_dates"] = gallery.exhibition_dates
 
 
 def notify(kind, name, email, body, work_title=None):
@@ -456,6 +457,56 @@ def admin_works():
     return render_template("admin/works.html", works=gallery.list_works(include_draft=True),
                            orders=gallery.list_orders()[:5],
                            inquiries=[i for i in gallery.list_inquiries() if not i["handled"]])
+
+
+@site.route("/admin/exhibitions", methods=["GET", "POST"])
+@admin_required
+def admin_exhibitions():
+    """The schedule. Adding one needs only a name and a date; everything else
+    is filled in on the show's own page once it is real."""
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        if not title:
+            flash("A show needs a name.")
+            return redirect(url_for("site.admin_exhibitions"))
+        eid = gallery.save_exhibition({"title": title,
+                                       "starts_on": request.form.get("starts_on")})
+        return redirect(url_for("site.admin_exhibition", exhibition_id=eid))
+    upcoming, past = gallery.list_exhibitions()
+    return render_template("admin/exhibitions.html", upcoming=upcoming, past=past)
+
+
+@site.route("/admin/exhibition/<int:exhibition_id>", methods=["GET", "POST"])
+@admin_required
+def admin_exhibition(exhibition_id):
+    e = gallery.get_exhibition(exhibition_id)
+    if not e:
+        abort(404)
+    if request.method == "POST":
+        gallery.save_exhibition({
+            "title": request.form.get("title") or e["title"],
+            "venue": (request.form.get("venue") or "").strip(),
+            "city": (request.form.get("city") or "").strip(),
+            "starts_on": request.form.get("starts_on"),
+            "ends_on": request.form.get("ends_on"),
+            "blurb": (request.form.get("blurb") or "").strip(),
+            "url": (request.form.get("url") or "").strip(),
+        }, exhibition_id)
+        gallery.set_exhibition_works(exhibition_id, request.form.getlist("work_ids"))
+        flash("Saved.")
+        return redirect(url_for("site.admin_exhibition", exhibition_id=exhibition_id))
+    return render_template("admin/exhibition_form.html", e=e,
+                           works=gallery.list_works(include_draft=True))
+
+
+@site.route("/admin/exhibition/<int:exhibition_id>/delete", methods=["POST"])
+@admin_required
+def admin_exhibition_delete(exhibition_id):
+    e = gallery.get_exhibition(exhibition_id)
+    gallery.delete_exhibition(exhibition_id)
+    flash(f"Deleted {e['title'] if e else 'it'}. The paintings that were in it "
+          "are untouched.")
+    return redirect(url_for("site.admin_exhibitions"))
 
 
 @site.route("/admin/collections", methods=["GET", "POST"])

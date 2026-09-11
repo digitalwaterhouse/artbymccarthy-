@@ -1,0 +1,56 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Exhibitions{% endblock %}
+{% block body %}
+<div class="adminhead">
+  <h1>Exhibitions</h1>
+</div>
+
+<p class="sub">Where the work is going, and when. This is for the studio — none of
+   it appears on the site. Attach paintings to a show and you have a record of
+   what hung where.</p>
+
+<form class="newrow" method="post">
+  <label class="sr" for="newshow">Name a new show</label>
+  <input id="newshow" name="title" placeholder="Name a new show" required>
+  <label class="sr" for="newshowdate">Opening date</label>
+  <input id="newshowdate" name="starts_on" type="date">
+  <button class="cta" type="submit">Add</button>
+</form>
+
+<h2 class="offhead up">Coming up</h2>
+{% if upcoming %}
+<ul class="sched">
+  {% for e in upcoming %}
+  <li class="{{ 'on-now' if e.running else '' }}">
+    <div class="when">
+      <span class="dates">{{ exhibition_dates(e) }}</span>
+      {% if e.running %}<span class="nowtag">on now</span>{% endif %}
+    </div>
+    <div class="what">
+      <a href="{{ url_for('site.admin_exhibition', exhibition_id=e.id) }}">{{ e.title }}</a>
+      <span class="sub">{{ e.venue or 'venue not set' }}{% if e.city %}, {{ e.city }}{% endif %}
+        · {{ e.count }} painting{{ '' if e.count == 1 else 's' }}</span>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">Nothing scheduled.</p>
+{% endif %}
+
+{% if past %}
+<h2 class="offhead">Already shown</h2>
+<ul class="sched past">
+  {% for e in past %}
+  <li>
+    <div class="when"><span class="dates">{{ exhibition_dates(e) }}</span></div>
+    <div class="what">
+      <a href="{{ url_for('site.admin_exhibition', exhibition_id=e.id) }}">{{ e.title }}</a>
+      <span class="sub">{{ e.venue or 'venue not set' }}{% if e.city %}, {{ e.city }}{% endif %}
+        · {{ e.count }} painting{{ '' if e.count == 1 else 's' }}</span>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

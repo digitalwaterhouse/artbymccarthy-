@@ -101,3 +101,29 @@ CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT
 );
+
+-- EXHIBITIONS are a schedule, not a catalogue: where the work is going and
+-- when. Studio-only for now -- nothing here renders on the public site.
+--
+-- The link to paintings is MANY-TO-MANY, which is the difference between this
+-- and a collection. A piece belongs to one collection (see above) but it can
+-- hang in a show in March and another one two years later, and both facts are
+-- worth keeping. That is why this is a join table rather than a column.
+CREATE TABLE IF NOT EXISTS exhibitions (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    title      TEXT NOT NULL,
+    venue      TEXT,
+    city       TEXT,
+    starts_on  TEXT,          -- YYYY-MM-DD
+    ends_on    TEXT,
+    blurb      TEXT,
+    url        TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS exhibition_works (
+    exhibition_id INTEGER NOT NULL REFERENCES exhibitions(id) ON DELETE CASCADE,
+    work_id       INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    PRIMARY KEY (exhibition_id, work_id)
+);
+CREATE INDEX IF NOT EXISTS idx_exwork_work ON exhibition_works(work_id);

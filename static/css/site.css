@@ -790,6 +790,53 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .grid-t.off tbody tr{background:#FBFBF9}
 .grid-t.off td[data-label="Email"]{color:var(--muted); text-decoration:line-through}
 
+/* ---------- the schedule ----------
+   Not a table: a show is a date and a name, and the date is the thing you are
+   scanning for, so it leads its own column and the rest hangs off it. */
+.offhead.up{margin-top:26px}
+.sched{list-style:none; margin:0 0 10px; padding:0}
+.sched li{
+  display:grid; grid-template-columns:13rem minmax(0,1fr); gap:4px 20px;
+  align-items:baseline; padding:14px 16px; background:var(--paper);
+  border:1px solid var(--line); border-left:3px solid var(--rule);
+  border-radius:3px; margin-bottom:8px;
+}
+.sched li.on-now{border-left-color:var(--turq)}
+.sched .dates{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13.5px;
+  color:var(--ink); font-variant-numeric:tabular-nums;
+}
+.sched .nowtag{
+  display:inline-block; margin-left:8px; font-size:10px; font-weight:700;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--accent);
+  border:1px solid var(--turq); border-radius:2px; padding:1px 6px;
+}
+.sched .what a{font-weight:600}
+.sched.past li{background:#FBFBF9}
+.sched.past .dates{color:var(--muted)}
+
+/* Ticking paintings into a show. A grid of real thumbnails, because she knows
+   the work by sight long before she knows what I called it. */
+.pickers{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px;
+  max-height:22rem; overflow-y:auto; padding:4px;
+  border:1px solid var(--line); border-radius:3px; background:var(--wall);
+}
+.pick{
+  flex-direction:row; align-items:center; gap:9px; padding:7px 9px; margin:0;
+  background:var(--paper); border:1px solid var(--line); border-radius:3px;
+  color:var(--ink); font-size:14px; cursor:pointer; min-height:52px;
+}
+.pick:hover{border-color:var(--rule)}
+.pick input{width:auto; min-width:18px; min-height:18px; margin:0; flex:none}
+.pick img{width:38px; height:38px; object-fit:cover; border-radius:2px; flex:none}
+.pick span{min-width:0; overflow-wrap:anywhere}
+.pick:has(input:checked){border-color:var(--turq); background:#F4FCFD}
+.danger-row{margin-top:22px}
+@media (max-width:560px){
+  .sched li{grid-template-columns:1fr; gap:2px}
+}
+
 
 /* ================= the landing =================
    A dark entry, then the lit room. The photograph on the front is a shadow

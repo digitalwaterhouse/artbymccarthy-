@@ -428,6 +428,125 @@ def list_editioned_works():
         return _hydrate(conn, rows)
 
 
+# -------------------------------------------------------------- exhibitions
+# Where the work is going and when. Studio-only: nothing here has a public
+# route. Dates are plain YYYY-MM-DD strings, which sort correctly as text and
+# compare directly against today's date.
+
+def _past_cutoff():
+    """A show counts as finished only once its end date is a full day behind
+    UTC. This is deliberately generous and deliberately timezone-free: an
+    exhibition ending today must never read as "past" while it is still on the
+    wall somewhere, and nothing here knows which timezone the reader keeps.
+    The cost is a show sitting under Coming up for a few hours after it closes,
+    which is the harmless direction to be wrong in."""
+    return (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+
+
+def today():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def list_exhibitions():
+    """Every show, each with how many paintings are attached and whether it has
+    finished. Upcoming first and soonest-first, because a schedule is read
+    forwards; everything past follows, most recent first."""
+    with connect() as conn:
+        rows = [dict(r) for r in conn.execute("SELECT * FROM exhibitions").fetchall()]
+        counts = {r["exhibition_id"]: r["c"] for r in conn.execute(
+            "SELECT exhibition_id, COUNT(*) c FROM exhibition_works "
+            "GROUP BY exhibition_id").fetchall()}
+    cutoff, now_ = _past_cutoff(), today()
+    for e in rows:
+        e["count"] = counts.get(e["id"], 0)
+        # No end date means a one-day show, so the start date decides.
+        end = e["ends_on"] or e["starts_on"] or ""
+        e["past"] = bool(end) and end <= cutoff
+        e["running"] = (not e["past"] and bool(e["starts_on"])
+                        and e["starts_on"] <= now_)
+    upcoming = sorted([e for e in rows if not e["past"]],
+                      key=lambda e: (e["starts_on"] or "9999-99-99", e["title"]))
+    past = sorted([e for e in rows if e["past"]],
+                  key=lambda e: (e["ends_on"] or e["starts_on"] or ""), reverse=True)
+    return upcoming, past
+
+
+def get_exhibition(exhibition_id):
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM exhibitions WHERE id=?",
+                           (exhibition_id,)).fetchone()
+        if row is None:
+            return None
+        e = dict(row)
+        e["work_ids"] = [r["work_id"] for r in conn.execute(
+            "SELECT work_id FROM exhibition_works WHERE exhibition_id=?",
+            (exhibition_id,)).fetchall()]
+    return e
+
+
+def save_exhibition(data, exhibition_id=None):
+    fields = ["title", "venue", "city", "starts_on", "ends_on", "blurb", "url"]
+    vals = {k: (data.get(k) or None) for k in fields}
+    vals["title"] = (data.get("title") or "Untitled show").strip()
+    with connect() as conn:
+        if exhibition_id:
+            sets = ", ".join(f"{k}=:{k}" for k in vals)
+            conn.execute(f"UPDATE exhibitions SET {sets} WHERE id=:id",
+                         {**vals, "id": exhibition_id})
+            return exhibition_id
+        vals["created_at"] = now()
+        cols = ", ".join(vals)
+        conn.execute(f"INSERT INTO exhibitions ({cols}) "
+                     f"VALUES ({', '.join(':'+k for k in vals)})", vals)
+        return conn.execute("SELECT last_insert_rowid() AS i").fetchone()["i"]
+
+
+def set_exhibition_works(exhibition_id, work_ids):
+    """Replace the whole set in one go. The form posts every checkbox that is
+    ticked, so what arrives IS the answer -- working out which ones changed
+    would only invent a way to get it wrong."""
+    with connect() as conn:
+        conn.execute("DELETE FROM exhibition_works WHERE exhibition_id=?",
+                     (exhibition_id,))
+        conn.executemany(
+            "INSERT OR IGNORE INTO exhibition_works (exhibition_id, work_id) "
+            "VALUES (?,?)", [(exhibition_id, int(w)) for w in work_ids])
+    return True
+
+
+def delete_exhibition(exhibition_id):
+    """The show goes, the paintings stay. exhibition_works cascades, and that
+    is the only thing that should disappear with it."""
+    with connect() as conn:
+        conn.execute("DELETE FROM exhibition_works WHERE exhibition_id=?",
+                     (exhibition_id,))
+        conn.execute("DELETE FROM exhibitions WHERE id=?", (exhibition_id,))
+    return True
+
+
+def exhibition_dates(e):
+    """One line for a date range: "12-30 March 2027", or a single day."""
+    def parse(v):
+        try:
+            return datetime.strptime(v, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            return None
+    a, b = parse(e.get("starts_on")), parse(e.get("ends_on"))
+    if not a and not b:
+        return "dates not set"
+    if a and not b:
+        return a.strftime("%-d %b %Y")
+    if b and not a:
+        return "until " + b.strftime("%-d %b %Y")
+    if a == b:
+        return a.strftime("%-d %b %Y")
+    if (a.year, a.month) == (b.year, b.month):
+        return f"{a.day}\u2013{b.strftime('%-d %b %Y')}"
+    if a.year == b.year:
+        return f"{a.strftime('%-d %b')}\u2013{b.strftime('%-d %b %Y')}"
+    return f"{a.strftime('%-d %b %Y')}\u2013{b.strftime('%-d %b %Y')}"
+
+
 # ------------------------------------------------------------------ ordering
 # The order the paintings hang in is an artistic decision, and it used to be
 # made by typing numbers into a `sort` field. These move one item one place and

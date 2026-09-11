@@ -1,0 +1,44 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ e.title }}{% endblock %}
+{% block body %}
+<div class="adminhead">
+  <h1>{{ e.title }}</h1>
+  <a href="{{ url_for('site.admin_exhibitions') }}">all exhibitions</a>
+</div>
+
+<form class="formgrid" method="post">
+  <label class="wide">Name <input name="title" value="{{ e.title }}" required></label>
+  <label>Venue <input name="venue" value="{{ e.venue or '' }}" placeholder="Gallery or space"></label>
+  <label>City <input name="city" value="{{ e.city or '' }}"></label>
+  <label>Opens <input name="starts_on" type="date" value="{{ e.starts_on or '' }}"></label>
+  <label>Closes <input name="ends_on" type="date" value="{{ e.ends_on or '' }}"></label>
+  <label class="wide">Link <input name="url" value="{{ e.url or '' }}" placeholder="https://"></label>
+  <label class="wide">Notes
+    <textarea name="blurb" rows="3" placeholder="Anything worth remembering — the contact there, what they asked for, how it went.">{{ e.blurb or '' }}</textarea>
+  </label>
+
+  <fieldset class="wide">
+    <legend>Paintings in this show</legend>
+    <p class="sub">A painting can be in more than one show over the years, and
+       ticking it here does not take it off the wall or change what it costs.</p>
+    <div class="pickers">
+      {% for w in works %}
+      <label class="pick">
+        <input type="checkbox" name="work_ids" value="{{ w.id }}"
+               {% if w.id in e.work_ids %}checked{% endif %}>
+        {% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}
+        <span>{{ w.title }}{% if w.year %} <span class="sub">{{ w.year }}</span>{% endif %}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <div class="wide"><button class="cta" type="submit">Save</button></div>
+</form>
+
+<form method="post" action="{{ url_for('site.admin_exhibition_delete', exhibition_id=e.id) }}"
+      class="danger-row"
+      onsubmit="return confirm('Delete the show {{ e.title }}? The paintings in it stay.')">
+  <button class="link danger" type="submit">delete this show</button>
+</form>
+{% endblock %}

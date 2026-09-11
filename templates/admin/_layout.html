@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}Studio{% endblock %} &mdash; {{ cfg.site_title }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=47">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=48">
 </head>
 <body class="admin">
 <div class="adminshell">
@@ -33,11 +33,12 @@
       {% endfor %}
     </div>
     {% for ep, label, href in [
+         ("admin_exhibitions", "Exhibitions", url_for('site.admin_exhibitions')),
          ("admin_orders",      "Orders",   url_for('site.admin_orders')),
          ("admin_inquiries",   "Messages", url_for('site.admin_inquiries')),
-         ("admin_subscribers", "List",     url_for('site.admin_subscribers')),
+         ("admin_subscribers", "Contacts", url_for('site.admin_subscribers')),
          ("admin_settings",    "Settings", url_for('site.admin_settings'))] %}
-    <a href="{{ href }}"{% if endpoint == ep %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
+    <a href="{{ href }}"{% if endpoint == ep or (ep == 'admin_exhibitions' and endpoint == 'admin_exhibition') %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
     {% endfor %}
   </nav>
   <div class="util">

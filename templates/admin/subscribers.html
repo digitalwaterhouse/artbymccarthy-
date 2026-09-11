@@ -1,12 +1,13 @@
 {% extends "admin/_layout.html" %}
-{% block title %}List{% endblock %}
+{% block title %}Contacts{% endblock %}
 {% block body %}
 <div class="adminhead">
-  <h1>Mailing list</h1>
+  <h1>Contacts</h1>
   {% if subs %}<a class="cta" href="{{ url_for('site.admin_subscribers_csv') }}">Export CSV</a>{% endif %}
 </div>
 
 {% if subs %}
+<p class="sub">People who asked to hear about new work.</p>
 {# The count said "41" next to the heading and nothing else. What she actually
    wants to know before writing to people is how many, how recently anyone
    joined, and where they came from. #}
