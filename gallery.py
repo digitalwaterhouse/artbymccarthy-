@@ -99,6 +99,7 @@ NEW_COLUMNS = {
         ("unsubscribed_at", "TEXT"),
     ],
     "works": [
+        ("location",       "TEXT"),
         ("collection_id",  "INTEGER REFERENCES collections(id) ON DELETE SET NULL"),
         ("edition_size",   "INTEGER"),
         ("edition_number", "INTEGER"),
@@ -308,6 +309,8 @@ def save_work(data, work_id=None):
               "status", "framed", "ready_to_hang", "signed_where", "story",
               "ship_band", "sort", "collection_id", "edition_size",
               "edition_number"]
+    # location is NOT here on purpose: it changes by MOVING a work, never by
+    # editing the form, so that works.location and work_movements cannot drift.
     vals = {k: data.get(k) for k in fields}
     vals["slug"] = unique_slug(data.get("slug") or slugify(vals["title"], vals["year"]), work_id)
     with connect() as conn:
@@ -345,6 +348,69 @@ def delete_work(work_id):
         conn.execute("UPDATE inquiries SET work_id=NULL WHERE work_id=?", (work_id,))
         conn.execute("DELETE FROM images WHERE work_id=?", (work_id,))
         conn.execute("DELETE FROM works WHERE id=?", (work_id,))
+    return True
+
+
+# ----------------------------------------------------------------- location
+# Where each physical painting is. See schema.sql for why this is separate from
+# status and why place is a name rather than a foreign key.
+
+def places():
+    """Every place a work has been, most-used first — feeds the datalist so the
+    same cafe is not typed three different ways."""
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT place, COUNT(*) n FROM work_movements GROUP BY place ORDER BY n DESC, place"
+        ).fetchall()
+    return [r["place"] for r in rows]
+
+
+def movements(work_id):
+    """Newest first — where it is now reads before where it used to be."""
+    with connect() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT * FROM work_movements WHERE work_id=? ORDER BY COALESCE(moved_on,'') DESC, id DESC",
+            (work_id,)).fetchall()]
+
+
+def relocate(work_id, place, note=None, moved_on=None):
+    """Record a move and update the work's current location in one transaction.
+
+    NOT called move_work: that name is already the sort-order mover further down
+    this file, and defining it twice meant the second definition silently won.
+
+    Both, or neither: works.location is a denormalised copy of the newest
+    movement, and if the two ever disagree the list view starts lying about
+    where a painting is."""
+    place = (place or "").strip()
+    if not place:
+        return False
+    with connect() as conn:
+        conn.execute(
+            "INSERT INTO work_movements (work_id, place, note, moved_on, created_at)"
+            " VALUES (?,?,?,?,?)",
+            (work_id, place, (note or "").strip() or None, (moved_on or "").strip() or today(), now()))
+        conn.execute("UPDATE works SET location=?, updated_at=? WHERE id=?",
+                     (place, now(), work_id))
+    return True
+
+
+def delete_movement(movement_id):
+    """Remove a mis-entered move and re-point the work at whatever is now newest.
+
+    Deleting the latest entry has to roll works.location back, or the work keeps
+    claiming to be somewhere its own history no longer mentions."""
+    with connect() as conn:
+        row = conn.execute("SELECT work_id FROM work_movements WHERE id=?", (movement_id,)).fetchone()
+        if not row:
+            return False
+        wid = row["work_id"]
+        conn.execute("DELETE FROM work_movements WHERE id=?", (movement_id,))
+        newest = conn.execute(
+            "SELECT place FROM work_movements WHERE work_id=? ORDER BY COALESCE(moved_on,'') DESC, id DESC LIMIT 1",
+            (wid,)).fetchone()
+        conn.execute("UPDATE works SET location=?, updated_at=? WHERE id=?",
+                     (newest["place"] if newest else None, now(), wid))
     return True
 
 

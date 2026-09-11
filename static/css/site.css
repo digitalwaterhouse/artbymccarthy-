@@ -868,6 +868,39 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .pick span{min-width:0; overflow-wrap:anywhere}
 .pick:has(input:checked){border-color:var(--turq); background:#F4FCFD}
 .danger-row{margin-top:22px}
+
+/* ---------- where a painting is ----------
+   Its own panel rather than a field in the form, because a location is not
+   edited, it CHANGES: you record a move and the history keeps the rest. */
+.wherebox{
+  background:var(--paper); border:1px solid var(--line); border-radius:3px;
+  padding:clamp(14px,3vw,20px); margin-bottom:8px;
+}
+.wherebox .now{margin:0 0 2px; font-size:15px}
+.wherebox .now strong{font-weight:600}
+.moverow{display:flex; flex-wrap:wrap; gap:9px; margin:16px 0 0; align-items:center}
+.moverow input{flex:1 1 12rem; min-width:0; font-size:16px}
+.moverow input[type=date]{flex:0 0 10rem}
+.moverow .cta{flex:none}
+/* The trail is a list of facts, not a table: date, place, and whatever she
+   noted. Newest first, so "where is it" is the first line read. */
+.trail{list-style:none; margin:18px 0 0; padding:0; border-top:1px solid var(--line)}
+.trail li{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px;
+  padding:9px 0; border-bottom:1px solid var(--line);
+}
+.trail li:last-child{border-bottom:0}
+.trail .mdate{
+  flex:0 0 6.5rem; font-size:12.5px; color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+.trail .mplace{font-weight:600; font-size:14.5px}
+.trail .sub{display:inline; flex:1 1 10rem}
+.trail form{margin-left:auto}
+@media (max-width:560px){
+  .trail .mdate{flex:1 1 100%}
+  .trail form{margin-left:0}
+}
 @media (max-width:560px){
   .sched li{grid-template-columns:1fr; gap:2px}
 }

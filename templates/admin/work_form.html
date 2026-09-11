@@ -68,6 +68,48 @@
   <div class="wide"><button class="cta" type="submit">Save</button></div>
 </form>
 
+{% if w %}
+<h2 id="where">Where it is</h2>
+<div class="wherebox">
+  <p class="now">
+    {% if w.location %}Currently at <strong>{{ w.location }}</strong>
+    {% else %}<span class="sub">No location recorded yet.</span>{% endif %}
+  </p>
+  <p class="sub">Where the painting physically is &mdash; separate from whether it is for
+     sale. Nothing here shows on the website.</p>
+
+  <form class="moverow" method="post" action="{{ url_for('site.admin_work_place', work_id=w.id) }}">
+    <label class="sr" for="place">Moved to</label>
+    <input id="place" name="place" list="placelist" placeholder="Studio, The Corner Cafe, a buyer&rsquo;s name&hellip;" required>
+    <datalist id="placelist">
+      {% for p in places %}<option value="{{ p }}">{% endfor %}
+    </datalist>
+    <label class="sr" for="moved_on">Date</label>
+    <input id="moved_on" name="moved_on" type="date">
+    <label class="sr" for="note">Note</label>
+    <input id="note" name="note" placeholder="Note (optional)">
+    <button class="cta" type="submit">Move it</button>
+  </form>
+
+  {% if movements %}
+  <ol class="trail">
+    {% for m in movements %}
+      <li>
+        <span class="mdate">{{ m.moved_on|day if m.moved_on else '' }}</span>
+        <span class="mplace">{{ m.place }}</span>
+        {% if m.note %}<span class="sub">{{ m.note }}</span>{% endif %}
+        <form method="post" action="{{ url_for('site.admin_movement_delete', movement_id=m.id) }}"
+              onsubmit="return confirm('Remove this entry from the history?')">
+          <input type="hidden" name="back" value="{{ url_for('site.admin_work', work_id=w.id) }}#where">
+          <button class="link danger" type="submit">remove</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+</div>
+{% endif %}
+
 {% if w and w.images %}
 <h2>Photographs</h2>
 <p class="sub">The first one is the picture the site leads with — on the wall, in the

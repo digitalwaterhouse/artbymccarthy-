@@ -127,3 +127,23 @@ CREATE TABLE IF NOT EXISTS exhibition_works (
     PRIMARY KEY (exhibition_id, work_id)
 );
 CREATE INDEX IF NOT EXISTS idx_exwork_work ON exhibition_works(work_id);
+
+-- WHERE THE PHYSICAL PAINTING IS RIGHT NOW. Deliberately separate from
+-- works.status: a piece can be `available` AND hanging in a cafe forty miles
+-- away, and those two facts answer different questions. status is "can someone
+-- buy it"; location is "where do I drive to collect it".
+--
+-- works.location holds the CURRENT place name, denormalised so the list view and
+-- filters do not need a join. work_movements is the history, one row per move.
+-- Place is a plain name rather than a foreign key: with one studio and a handful
+-- of venues, a places table would be a second screen to maintain for no gain.
+-- The form offers previously-used names so spellings stay consistent.
+CREATE TABLE IF NOT EXISTS work_movements (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    work_id    INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    place      TEXT NOT NULL,
+    note       TEXT,
+    moved_on   TEXT,          -- YYYY-MM-DD, hers to set; may differ from entry day
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_movements_work ON work_movements(work_id, moved_on, id);

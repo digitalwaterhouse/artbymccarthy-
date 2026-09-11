@@ -604,7 +604,30 @@ def admin_work(work_id=None):
                     flash(str(e))
         return redirect(url_for("site.admin_work", work_id=work_id))
     return render_template("admin/work_form.html", w=w,
-                           collections=gallery.list_collections())
+                           collections=gallery.list_collections(),
+                           places=gallery.places(),
+                           movements=gallery.movements(work_id) if work_id else [])
+
+
+@site.route("/admin/work/<int:work_id>/place", methods=["POST"])
+@admin_required
+def admin_work_place(work_id):
+    """Move a painting. Not part of the work form's save: location changes by
+    moving, so there is one way it can change and one place it is recorded."""
+    ok = gallery.relocate(work_id,
+                           request.form.get("place"),
+                           request.form.get("note"),
+                           request.form.get("moved_on"))
+    flash("Moved." if ok else "Say where it went.")
+    return redirect(url_for("site.admin_work", work_id=work_id) + "#where")
+
+
+@site.route("/admin/movement/<int:movement_id>/delete", methods=["POST"])
+@admin_required
+def admin_movement_delete(movement_id):
+    gallery.delete_movement(movement_id)
+    flash("Entry removed.")
+    return redirect(request.form.get("back") or url_for("site.admin_works"))
 
 
 @site.route("/admin/work/<int:work_id>/status", methods=["POST"])
