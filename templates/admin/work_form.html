@@ -110,6 +110,73 @@
 </div>
 {% endif %}
 
+{% if w %}
+<h2 id="qr">Label</h2>
+<div class="wherebox qrbox">
+  <img src="{{ url_for('site.admin_work_qr', work_id=w.id) }}" alt="QR code for {{ w.title }}" width="150" height="150">
+  <div>
+    <p class="sub">Scans to this painting&rsquo;s page on the site, so someone standing in
+       front of it can read the story and buy it. Print it on a card beside the work.</p>
+    <p><a class="link" href="{{ url_for('site.admin_work_qr', work_id=w.id) }}"
+          download="{{ w.slug }}-qr.png">Download the PNG</a></p>
+    <p class="sub codeurl">{{ url_for('site.work', slug=w.slug, _external=True) }}</p>
+  </div>
+</div>
+
+<h2 id="care">Care and repair</h2>
+<div class="wherebox">
+  <p class="sub">Reframing, varnish, a touch-up after a knock in transit. Nothing here
+     shows on the website.{% if care_total and care_total != '$0' %}
+     Spent so far: <strong>{{ care_total }}</strong>.{% endif %}</p>
+
+  <form class="moverow" method="post" action="{{ url_for('site.admin_work_care', work_id=w.id) }}">
+    <label class="sr" for="what">What was done</label>
+    <input id="what" name="what" placeholder="What was done" required>
+    <label class="sr" for="care_on">Date</label>
+    <input id="care_on" name="happened_on" type="date">
+    <label class="sr" for="who">Who</label>
+    <input id="who" name="who" placeholder="Who (optional)">
+    <label class="sr" for="cost">Cost</label>
+    <input id="cost" name="cost" inputmode="decimal" placeholder="Cost" size="7">
+    <button class="cta" type="submit">Record</button>
+  </form>
+
+  {% if care %}
+  <ol class="trail">
+    {% for c in care %}
+      <li>
+        <span class="mdate">{{ c.happened_on|day if c.happened_on else '' }}</span>
+        <span class="mplace">{{ c.what }}</span>
+        {% if c.who %}<span class="sub">{{ c.who }}</span>{% endif %}
+        {% if c.cost %}<span class="mcost">{{ c.cost }}</span>{% endif %}
+        <form method="post" action="{{ url_for('site.admin_care_delete', care_id=c.id) }}"
+              onsubmit="return confirm('Remove this entry?')">
+          <input type="hidden" name="back" value="{{ url_for('site.admin_work', work_id=w.id) }}#care">
+          <button class="link danger" type="submit">remove</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+</div>
+
+{% if shows %}
+<h2>Shown at</h2>
+<div class="wherebox">
+  <ol class="trail">
+    {% for e in shows %}
+      <li>
+        <span class="mdate">{{ exhibition_dates(e) }}</span>
+        <span class="mplace"><a href="{{ url_for('site.admin_exhibition', exhibition_id=e.id) }}">{{ e.title }}</a></span>
+        {% if e.venue %}<span class="sub">{{ e.venue }}{% if e.city %}, {{ e.city }}{% endif %}</span>{% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+  <p class="sub">A piece joins a show from the show&rsquo;s own page, under Exhibitions.</p>
+</div>
+{% endif %}
+{% endif %}
+
 {% if w and w.images %}
 <h2>Photographs</h2>
 <p class="sub">The first one is the picture the site leads with — on the wall, in the

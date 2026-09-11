@@ -869,6 +869,24 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .pick:has(input:checked){border-color:var(--turq); background:#F4FCFD}
 .danger-row{margin-top:22px}
 
+/* One row of filters above the list. Wraps rather than scrolls; every control
+   is the same height so the row reads as a single instrument. */
+.filters{
+  display:flex; flex-wrap:wrap; gap:9px; align-items:center;
+  margin:0 0 14px; padding:12px 14px;
+  background:var(--paper); border:1px solid var(--line); border-radius:3px;
+}
+.filters input[name=q]{flex:1 1 16rem; min-width:0; font-size:16px}
+.filters select{flex:0 0 auto; width:auto; font-size:16px; max-width:14rem}
+.filters .cta{flex:none}
+.filters .link{flex:none}
+@media (max-width:640px){
+  .filters{padding:10px 12px}
+  .filters input[name=q]{flex:1 1 100%}
+  .filters select{flex:1 1 8rem; max-width:none}
+  .filters .cta{flex:1 1 100%; text-align:center}
+}
+
 /* ---------- where a painting is ----------
    Its own panel rather than a field in the form, because a location is not
    edited, it CHANGES: you record a move and the history keeps the rest. */
@@ -896,6 +914,12 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 }
 .trail .mplace{font-weight:600; font-size:14.5px}
 .trail .sub{display:inline; flex:1 1 10rem}
+.qrbox{display:flex; flex-wrap:wrap; gap:18px; align-items:center}
+.qrbox img{flex:none; border:1px solid var(--line); border-radius:3px; background:#fff}
+.qrbox > div{flex:1 1 16rem; min-width:0}
+.qrbox p{margin:0 0 8px}
+.qrbox .codeurl{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; overflow-wrap:anywhere}
+.trail .mcost{font-variant-numeric:tabular-nums; color:var(--ink); font-size:14px}
 .trail form{margin-left:auto}
 @media (max-width:560px){
   .trail .mdate{flex:1 1 100%}

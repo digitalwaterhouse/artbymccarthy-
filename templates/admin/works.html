@@ -13,6 +13,49 @@
 </div>
 {% endif %}
 
+{# Filters, not a dashboard: one row that narrows the list in place. Every
+   control is a plain GET, so a filtered view is a URL she can bookmark. #}
+<form class="filters" method="get">
+  <label class="sr" for="fq">Search</label>
+  <input id="fq" name="q" value="{{ q }}" placeholder="Title, medium, story, where it is&hellip;">
+  <label class="sr" for="fstatus">Status</label>
+  <select id="fstatus" name="status">
+    <option value="">Any status</option>
+    {% for s in ['available','reserved','sold','nfs','draft'] %}
+      <option value="{{ s }}" {% if f_status == s %}selected{% endif %}>{{ status_label(s) }}</option>
+    {% endfor %}
+  </select>
+  {% if media|length > 1 %}
+  <label class="sr" for="fmedium">Medium</label>
+  <select id="fmedium" name="medium">
+    <option value="">Any medium</option>
+    {% for m in media %}<option value="{{ m }}" {% if f_medium == m %}selected{% endif %}>{{ m }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  {% if places %}
+  <label class="sr" for="fplace">Where</label>
+  <select id="fplace" name="place">
+    <option value="">Anywhere</option>
+    {% for p in places %}<option value="{{ p }}" {% if f_place == p %}selected{% endif %}>{{ p }}</option>{% endfor %}
+    <option value="none" {% if f_place == 'none' %}selected{% endif %}>&mdash; not recorded &mdash;</option>
+  </select>
+  {% endif %}
+  {% if collections %}
+  <label class="sr" for="fcoll">Collection</label>
+  <select id="fcoll" name="collection">
+    <option value="">Any collection</option>
+    {% for c in collections %}<option value="{{ c.id }}" {% if f_collection == c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    <option value="none" {% if f_collection == 'none' %}selected{% endif %}>&mdash; none &mdash;</option>
+  </select>
+  {% endif %}
+  <button class="cta" type="submit">Filter</button>
+  {% if filtered %}<a class="link" href="{{ url_for('site.admin_works') }}">Clear</a>{% endif %}
+</form>
+
+{% if filtered %}
+<p class="sub">Showing <strong>{{ works|length }}</strong> of {{ total }} pieces.</p>
+{% endif %}
+
 <p class="sub">A <strong>draft</strong> is not on the wall at all — use it while you are
    still photographing or writing about a piece. The order the paintings hang in is set
    by <em>Sort order</em> on each one.</p>
@@ -47,7 +90,7 @@
       </td>
     </tr>
   {% else %}
-    <tr><td colspan="9" class="empty">Nothing listed yet. Add the first painting.</td></tr>
+    <tr><td colspan="9" class="empty">{% if filtered %}Nothing matches that.{% else %}Nothing listed yet. Add the first painting.{% endif %}</td></tr>
   {% endfor %}
   </tbody>
 </table>

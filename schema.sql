@@ -147,3 +147,18 @@ CREATE TABLE IF NOT EXISTS work_movements (
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_movements_work ON work_movements(work_id, moved_on, id);
+
+-- Conservation and repair. One row per thing done to a painting: a reframe, a
+-- varnish, a touch-up after a knock in transit. cost_cents is nullable because
+-- plenty of care costs nothing but her afternoon.
+CREATE TABLE IF NOT EXISTS work_care (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    work_id     INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    happened_on TEXT,          -- YYYY-MM-DD
+    what        TEXT NOT NULL,
+    who         TEXT,          -- framer, conservator, herself
+    cost_cents  INTEGER,
+    note        TEXT,
+    created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_care_work ON work_care(work_id, happened_on, id);

@@ -454,9 +454,28 @@ def admin_logout():
 @admin_required
 def admin_works():
     gallery.release_expired()
-    return render_template("admin/works.html", works=gallery.list_works(include_draft=True),
+    q = (request.args.get("q") or "").strip()
+    st = request.args.get("status") or ""
+    med = request.args.get("medium") or ""
+    place = request.args.get("place") or ""
+    coll = request.args.get("collection") or ""
+    # "none" is a real choice, not an empty filter: show me what is filed
+    # nowhere / sitting nowhere. 0 is the sentinel for it in the query layer.
+    coll_id = 0 if coll == "none" else (_int(coll) if coll else None)
+    place_v = 0 if place == "none" else (place or None)
+    works = gallery.search_works(q=q or None,
+                                 status=st if st in gallery.STATUSES else None,
+                                 collection_id=coll_id,
+                                 place=place_v,
+                                 medium=med or None)
+    filtered = bool(q or st or med or place or coll)
+    return render_template("admin/works.html", works=works,
                            orders=gallery.list_orders()[:5],
-                           inquiries=[i for i in gallery.list_inquiries() if not i["handled"]])
+                           inquiries=[i for i in gallery.list_inquiries() if not i["handled"]],
+                           q=q, f_status=st, f_medium=med, f_place=place, f_collection=coll,
+                           filtered=filtered, total=gallery.count_works(),
+                           collections=gallery.list_collections(),
+                           media=gallery.media_list(), places=gallery.current_places())
 
 
 @site.route("/admin/exhibitions", methods=["GET", "POST"])
@@ -606,7 +625,62 @@ def admin_work(work_id=None):
     return render_template("admin/work_form.html", w=w,
                            collections=gallery.list_collections(),
                            places=gallery.places(),
-                           movements=gallery.movements(work_id) if work_id else [])
+                           movements=gallery.movements(work_id) if work_id else [],
+                           care=gallery.care_for(work_id) if work_id else [],
+                           care_total=gallery.money(gallery.care_total(work_id)) if work_id else None,
+                           shows=gallery.shows_for(work_id) if work_id else [])
+
+
+@site.route("/admin/work/<int:work_id>/qr.png")
+@admin_required
+def admin_work_qr(work_id):
+    """A QR label for one painting, pointing at its PUBLIC page.
+
+    Generated here rather than by a service: no account, no tracking pixel in
+    the middle of her gallery, and a printed label that cannot stop working
+    because somebody else's free tier ended. High error correction because these
+    get printed small and live on a wall next to a cafe window.
+    """
+    w = gallery.get_work(work_id=work_id)
+    if not w:
+        abort(404)
+    import qrcode
+    from qrcode.constants import ERROR_CORRECT_H
+    url = url_for("site.work", slug=w["slug"], _external=True)
+    img = qrcode.QRCode(box_size=10, border=2, error_correction=ERROR_CORRECT_H)
+    img.add_data(url)
+    img.make(fit=True)
+    buf = io.BytesIO()
+    img.make_image(fill_color="#171a18", back_color="white").save(buf, format="PNG")
+    buf.seek(0)
+    name = gallery.slugify(w["title"]) or ("work-%d" % work_id)
+    return Response(buf.getvalue(), mimetype="image/png", headers={
+        # inline so the admin page can show it; the download link adds its own
+        # filename via the anchor's download attribute
+        "Content-Disposition": 'inline; filename="%s-qr.png"' % name,
+        "Cache-Control": "no-store",
+    })
+
+
+@site.route("/admin/work/<int:work_id>/care", methods=["POST"])
+@admin_required
+def admin_work_care(work_id):
+    ok = gallery.add_care(work_id,
+                          request.form.get("what"),
+                          request.form.get("who"),
+                          _price_cents(request.form.get("cost")),
+                          request.form.get("happened_on"),
+                          request.form.get("note"))
+    flash("Recorded." if ok else "Say what was done.")
+    return redirect(url_for("site.admin_work", work_id=work_id) + "#care")
+
+
+@site.route("/admin/care/<int:care_id>/delete", methods=["POST"])
+@admin_required
+def admin_care_delete(care_id):
+    gallery.delete_care(care_id)
+    flash("Entry removed.")
+    return redirect(request.form.get("back") or url_for("site.admin_works"))
 
 
 @site.route("/admin/work/<int:work_id>/place", methods=["POST"])

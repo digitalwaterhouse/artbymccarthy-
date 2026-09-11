@@ -277,6 +277,68 @@ def list_works(status=None, include_nfs=True, include_draft=False, collection_id
         return _hydrate(conn, conn.execute(sql, args).fetchall())
 
 
+def count_works():
+    with connect() as conn:
+        return conn.execute("SELECT COUNT(*) n FROM works").fetchone()["n"]
+
+
+def search_works(q=None, status=None, collection_id=None, place=None, medium=None):
+    """The studio's own view of the collection, filtered.
+
+    Separate from list_works on purpose: that one serves the PUBLIC wall and its
+    defaults are the safety (drafts excluded unless asked). This one always shows
+    everything she owns, including drafts, because the studio is where you go to
+    find the piece that is not on the site yet.
+    """
+    sql = "SELECT * FROM works WHERE 1=1"
+    args = []
+    if q:
+        # Matched across the fields she would actually search by. A LIKE with
+        # both wildcards, not a prefix match: "tuk" should find "Tuk-tuk" and
+        # "red" should find "Red Ground".
+        like = "%" + q.strip().lower() + "%"
+        sql += (" AND (LOWER(title) LIKE ? OR LOWER(COALESCE(medium,'')) LIKE ?"
+                " OR LOWER(COALESCE(story,'')) LIKE ? OR LOWER(COALESCE(location,'')) LIKE ?"
+                " OR LOWER(COALESCE(signed_where,'')) LIKE ?)")
+        args += [like] * 5
+    if status:
+        sql += " AND status=?"
+        args.append(status)
+    if collection_id == 0:
+        sql += " AND collection_id IS NULL"
+    elif collection_id:
+        sql += " AND collection_id=?"
+        args.append(collection_id)
+    if place == 0:
+        sql += " AND (location IS NULL OR location='')"
+    elif place:
+        sql += " AND location=?"
+        args.append(place)
+    if medium:
+        sql += " AND medium=?"
+        args.append(medium)
+    sql += " ORDER BY sort, id DESC"
+    with connect() as conn:
+        return _hydrate(conn, conn.execute(sql, args).fetchall())
+
+
+def media_list():
+    """Distinct mediums actually in use, for the filter."""
+    with connect() as conn:
+        return [r["medium"] for r in conn.execute(
+            "SELECT DISTINCT medium FROM works WHERE medium IS NOT NULL AND medium<>''"
+            " ORDER BY medium").fetchall()]
+
+
+def current_places():
+    """Places that currently hold something, for the filter — distinct from
+    places(), which is every place anything has EVER been."""
+    with connect() as conn:
+        return [r["location"] for r in conn.execute(
+            "SELECT location, COUNT(*) n FROM works WHERE location IS NOT NULL AND location<>''"
+            " GROUP BY location ORDER BY n DESC, location").fetchall()]
+
+
 def get_work(slug=None, work_id=None):
     with connect() as conn:
         if slug is not None:
@@ -412,6 +474,57 @@ def delete_movement(movement_id):
         conn.execute("UPDATE works SET location=?, updated_at=? WHERE id=?",
                      (newest["place"] if newest else None, now(), wid))
     return True
+
+
+# ---------------------------------------------------------------------- care
+# Conservation, repair, reframing. A log, like movements — the interesting thing
+# is the sequence and what it cost, not a single current value.
+
+def care_for(work_id):
+    with connect() as conn:
+        rows = [dict(r) for r in conn.execute(
+            "SELECT * FROM work_care WHERE work_id=? ORDER BY COALESCE(happened_on,'') DESC, id DESC",
+            (work_id,)).fetchall()]
+    for r in rows:
+        r["cost"] = money(r["cost_cents"])
+    return rows
+
+
+def care_total(work_id):
+    with connect() as conn:
+        v = conn.execute("SELECT COALESCE(SUM(cost_cents),0) t FROM work_care WHERE work_id=?",
+                         (work_id,)).fetchone()["t"]
+    return v or 0
+
+
+def add_care(work_id, what, who=None, cost_cents=None, happened_on=None, note=None):
+    what = (what or "").strip()
+    if not what:
+        return False
+    with connect() as conn:
+        conn.execute(
+            "INSERT INTO work_care (work_id, happened_on, what, who, cost_cents, note, created_at)"
+            " VALUES (?,?,?,?,?,?,?)",
+            (work_id, (happened_on or "").strip() or today(), what,
+             (who or "").strip() or None, cost_cents, (note or "").strip() or None, now()))
+    return True
+
+
+def delete_care(care_id):
+    with connect() as conn:
+        conn.execute("DELETE FROM work_care WHERE id=?", (care_id,))
+    return True
+
+
+def shows_for(work_id):
+    """Which exhibitions a piece has hung in. The attach side lives on the show;
+    this is the same link read from the painting's end, which is the question
+    asked far more often."""
+    with connect() as conn:
+        rows = [dict(r) for r in conn.execute(
+            "SELECT e.* FROM exhibitions e JOIN exhibition_works x ON x.exhibition_id = e.id"
+            " WHERE x.work_id=? ORDER BY COALESCE(e.starts_on,'') DESC", (work_id,)).fetchall()]
+    return rows
 
 
 # --------------------------------------------------------------- collections

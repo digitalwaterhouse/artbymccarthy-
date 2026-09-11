@@ -2,3 +2,6 @@ Flask==3.1.2
 Pillow==12.0.0
 fonttools==4.64.0
 gunicorn==21.2.0
+# QR labels for individual works. Generated on the server — no third-party
+# service, nothing phoning home, and the code keeps working offline.
+qrcode==8.2
