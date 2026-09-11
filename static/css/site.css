@@ -1193,6 +1193,24 @@ body.home{
 
 /* ---------- the wall, below the entry ---------- */
 /* Opaque on purpose: this is what covers the dark entry painted on the body. */
+/* The sign-up row where the home page carries it: between the dark entry and
+   the wall, on the cream ground the wall starts. It is the first thing under
+   the hero because that is where interest actually is -- the same row at the
+   foot of the home page sits beneath every painting she owns.
+
+   Same side padding as .wall so the two read as one column, and the rule
+   underneath does the separating, which is why the form's own footer rule is
+   taken off below: two hairlines a few pixels apart is a mistake, not a band. */
+.signup-band{
+  background:var(--wall);
+  padding:clamp(26px,4vw,46px) clamp(18px,5vw,56px);
+  border-bottom:1px solid var(--line);
+}
+.signup-band .signup{padding-bottom:0; margin-bottom:0; border-bottom:0}
+/* The entry above is dark, so the field would otherwise pick up the ground
+   rather than sit on paper -- the same reason the footer needed this. */
+.home .signup-band input[type=email]{background:var(--paper)}
+
 .wall{background:var(--wall); padding:clamp(40px,6vw,72px) clamp(18px,5vw,56px) 72px}
 .home .foot{background:var(--wall)}
 .wall-head{

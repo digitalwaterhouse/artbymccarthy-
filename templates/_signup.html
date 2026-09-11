@@ -1,0 +1,20 @@
+{# The only way anyone can join the list. The endpoint, the studio page and the
+   unsubscribe link all existed; nothing on the site could add a person.
+
+   Pulled out of the footer so the home page can carry it high, above the wall,
+   while every other page keeps it at the foot. One copy, two placements -- the
+   alternative was the same form written twice and drifting apart. #}
+<form class="signup" method="post" action="{{ url_for('site.subscribe') }}">
+  <div class="signup-say">
+    <strong>Hear when there is new work</strong>
+    <span>About once a month. Nothing else, and you can stop any time.</span>
+  </div>
+  <div class="signup-do">
+    <label class="hp" for="hp-sub">Website</label>
+    <input class="hp" type="text" name="website" id="hp-sub" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <label class="hp" for="sub-email">Your email</label>
+    <input id="sub-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+    <input type="hidden" name="source" value="{{ signup_source }}">
+    <button class="btn-ghost" type="submit">Keep me posted</button>
+  </div>
+</form>

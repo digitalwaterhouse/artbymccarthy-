@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Karla:wght@400;500;700&family=Mrs+Saint+Delafield&display=swap">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=69">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=70">
 </head>
 <script>
 /* Flagged before first paint so the fallback fade never flickers in on a
@@ -71,22 +71,12 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
 {% if slides %}{% include "_gallery.html" %}{% endif %}
 
 <footer class="foot">
-  {# The only way anyone can join the list. The endpoint, the studio page and the
-     unsubscribe link all existed; nothing on the site could add a person. #}
-  <form class="signup" method="post" action="{{ url_for('site.subscribe') }}">
-    <div class="signup-say">
-      <strong>Hear when there is new work</strong>
-      <span>About once a month. Nothing else, and you can stop any time.</span>
-    </div>
-    <div class="signup-do">
-      <label class="hp" for="hp-sub">Website</label>
-      <input class="hp" type="text" name="website" id="hp-sub" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <label class="hp" for="sub-email">Your email</label>
-      <input id="sub-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
-      <input type="hidden" name="source" value="{{ signup_source }}">
-      <button class="btn-ghost" type="submit">Keep me posted</button>
-    </div>
-  </form>
+  {# The home page carries this high, above the wall, so it is not buried under
+     a screen of paintings on the one page most people land on. Everywhere else
+     it stays at the foot, which is where a reader who has got that far is
+     ready for it. MOVED, not duplicated -- two of the same form on one page is
+     two ids, and the second one silently loses the label association. #}
+  {% if endpoint != 'index' %}{% include "_signup.html" %}{% endif %}
   <p class="fine">&copy; {{ cfg.site_title }}. All images and paintings remain the property of the artist.</p>
 </footer>
 <script>
