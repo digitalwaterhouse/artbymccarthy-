@@ -182,11 +182,9 @@
 </section>
 {% endif %}
 
-</div>
-{% endif %}
-
-{% if w and w.images %}
-<h2>Photographs</h2>
+{% if w.images %}
+<section class="panel panel-wide">
+  <h3>Photographs</h3>
 <p class="sub">The first one is the picture the site leads with — on the wall, in the
    archive and on anything shared to social media. Use the arrows to choose it.</p>
 <div class="shots">
@@ -214,6 +212,10 @@
       </div>
     </figure>
   {% endfor %}
+</div>
+</section>
+{% endif %}
+
 </div>
 {% endif %}
 {% endblock %}

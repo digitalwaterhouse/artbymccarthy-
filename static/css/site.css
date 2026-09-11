@@ -720,6 +720,18 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .formgrid .check{flex-direction:row; align-items:center; gap:9px; color:var(--ink); min-height:40px}
 .formgrid .check input{width:auto; min-width:20px; min-height:20px}
 .formgrid input,.formgrid select,.formgrid textarea{box-sizing:border-box; max-width:100%}
+/* Outline, not solid. Move it / Record / Choose Files are local "add a row"
+   controls inside their own panels; filling all three made them compete with
+   Save, which is the page's one real commitment. */
+.panel .cta,
+.formgrid input[type=file]::file-selector-button{
+  background:transparent; color:var(--accent); border:1px solid var(--accent);
+}
+.panel .cta:hover,
+.formgrid input[type=file]:hover::file-selector-button{
+  background:var(--accent); color:#fff;
+}
+
 /* The file input was the one raw browser control left in the studio — a grey
    "Choose Files" chip that matched nothing else on the page. ::file-selector-button
    styles the button half while leaving the native picker and its "no file
@@ -922,6 +934,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   background:var(--paper); border:1px solid var(--line); border-radius:3px;
   padding:16px 18px 18px; min-width:0;
 }
+.panel-wide{grid-column:1/-1}
 .panel > h3{
   margin:0 0 12px; font-family:"Karla",sans-serif;
   font-size:11px; letter-spacing:.09em; text-transform:uppercase;
