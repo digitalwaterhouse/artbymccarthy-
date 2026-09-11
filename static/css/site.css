@@ -720,6 +720,25 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .formgrid .check{flex-direction:row; align-items:center; gap:9px; color:var(--ink); min-height:40px}
 .formgrid .check input{width:auto; min-width:20px; min-height:20px}
 .formgrid input,.formgrid select,.formgrid textarea{box-sizing:border-box; max-width:100%}
+/* The file input was the one raw browser control left in the studio — a grey
+   "Choose Files" chip that matched nothing else on the page. ::file-selector-button
+   styles the button half while leaving the native picker and its "no file
+   chosen" text alone, which a hidden-input-plus-label trick would throw away
+   along with the file names after a selection. */
+.formgrid input[type=file]{
+  padding:9px 11px; background:var(--wall); border:1px solid var(--line);
+  border-radius:3px; font:400 14px "Karla",sans-serif; color:var(--muted);
+  cursor:pointer; width:100%;
+}
+.formgrid input[type=file]::file-selector-button{
+  -webkit-appearance:none; appearance:none;
+  background:var(--accent); color:#fff; border:1px solid var(--accent);
+  border-radius:2px; padding:9px 18px; margin-right:12px;
+  font:600 13.5px/1 "Karla",sans-serif; letter-spacing:.04em; cursor:pointer;
+  transition:background .2s ease, border-color .2s ease;
+}
+.formgrid input[type=file]:hover::file-selector-button{background:#24404b; border-color:#24404b}
+.formgrid input[type=file]:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
 .rates{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px}
 /* A dollar sign sitting inside the field, so the unit is visible while typing
    and not only in the legend above. */
