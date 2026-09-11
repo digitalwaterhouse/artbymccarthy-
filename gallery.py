@@ -74,8 +74,37 @@ def init_db():
         sql = f.read()
     with connect() as conn:
         conn.executescript(sql)
+        _migrate(conn)
         for k, v in DEFAULT_SETTINGS.items():
             conn.execute("INSERT OR IGNORE INTO settings(key,value) VALUES(?,?)", (k, v))
+
+
+# Columns added to a table that already exists. schema.sql is all CREATE TABLE
+# IF NOT EXISTS, which does nothing at all to a live database -- so a new
+# column has to be added here or it only ever appears on a fresh install, and
+# the one database that matters is the live one on Render.
+NEW_COLUMNS = {
+    "works": [
+        ("collection_id",  "INTEGER REFERENCES collections(id) ON DELETE SET NULL"),
+        ("edition_size",   "INTEGER"),
+        ("edition_number", "INTEGER"),
+    ],
+}
+
+
+def _migrate(conn):
+    for table, cols in NEW_COLUMNS.items():
+        have = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+        for name, ddl in cols:
+            if name not in have:
+                # SQLite allows ADD COLUMN with a REFERENCES clause as long as
+                # the default is NULL, which every one of these is.
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
+    # Indexes on the new columns belong here too, and NOT in schema.sql: that
+    # file is executed in full before this runs, so an index naming a column
+    # this migration has yet to add takes the whole script down with it.
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_works_collection "
+                 "ON works(collection_id, sort, id)")
 
 
 # ------------------------------------------------------------------ settings
@@ -136,11 +165,11 @@ def slugify(title, year=None):
     return s or secrets.token_hex(4)
 
 
-def unique_slug(base_slug, work_id=None):
+def unique_slug(base_slug, work_id=None, table="works"):
     with connect() as conn:
         slug, n = base_slug, 2
         while True:
-            row = conn.execute("SELECT id FROM works WHERE slug=?", (slug,)).fetchone()
+            row = conn.execute(f"SELECT id FROM {table} WHERE slug=?", (slug,)).fetchone()
             if row is None or (work_id and row["id"] == work_id):
                 return slug
             slug = f"{base_slug}-{n}"
@@ -156,10 +185,14 @@ def _hydrate(conn, rows):
     by_work = {}
     for img in conn.execute(q, ids).fetchall():
         by_work.setdefault(img["work_id"], []).append(dict(img))
+    names = {r["id"]: dict(r) for r in
+             conn.execute("SELECT id, slug, name FROM collections").fetchall()}
     for w in works:
         w["images"] = by_work.get(w["id"], [])
         w["price"] = money(w["price_cents"])
         w["dims"] = dims(w)
+        w["edition"] = edition(w)
+        w["collection"] = names.get(w.get("collection_id"))
     return works
 
 
@@ -184,7 +217,23 @@ def dims(w):
     return s + " in"
 
 
-def list_works(status=None, include_nfs=True, include_draft=False):
+def edition(w):
+    """How a run is written on a gallery label.
+
+    Catalogue detail only: this says the piece is one of a run, never that
+    several of it are for sale. Stock stays at one -- see the note at the top
+    of this file and the comment in schema.sql."""
+    size, num = w.get("edition_size"), w.get("edition_number")
+    if size and num:
+        return f"#{num} of {size}"
+    if size:
+        return f"Edition of {size}"
+    if num:
+        return f"#{num}"
+    return None
+
+
+def list_works(status=None, include_nfs=True, include_draft=False, collection_id=None):
     """The works, in the order the wall shows them.
 
     include_draft is FALSE by default and that default is the safety. The
@@ -205,6 +254,9 @@ def list_works(status=None, include_nfs=True, include_draft=False):
         sql = "SELECT * FROM works WHERE status IN ('available','reserved','nfs')"
     elif status is None and not include_draft:
         sql += " WHERE status <> 'draft'"
+    if collection_id is not None:
+        sql += (" AND " if " WHERE " in sql else " WHERE ") + "collection_id=?"
+        args.append(collection_id)
     sql += " ORDER BY sort, id DESC"
     with connect() as conn:
         return _hydrate(conn, conn.execute(sql, args).fetchall())
@@ -240,7 +292,8 @@ def neighbours(work):
 def save_work(data, work_id=None):
     fields = ["title", "year", "medium", "h_in", "w_in", "d_in", "price_cents",
               "status", "framed", "ready_to_hang", "signed_where", "story",
-              "ship_band", "sort"]
+              "ship_band", "sort", "collection_id", "edition_size",
+              "edition_number"]
     vals = {k: data.get(k) for k in fields}
     vals["slug"] = unique_slug(data.get("slug") or slugify(vals["title"], vals["year"]), work_id)
     with connect() as conn:
@@ -279,6 +332,86 @@ def delete_work(work_id):
         conn.execute("DELETE FROM images WHERE work_id=?", (work_id,))
         conn.execute("DELETE FROM works WHERE id=?", (work_id,))
     return True
+
+
+# --------------------------------------------------------------- collections
+# A named body of work. One collection per piece, or none -- see schema.sql
+# for why this is not a tag list.
+
+def list_collections(with_counts=True):
+    """Collections in hanging order, each with how many pieces are in it.
+
+    The count is of PUBLIC pieces: a collection whose only members are still
+    drafts reads as empty on the site, and the studio list should say the same
+    number the visitor will see rather than a more flattering one."""
+    with connect() as conn:
+        rows = [dict(r) for r in conn.execute(
+            "SELECT * FROM collections ORDER BY sort, name").fetchall()]
+        if with_counts:
+            counts = {r["collection_id"]: r["c"] for r in conn.execute(
+                "SELECT collection_id, COUNT(*) c FROM works "
+                "WHERE status <> 'draft' AND collection_id IS NOT NULL "
+                "GROUP BY collection_id").fetchall()}
+            drafts = {r["collection_id"]: r["c"] for r in conn.execute(
+                "SELECT collection_id, COUNT(*) c FROM works "
+                "WHERE status = 'draft' AND collection_id IS NOT NULL "
+                "GROUP BY collection_id").fetchall()}
+            for c in rows:
+                c["count"] = counts.get(c["id"], 0)
+                c["draft_count"] = drafts.get(c["id"], 0)
+    return rows
+
+
+def get_collection(slug=None, collection_id=None):
+    with connect() as conn:
+        if slug is not None:
+            row = conn.execute("SELECT * FROM collections WHERE slug=?", (slug,)).fetchone()
+        else:
+            row = conn.execute("SELECT * FROM collections WHERE id=?",
+                               (collection_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def save_collection(data, collection_id=None):
+    vals = {"name": (data.get("name") or "").strip(),
+            "blurb": data.get("blurb") or "",
+            "sort": data.get("sort") or 0}
+    vals["slug"] = unique_slug(data.get("slug") or slugify(vals["name"]),
+                               collection_id, table="collections")
+    with connect() as conn:
+        if collection_id:
+            sets = ", ".join(f"{k}=:{k}" for k in vals)
+            conn.execute(f"UPDATE collections SET {sets} WHERE id=:id",
+                         {**vals, "id": collection_id})
+            return collection_id
+        vals["created_at"] = now()
+        cols = ", ".join(vals)
+        conn.execute(f"INSERT INTO collections ({cols}) "
+                     f"VALUES ({', '.join(':'+k for k in vals)})", vals)
+        return conn.execute("SELECT last_insert_rowid() AS i").fetchone()["i"]
+
+
+def delete_collection(collection_id):
+    """Delete the collection, keep the paintings.
+
+    The pieces are detached rather than deleted -- the same reasoning as the
+    inquiries in delete_work. Nobody types "delete the Box Series" meaning
+    "delete the eleven paintings in it"."""
+    with connect() as conn:
+        conn.execute("UPDATE works SET collection_id=NULL WHERE collection_id=?",
+                     (collection_id,))
+        conn.execute("DELETE FROM collections WHERE id=?", (collection_id,))
+    return True
+
+
+def list_editioned_works():
+    """Pieces that carry a run, newest first. The Editions section is a view of
+    the catalogue, not a second inventory -- editing happens on the piece."""
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM works WHERE edition_size IS NOT NULL "
+            "OR edition_number IS NOT NULL ORDER BY sort, id DESC").fetchall()
+        return _hydrate(conn, rows)
 
 
 # ------------------------------------------------------------------ ordering

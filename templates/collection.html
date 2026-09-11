@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ c.name }} &mdash; {{ cfg.site_title }}{% endblock %}
+{% block desc %}{{ c.blurb or (c.name ~ ', a body of work by ' ~ cfg.site_title) }}{% endblock %}
+{% block body %}
+<section class="intro">
+  <h1>{{ c.name }}</h1>
+  {% if c.blurb %}<p class="lede">{{ c.blurb }}</p>{% endif %}
+</section>
+{% if works %}
+<div class="grid">
+  {% for w in works %}
+  <a class="tile{% if w.status == 'sold' %} sold{% endif %}" href="{{ url_for('site.work', slug=w.slug) }}">
+    {% if w.images %}
+      <picture>
+        <source type="image/webp" srcset="{{ img_url(w.images[0].base,'s') }} 600w, {{ img_url(w.images[0].base,'m') }} 1400w" sizes="(max-width: 700px) 92vw, 30vw">
+        <img src="{{ img_url(w.images[0].base,'m','jpg') }}" alt="{{ w.title }}" loading="lazy">
+      </picture>
+    {% endif %}
+    <div class="cap">
+      <span class="t">{{ w.title }}{% if w.year %}, {{ w.year }}{% endif %}</span>
+      {% if w.status == 'sold' %}<span class="p dot">Sold</span>
+      {% elif w.price %}<span class="p">{{ w.price }}</span>{% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty">Nothing in this collection yet.</p>
+{% endif %}
+{% endblock %}

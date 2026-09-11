@@ -1,0 +1,42 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Collections{% endblock %}
+{% block body %}
+<div class="adminhead">
+  <h1>Collections</h1>
+</div>
+
+<p class="sub">A collection is a body of work — the Box Series, the pieces from
+   Colombo. Each painting belongs to one, or to none, and every collection gets
+   its own page on the site that you can send someone straight to.</p>
+
+<form class="newrow" method="post">
+  <label class="sr" for="newcollection">Name a new collection</label>
+  <input id="newcollection" name="name" placeholder="Name a new collection" required>
+  <button class="cta" type="submit">Add</button>
+</form>
+
+<table class="grid-t">
+  <thead><tr><th>Collection</th><th class="num">Pieces</th><th>On the site</th><th></th></tr></thead>
+  <tbody>
+  {% for c in collections %}
+    <tr>
+      <td data-label="Collection"><a href="{{ url_for('site.admin_collection', collection_id=c.id) }}">{{ c.name }}</a>
+          {% if c.blurb %}<span class="sub">{{ c.blurb }}</span>{% endif %}</td>
+      <td class="num" data-label="Pieces">{{ c.count }}{% if c.draft_count %}<span class="sub">+{{ c.draft_count }} draft</span>{% endif %}</td>
+      <td data-label="On the site">
+        {% if c.count %}<a href="{{ url_for('site.collection', slug=c.slug) }}">/collection/{{ c.slug }}</a>
+        {% else %}<span class="sub">empty — not shown</span>{% endif %}
+      </td>
+      <td class="right" data-label="">
+        <form method="post" action="{{ url_for('site.admin_collection_delete', collection_id=c.id) }}"
+              onsubmit="return confirm('Delete the collection {{ c.name }}? The paintings in it stay, in no collection.')">
+          <button class="link danger" type="submit">delete</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="empty">No collections yet. Name one above, then put pieces in it from each painting's own page.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

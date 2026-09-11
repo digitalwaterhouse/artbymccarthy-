@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}Studio{% endblock %} &mdash; {{ cfg.site_title }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=43">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=44">
 </head>
 <body class="admin">
 <div class="adminshell">
@@ -20,13 +20,24 @@
   {# The section you are on is marked, so the bar says where you are instead of
      just where you could go. #}
   <nav>
+    {# Artwork is a group: the three ways into the catalogue sit under it, and
+       the parent itself goes to Pieces because that is the one she opens. #}
+    {% set art = ['admin_works','admin_work','admin_collections','admin_collection','admin_editions'] %}
+    <a class="grp{% if endpoint in art %} open{% endif %}" href="{{ url_for('site.admin_works') }}">Artwork</a>
+    <div class="subnav">
+      {% for eps, label, href in [
+           (['admin_works','admin_work'],             "Pieces",      url_for('site.admin_works')),
+           (['admin_collections','admin_collection'], "Collections", url_for('site.admin_collections')),
+           (['admin_editions'],                       "Editions",    url_for('site.admin_editions'))] %}
+      <a href="{{ href }}"{% if endpoint in eps %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </div>
     {% for ep, label, href in [
-         ("admin_works",       "Artwork",  url_for('site.admin_works')),
          ("admin_orders",      "Orders",   url_for('site.admin_orders')),
          ("admin_inquiries",   "Messages", url_for('site.admin_inquiries')),
          ("admin_subscribers", "List",     url_for('site.admin_subscribers')),
          ("admin_settings",    "Settings", url_for('site.admin_settings'))] %}
-    <a href="{{ href }}"{% if endpoint == ep or (ep == 'admin_works' and endpoint == 'admin_work') %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
+    <a href="{{ href }}"{% if endpoint == ep %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
     {% endfor %}
   </nav>
   <div class="util">

@@ -1,3 +1,16 @@
+-- A COLLECTION is a named body of work -- the Box Series, the Sri Lanka
+-- pieces. A painting belongs to one or to none; it is not a tag list, because
+-- a piece shown in four places at once is a piece with no home. Deleting a
+-- collection frees its pieces rather than taking them with it.
+CREATE TABLE IF NOT EXISTS collections (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug       TEXT UNIQUE NOT NULL,
+    name       TEXT NOT NULL,
+    blurb      TEXT,
+    sort       INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+
 -- Art by McCarthy -- one-of-a-kind inventory. Quantity is always 1, so the
 -- interesting state lives in works.status, not in a stock count.
 CREATE TABLE IF NOT EXISTS works (
@@ -21,6 +34,13 @@ CREATE TABLE IF NOT EXISTS works (
     story          TEXT,
     ship_band      TEXT NOT NULL DEFAULT 'medium',
     sort           INTEGER NOT NULL DEFAULT 0,
+    collection_id  INTEGER REFERENCES collections(id) ON DELETE SET NULL,
+    -- EDITION IS CATALOGUE DETAIL, NOT STOCK. "Edition of 25, #4" describes a
+    -- piece that is one of a run; it does NOT mean 25 of them are for sale
+    -- here. Quantity is still always 1, which is what keeps reserve/release
+    -- honest -- see the note at the top of this file.
+    edition_size   INTEGER,
+    edition_number INTEGER,
     created_at     TEXT NOT NULL,
     updated_at     TEXT
 );

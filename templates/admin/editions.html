@@ -1,0 +1,27 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Editions{% endblock %}
+{% block body %}
+<h1>Editions</h1>
+
+<p class="sub">A piece that is one of a run — <em>#4 of 25</em>. This is catalogue
+   detail that shows on the painting's page; it does not put more than one of
+   anything up for sale. Set it on the painting, under <em>Edition</em>.</p>
+
+<table class="grid-t">
+  <thead><tr><th></th><th>Title</th><th>Edition</th><th>Status</th><th>Price</th></tr></thead>
+  <tbody>
+  {% for w in works %}
+    <tr{% if w.status == 'draft' %} class="is-draft"{% endif %}>
+      <td class="thumb" data-label="">{% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}</td>
+      <td data-label="Title"><a href="{{ url_for('site.admin_work', work_id=w.id) }}">{{ w.title }}</a>
+          <span class="sub">{{ w.year or '' }} {{ w.medium or '' }}</span></td>
+      <td data-label="Edition">{{ w.edition }}</td>
+      <td data-label="Status">{{ w.status }}</td>
+      <td class="num" data-label="Price">{{ w.price or '&mdash;'|safe }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="empty">No piece is marked as part of an edition yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

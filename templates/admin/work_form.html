@@ -31,6 +31,19 @@
     </select>
   </label>
 
+  <label>Collection
+    <select name="collection_id">
+      <option value="">— none —</option>
+      {% for c in collections %}
+        <option value="{{ c.id }}" {% if w and w.collection_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  {# Catalogue detail, not stock: this says the piece is one of a run, it does
+     not put 25 of them up for sale. #}
+  <label>Edition of <input name="edition_size" value="{{ w.edition_size if w and w.edition_size else '' }}" inputmode="numeric" placeholder="25"></label>
+  <label>This one is # <input name="edition_number" value="{{ w.edition_number if w and w.edition_number else '' }}" inputmode="numeric" placeholder="4"></label>
+
   <label>Signed <input name="signed_where" value="{{ w.signed_where if w else '' }}" placeholder="Lower right, front"></label>
   <label class="check"><input type="checkbox" name="framed" {% if w and w.framed %}checked{% endif %}> Framed</label>
   <label class="check"><input type="checkbox" name="ready_to_hang" {% if not w or w.ready_to_hang %}checked{% endif %}> Ready to hang</label>

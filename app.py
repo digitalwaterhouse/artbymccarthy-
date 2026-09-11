@@ -92,6 +92,7 @@ def inject():
     # Which nav item to light up. A single work and the archive still belong
     # under Work, and /commissions is the Contact page wearing another URL.
     nav = {"index": "work", "work": "work", "archive": "work",
+           "collection": "work",
            "about": "about", "contact": "contact"}.get(ep, "")
     # slides/has_archive go to every template because the viewer is included
     # from base.html now rather than from the landing page alone.
@@ -244,6 +245,20 @@ def work(slug):
     if not w or (w["status"] == "draft" and not session.get("admin")):
         abort(404)
     return render_template("work.html", w=w, near=gallery.neighbours(w))
+
+
+@site.route("/collection/<slug>")
+def collection(slug):
+    c = gallery.get_collection(slug=slug)
+    if not c:
+        abort(404)
+    works = gallery.list_works(collection_id=c["id"])
+    # An empty collection is a page with nothing on it, and the slug is
+    # guessable. Signed in it still renders, so she can see one before it
+    # has anything in it.
+    if not works and not session.get("admin"):
+        abort(404)
+    return render_template("collection.html", c=c, works=works)
 
 
 @site.route("/about")
@@ -426,6 +441,63 @@ def admin_works():
                            inquiries=[i for i in gallery.list_inquiries() if not i["handled"]])
 
 
+@site.route("/admin/collections", methods=["GET", "POST"])
+@admin_required
+def admin_collections():
+    """List, and create from the same page. A collection is a name and a
+    sentence, so a separate 'new' screen would be a form with two fields on
+    it and a round trip to reach them."""
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        if not name:
+            flash("A collection needs a name.")
+        else:
+            gallery.save_collection({"name": name})
+            flash(f"Added {name}.")
+        return redirect(url_for("site.admin_collections"))
+    return render_template("admin/collections.html",
+                           collections=gallery.list_collections())
+
+
+@site.route("/admin/collection/<int:collection_id>", methods=["GET", "POST"])
+@admin_required
+def admin_collection(collection_id):
+    c = gallery.get_collection(collection_id=collection_id)
+    if not c:
+        abort(404)
+    if request.method == "POST":
+        gallery.save_collection({
+            "name": (request.form.get("name") or c["name"]).strip(),
+            "blurb": (request.form.get("blurb") or "").strip(),
+            "sort": _int(request.form.get("sort"), 0),
+            "slug": (request.form.get("slug") or "").strip() or None,
+        }, collection_id)
+        flash("Saved.")
+        return redirect(url_for("site.admin_collection", collection_id=collection_id))
+    return render_template("admin/collection_form.html", c=c,
+                           works=gallery.list_works(include_draft=True,
+                                                    collection_id=collection_id))
+
+
+@site.route("/admin/collection/<int:collection_id>/delete", methods=["POST"])
+@admin_required
+def admin_collection_delete(collection_id):
+    c = gallery.get_collection(collection_id=collection_id)
+    gallery.delete_collection(collection_id)
+    # Said out loud, because "delete" next to a count of paintings reads as if
+    # it might take them with it.
+    flash(f"Deleted {c['name'] if c else 'it'}. Its paintings are still here, "
+          "now in no collection.")
+    return redirect(url_for("site.admin_collections"))
+
+
+@site.route("/admin/editions")
+@admin_required
+def admin_editions():
+    return render_template("admin/editions.html",
+                           works=gallery.list_editioned_works())
+
+
 @site.route("/admin/work/new", methods=["GET", "POST"])
 @site.route("/admin/work/<int:work_id>", methods=["GET", "POST"])
 @admin_required
@@ -447,6 +519,10 @@ def admin_work(work_id=None):
             "story": (f.get("story") or "").strip(),
             "ship_band": f.get("ship_band") if f.get("ship_band") in gallery.SHIP_BANDS else "medium",
             "sort": _int(f.get("sort"), 0),
+            "collection_id": _int(f.get("collection_id")) or None,
+            # Catalogue detail, not stock. See gallery.edition().
+            "edition_size": _int(f.get("edition_size")) or None,
+            "edition_number": _int(f.get("edition_number")) or None,
             "slug": (f.get("slug") or "").strip() or None,
         }
         work_id = gallery.save_work(data, work_id)
@@ -459,7 +535,8 @@ def admin_work(work_id=None):
                 except ValueError as e:
                     flash(str(e))
         return redirect(url_for("site.admin_work", work_id=work_id))
-    return render_template("admin/work_form.html", w=w)
+    return render_template("admin/work_form.html", w=w,
+                           collections=gallery.list_collections())
 
 
 @site.route("/admin/work/<int:work_id>/status", methods=["POST"])

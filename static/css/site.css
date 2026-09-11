@@ -534,6 +534,20 @@ body.admin{background:#F3F4F2; font-size:15px}
   transition:color .15s, background .15s, border-color .15s;
 }
 .adminside nav a:hover{color:#fff; background:rgba(255,255,255,.07)}
+/* Artwork is a group heading that is also a link. It never takes the turquoise
+   edge itself -- that belongs to whichever child you are actually on, or the
+   rail would mark two places at once. */
+.adminside nav a.grp.open{color:#fff}
+.adminside .subnav{display:flex; flex-direction:column; padding-bottom:4px}
+.adminside .subnav a{
+  display:flex; align-items:center; padding:9px 18px 9px 34px;
+  color:#9DABA4; text-decoration:none;
+  font:500 12.5px/1 "Karla",sans-serif; letter-spacing:.02em; text-transform:none;
+  border-left:3px solid transparent;
+  transition:color .15s, background .15s, border-color .15s;
+}
+.adminside .subnav a:hover{color:#fff; background:rgba(255,255,255,.07)}
+.adminside .subnav a.on{color:#fff; background:rgba(255,255,255,.10); border-left-color:var(--turq)}
 .adminside nav a.on{color:#fff; background:rgba(255,255,255,.10); border-left-color:var(--turq)}
 /* Pinned to the foot of the rail: leaving and signing out are not sections. */
 .adminside .util{
@@ -560,6 +574,14 @@ body.admin{background:#F3F4F2; font-size:15px}
     border-left:0; border-bottom:3px solid transparent;
   }
   .adminside nav a.on{border-bottom-color:var(--turq)}
+  /* Laid down as a bar there is no room to indent, so the group heading and
+     its three children read as one wrapping row of items. */
+  .adminside .subnav{flex-direction:row; flex-wrap:wrap; padding-bottom:0}
+  .adminside .subnav a{
+    padding:12px 11px 9px; font-size:11.5px; letter-spacing:.06em;
+    text-transform:uppercase; border-left:0; border-bottom:3px solid transparent;
+  }
+  .adminside .subnav a.on{border-bottom-color:var(--turq)}
   .adminside .util{
     margin-top:0; flex-direction:row; gap:18px; padding:8px 0 10px; width:100%;
     box-shadow:none;
@@ -573,6 +595,12 @@ body.admin{background:#F3F4F2; font-size:15px}
 .adminhead{display:flex; align-items:center; gap:16px; margin-bottom:18px}
 .adminhead h1{font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.7rem; margin:0; margin-right:auto}
 .alerts{display:flex; gap:14px; margin-bottom:16px; font-size:14px}
+/* Naming a collection is two fields' worth of work, so it happens on the list
+   itself rather than behind a New screen. */
+.newrow{display:flex; gap:10px; align-items:stretch; margin:0 0 18px; max-width:34rem}
+.newrow input{flex:1; box-sizing:border-box; font-size:16px}
+.newrow .cta{white-space:nowrap}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap}
 .err{background:#FBE9E7; border:1px solid #E0B4AE; padding:9px 12px}
 
 /* ---------- the working surface ----------

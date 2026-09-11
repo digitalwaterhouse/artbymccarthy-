@@ -26,6 +26,9 @@
       {% if w.dims %}<dt>Size</dt><dd>{{ w.dims }}</dd>{% endif %}
       <dt>Framing</dt><dd>{{ 'Framed' if w.framed else 'Unframed' }}{{ ', ready to hang' if w.ready_to_hang else '' }}</dd>
       {% if w.signed_where %}<dt>Signed</dt><dd>{{ w.signed_where }}</dd>{% endif %}
+      {% if w.edition %}<dt>Edition</dt><dd>{{ w.edition }}</dd>{% endif %}
+      {% if w.collection %}<dt>Collection</dt>
+        <dd><a href="{{ url_for('site.collection', slug=w.collection.slug) }}">{{ w.collection.name }}</a></dd>{% endif %}
     </dl>
 
     {% if w.story %}<p class="story">{{ w.story }}</p>{% endif %}
