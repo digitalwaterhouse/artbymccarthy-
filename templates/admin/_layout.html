@@ -5,21 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}Studio{% endblock %} &mdash; {{ cfg.site_title }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=42">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=43">
 </head>
 <body class="admin">
-<header class="adminbar">
+<div class="adminshell">
+<header class="adminside">
   <a class="adminbrand" href="{{ url_for('site.admin_works') }}">
     <picture>
       <source type="image/webp" srcset="{{ url_for('static', filename='img/mark-128.webp') }}">
-      <img src="{{ url_for('static', filename='img/mark-128.jpg') }}" alt="Studio" width="32" height="32">
+      <img src="{{ url_for('static', filename='img/mark-128.jpg') }}" alt="" width="32" height="32">
     </picture>
+    <span>Studio</span>
   </a>
   {# The section you are on is marked, so the bar says where you are instead of
      just where you could go. #}
   <nav>
     {% for ep, label, href in [
-         ("admin_works",       "Work",     url_for('site.admin_works')),
+         ("admin_works",       "Artwork",  url_for('site.admin_works')),
          ("admin_orders",      "Orders",   url_for('site.admin_orders')),
          ("admin_inquiries",   "Messages", url_for('site.admin_inquiries')),
          ("admin_subscribers", "List",     url_for('site.admin_subscribers')),
@@ -36,5 +38,6 @@
 {% with msgs = get_flashed_messages() %}{% if msgs %}<div class="flash">{% for m in msgs %}<p>{{ m }}</p>{% endfor %}</div>{% endif %}{% endwith %}
 {% block body %}{% endblock %}
 </main>
+</div>
 </body>
 </html>

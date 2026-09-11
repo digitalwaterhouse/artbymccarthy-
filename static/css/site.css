@@ -498,52 +498,77 @@ textarea{resize:vertical}
    Deliberately plain. It is a working surface, used by one person, and it
    should look nothing like the shop so there is never a doubt which is which. */
 body.admin{background:#F3F4F2; font-size:15px}
-/* The admin bar was a row of small, low-contrast links with no indication of
-   where you were. It is a tab bar now: full-height targets, uppercase labels
-   at proper contrast, and the current section marked with a turquoise rule. */
-.adminbar{
-  display:flex; align-items:stretch; flex-wrap:wrap; gap:0;
-  background:#141A18; color:#EAEDE9; padding:0 clamp(14px,3vw,28px);
-  box-shadow:inset 0 -1px 0 rgba(255,255,255,.10);
+/* The nav is a LEFT RAIL, not a top bar. There are five sections and they read
+   as a list rather than as tabs across the top; a rail also hands the whole
+   width of the page to the tables, which are the only thing in here that is
+   ever short of room. The section you are on is marked with a turquoise edge,
+   so the nav says where you are and not just where you could go. */
+.adminshell{display:grid; grid-template-columns:206px minmax(0,1fr)}
+.adminside{
+  /* align-self:start, NOT the grid default of stretch: a stretched item fills
+     the row and sticky then has nothing left to travel through. */
+  align-self:start; position:sticky; top:0;
+  height:100vh; height:100dvh; overflow:auto;
+  display:flex; flex-direction:column;
+  background:#141A18; color:#EAEDE9;
+  box-shadow:inset -1px 0 0 rgba(255,255,255,.10);
 }
 /* The same bug as the public masthead, so the admin is visibly part of the
-   site rather than a generic panel. It links home to the work list. */
+   site rather than a generic panel. It links home to the artwork list. */
 .adminbrand{
-  display:flex; align-items:center; padding-right:22px;
+  display:flex; align-items:center; gap:11px; padding:18px 18px 16px;
   text-decoration:none; color:#fff;
+  font:600 13px/1 "Karla",sans-serif; letter-spacing:.13em; text-transform:uppercase;
 }
 .adminbrand img{
   width:32px; height:32px; display:block; border-radius:2px;
   box-shadow:0 0 0 1px rgba(255,255,255,.16);
 }
 .adminbrand:hover img{opacity:.85}
-.adminbar nav{display:flex; flex-wrap:wrap; margin-right:auto}
-.adminbar nav a{
-  display:flex; align-items:center; padding:15px 15px 12px;
+.adminside nav{display:flex; flex-direction:column; padding-top:6px}
+.adminside nav a{
+  display:flex; align-items:center; padding:12px 18px;
   color:#CBD5CE; text-decoration:none;
   font:600 12.5px/1 "Karla",sans-serif; letter-spacing:.08em; text-transform:uppercase;
-  border-bottom:3px solid transparent;
+  border-left:3px solid transparent;
   transition:color .15s, background .15s, border-color .15s;
 }
-.adminbar nav a:hover{color:#fff; background:rgba(255,255,255,.07)}
-.adminbar nav a.on{
-  color:#fff; background:rgba(255,255,255,.10); border-bottom-color:var(--turq);
+.adminside nav a:hover{color:#fff; background:rgba(255,255,255,.07)}
+.adminside nav a.on{color:#fff; background:rgba(255,255,255,.10); border-left-color:var(--turq)}
+/* Pinned to the foot of the rail: leaving and signing out are not sections. */
+.adminside .util{
+  margin-top:auto; display:flex; flex-direction:column; gap:10px;
+  padding:20px 18px; box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
 }
-.adminbar .util{display:flex; align-items:center; gap:18px; padding-left:20px}
-.adminbar .util a{
-  color:#93A29A; text-decoration:none; font-size:13px; white-space:nowrap;
-  transition:color .15s;
-}
-.adminbar .util a:hover{color:#fff}
-.adminbar .util a.out{color:#D79B93}
-.adminbar :focus-visible{outline:2px solid var(--turq); outline-offset:-3px}
-@media (max-width:640px){
-  .adminbar{padding:0 12px}
+.adminside .util a{color:#93A29A; text-decoration:none; font-size:13px; white-space:nowrap; transition:color .15s}
+.adminside .util a:hover{color:#fff}
+.adminside .util a.out{color:#D79B93}
+.adminside :focus-visible{outline:2px solid var(--turq); outline-offset:-3px}
+/* A 206px rail out of a 390px screen is most of the screen, so on a phone it
+   lies back down as a bar and the current-section edge moves to the bottom. */
+@media (max-width:760px){
+  .adminshell{grid-template-columns:1fr}
+  .adminside{
+    position:static; height:auto; overflow:visible;
+    flex-direction:row; flex-wrap:wrap; align-items:center; padding:0 12px;
+    box-shadow:inset 0 -1px 0 rgba(255,255,255,.10);
+  }
   .adminbrand{padding:10px 16px 6px 0; width:100%}
-  .adminbar nav a{padding:12px 11px 9px; font-size:11.5px; letter-spacing:.06em}
-  .adminbar .util{padding:8px 0 10px; width:100%}
+  .adminside nav{flex-direction:row; flex-wrap:wrap; padding-top:0; margin-right:auto}
+  .adminside nav a{
+    padding:12px 11px 9px; font-size:11.5px; letter-spacing:.06em;
+    border-left:0; border-bottom:3px solid transparent;
+  }
+  .adminside nav a.on{border-bottom-color:var(--turq)}
+  .adminside .util{
+    margin-top:0; flex-direction:row; gap:18px; padding:8px 0 10px; width:100%;
+    box-shadow:none;
+  }
 }
-.adminmain{padding:clamp(16px,3vw,30px); max-width:1100px}
+/* Centred in the column beside the rail rather than pushed up against it:
+   at 1600px the old left-aligned block left a third of the screen empty on
+   the right and the tables looked like they had slipped. */
+.adminmain{padding:clamp(16px,3vw,30px); max-width:1100px; margin-inline:auto}
 .adminmain.narrowbox{max-width:22rem; margin:12vh auto}
 .adminhead{display:flex; align-items:center; gap:16px; margin-bottom:18px}
 .adminhead h1{font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.7rem; margin:0; margin-right:auto}
@@ -614,18 +639,16 @@ body.admin{background:#F3F4F2; font-size:15px}
 .shots img{width:100%; height:120px; object-fit:cover; border-radius:2px; display:block}
 .shots figcaption{font-size:12px; color:var(--muted); padding:6px 0}
 
-/* Ordering controls. Quiet until you reach for them: they sit on every row of
-   a page whose subject is the paintings, and a column of dark chevrons reads
-   as more important than the titles beside it. The touch target is bigger than
-   the glyph -- this is used on a phone, one-handed, standing in a studio. */
-.movers{width:34px; padding-right:0 !important; white-space:nowrap; line-height:1}
+/* Ordering controls, now only on the photographs of a single work -- the
+   artwork table itself no longer reorders row by row. Quiet until you reach
+   for them. The touch target is bigger than the glyph: this is used on a
+   phone, one-handed, standing in a studio. */
 .mover{
   font-size:16px; line-height:1; padding:7px 8px; color:var(--muted);
   min-height:34px; min-width:32px; text-decoration:none; border-radius:2px;
 }
 .mover:hover:not([disabled]){color:var(--accent); background:#F1F3F2}
 .mover[disabled]{opacity:.22; cursor:default}
-.movers .inline{display:block}
 /* A draft is not on the wall, and the row says so at a glance rather than
    making you read the status menu. */
 .grid-t tr.is-draft{background:repeating-linear-gradient(135deg,#fff,#fff 9px,#F7F4EE 9px,#F7F4EE 18px)}
@@ -668,8 +691,6 @@ body.admin{background:#F3F4F2; font-size:15px}
      reads as a plain list of facts. */
   .grid-t td.thumb{width:auto; padding-bottom:8px}
   .grid-t td.thumb img{width:88px; height:88px}
-  .grid-t td.movers{width:auto; padding-top:10px}
-  .movers .inline{display:inline-block; margin-right:6px}
   .grid-t td.right{padding-top:8px; border-top:1px solid var(--line); margin-top:8px}
   .grid-t select{width:100%; max-width:none}
   .grid-t .inline{display:flex; flex-wrap:wrap; width:100%}
