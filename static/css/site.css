@@ -704,12 +704,15 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .link.danger{color:#A3372B}
 
 .formgrid{
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px;
-  background:var(--paper); padding:clamp(14px,3vw,22px); border:1px solid var(--line);
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px 14px;
+  background:var(--paper); padding:clamp(13px,2.4vw,18px); border:1px solid var(--line);
   border-radius:3px;
 }
+/* label/field pairs were 5px apart inside a 16px grid gap, so the page read as
+   one long ladder. Tighter inside, same outside. */
+.formgrid label{gap:4px}
 .formgrid .wide{grid-column:1/-1}
-.formgrid fieldset{grid-column:1/-1; border:1px solid var(--line); border-radius:3px; padding:16px; margin:0}
+.formgrid fieldset{grid-column:1/-1; border:1px solid var(--line); border-radius:3px; padding:13px 14px; margin:0}
 .formgrid legend{
   font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent);
   padding:0 7px; font-weight:600;
@@ -726,7 +729,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   color:var(--muted); font-size:15px; pointer-events:none;
 }
 .money input{padding-left:24px}
-.shots{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; margin-top:14px}
+.shots{display:grid; grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:12px; margin-top:12px}
 .shots figure{margin:0; background:var(--paper); border:1px solid var(--line); border-radius:3px; padding:8px}
 .shots img{
   width:100%; aspect-ratio:1; height:auto; object-fit:contain;
@@ -887,38 +890,59 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   .filters .cta{flex:1 1 100%; text-align:center}
 }
 
-/* ---------- where a painting is ----------
-   Its own panel rather than a field in the form, because a location is not
-   edited, it CHANGES: you record a move and the history keeps the rest. */
-.wherebox{
-  background:var(--paper); border:1px solid var(--line); border-radius:3px;
-  padding:clamp(14px,3vw,20px); margin-bottom:8px;
+/* ---------- the panels below the work form ----------
+   The page had become one very tall column: form, then four full-width boxes,
+   then the photographs. These sit two-across where there is room, and each
+   carries a compact header instead of a serif h2 with its own margins — which
+   is most of the height saved. */
+.panels{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(370px,1fr));
+  gap:14px; margin:18px 0 26px; align-items:start;
 }
-.wherebox .now{margin:0 0 2px; font-size:15px}
-.wherebox .now strong{font-weight:600}
-.moverow{display:flex; flex-wrap:wrap; gap:9px; margin:16px 0 0; align-items:center}
-.moverow input{flex:1 1 12rem; min-width:0; font-size:16px}
-.moverow input[type=date]{flex:0 0 10rem}
-.moverow .cta{flex:none}
-/* The trail is a list of facts, not a table: date, place, and whatever she
-   noted. Newest first, so "where is it" is the first line read. */
-.trail{list-style:none; margin:18px 0 0; padding:0; border-top:1px solid var(--line)}
+.panel{
+  background:var(--paper); border:1px solid var(--line); border-radius:3px;
+  padding:16px 18px 18px; min-width:0;
+}
+.panel > h3{
+  margin:0 0 12px; font-family:"Karla",sans-serif;
+  font-size:11px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--accent); font-weight:600;
+}
+.panel .now{margin:0 0 2px; font-size:15px}
+.panel .now strong{font-weight:600}
+/* Care wants its whole row of fields; on a half-width panel that means the
+   controls wrap rather than squeeze to nothing. */
+.moverow{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 0; align-items:center}
+.moverow input{flex:1 1 9rem; min-width:0; font-size:16px}
+.moverow input[type=date]{flex:0 0 9.5rem}
+.moverow input[name=cost]{flex:0 0 6rem}
+.moverow .cta{flex:1 1 auto; min-width:6rem}
+/* The trail is a list of facts: date, place, note. Newest first, so "where is
+   it" is the first line read. */
+.trail{list-style:none; margin:14px 0 0; padding:0; border-top:1px solid var(--line)}
 .trail li{
-  display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px;
-  padding:9px 0; border-bottom:1px solid var(--line);
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:3px 10px;
+  padding:8px 0; border-bottom:1px solid var(--line);
 }
 .trail li:last-child{border-bottom:0}
 .trail .mdate{
-  flex:0 0 6.5rem; font-size:12.5px; color:var(--muted);
+  flex:0 0 6rem; font-size:12px; color:var(--muted);
   font-variant-numeric:tabular-nums;
 }
-.trail .mplace{font-weight:600; font-size:14.5px}
-.trail .sub{display:inline; flex:1 1 10rem}
-.qrbox{display:flex; flex-wrap:wrap; gap:18px; align-items:center}
-.qrbox img{flex:none; border:1px solid var(--line); border-radius:3px; background:#fff}
-.qrbox > div{flex:1 1 16rem; min-width:0}
-.qrbox p{margin:0 0 8px}
-.qrbox .codeurl{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; overflow-wrap:anywhere}
+.trail .mplace{font-weight:600; font-size:14px}
+.trail .sub{display:inline; flex:1 1 8rem; font-size:12.5px}
+.trail .mcost{font-variant-numeric:tabular-nums; color:var(--ink); font-size:13.5px}
+.trail form{margin-left:auto}
+.qrrow{display:flex; flex-wrap:wrap; gap:14px; align-items:center}
+.qrrow img{flex:none; border:1px solid var(--line); border-radius:3px; background:#fff;
+  width:110px; height:110px}
+.qrrow > div{flex:1 1 11rem; min-width:0}
+.qrrow p{margin:0 0 7px; font-size:13px}
+.qrrow .codeurl{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px; overflow-wrap:anywhere}
+@media (max-width:560px){
+  .trail .mdate{flex:1 1 100%}
+  .trail form{margin-left:0}
+}
 .trail .mcost{font-variant-numeric:tabular-nums; color:var(--ink); font-size:14px}
 .trail form{margin-left:auto}
 @media (max-width:560px){

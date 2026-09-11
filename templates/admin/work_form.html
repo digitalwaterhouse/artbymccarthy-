@@ -69,8 +69,10 @@
 </form>
 
 {% if w %}
-<h2 id="where">Where it is</h2>
-<div class="wherebox">
+<div class="panels">
+
+<section class="panel" id="where">
+  <h3>Where it is</h3>
   <p class="now">
     {% if w.location %}Currently at <strong>{{ w.location }}</strong>
     {% else %}<span class="sub">No location recorded yet.</span>{% endif %}
@@ -107,12 +109,11 @@
     {% endfor %}
   </ol>
   {% endif %}
-</div>
-{% endif %}
+</section>
 
-{% if w %}
-<h2 id="qr">Label</h2>
-<div class="wherebox qrbox">
+<section class="panel qrbox" id="qr">
+  <h3>Label</h3>
+  <div class="qrrow">
   <img src="{{ url_for('site.admin_work_qr', work_id=w.id) }}" alt="QR code for {{ w.title }}" width="150" height="150">
   <div>
     <p class="sub">Scans to this painting&rsquo;s page on the site, so someone standing in
@@ -120,11 +121,13 @@
     <p><a class="link" href="{{ url_for('site.admin_work_qr', work_id=w.id) }}"
           download="{{ w.slug }}-qr.png">Download the PNG</a></p>
     <p class="sub codeurl">{{ url_for('site.work', slug=w.slug, _external=True) }}</p>
+    </div>
   </div>
-</div>
 
-<h2 id="care">Care and repair</h2>
-<div class="wherebox">
+</section>
+
+<section class="panel" id="care">
+  <h3>Care and repair</h3>
   <p class="sub">Reframing, varnish, a touch-up after a knock in transit. Nothing here
      shows on the website.{% if care_total and care_total != '$0' %}
      Spent so far: <strong>{{ care_total }}</strong>.{% endif %}</p>
@@ -160,9 +163,11 @@
   {% endif %}
 </div>
 
+</section>
+
 {% if shows %}
-<h2>Shown at</h2>
-<div class="wherebox">
+<section class="panel">
+  <h3>Shown at</h3>
   <ol class="trail">
     {% for e in shows %}
       <li>
@@ -173,8 +178,10 @@
     {% endfor %}
   </ol>
   <p class="sub">A piece joins a show from the show&rsquo;s own page, under Exhibitions.</p>
-</div>
+</section>
 {% endif %}
+
+</div>
 {% endif %}
 
 {% if w and w.images %}
