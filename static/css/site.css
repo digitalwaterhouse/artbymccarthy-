@@ -465,24 +465,43 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 }
 
 /* ---------- stepping between works ---------- */
+/* ---------- stepping between paintings ----------
+   IN THE DETAILS COLUMN, not across the foot of the page. It sits where the
+   reader already is once they have read the size and the price, and it leaves
+   the whole left-hand column to the painting.
+
+   Which means it now lives in roughly 300px, not the full width, so the row of
+   three becomes a grid: the count on its own line and the two steps sharing
+   the one below. The two are equal columns rather than content-width, because
+   "Previous" next to a piece called "Face" would otherwise give the two ends
+   wildly different sizes for no reason a reader could name. */
 .stepper{
-  display:flex; align-items:center; gap:clamp(12px,2vw,24px);
-  margin-top:clamp(40px,5vw,64px); padding-top:26px; border-top:1px solid var(--line);
+  display:grid; grid-template-columns:1fr 1fr; gap:9px;
+  margin-top:clamp(22px,3vw,32px); padding-top:20px; border-top:1px solid var(--line);
 }
 .step{
-  display:flex; flex-direction:column; gap:5px; max-width:20rem;
-  padding:12px 16px; border:1.5px solid var(--rule); border-radius:2px;
+  display:flex; flex-direction:column; gap:5px; min-width:0;
+  padding:11px 13px; border:1.5px solid var(--rule); border-radius:2px;
   background:var(--paper); text-decoration:none; color:var(--ink);
   box-shadow:3px 3px 0 0 transparent;
   transition:border-color .18s, box-shadow .18s, transform .18s;
 }
 .step:hover{border-color:var(--ink); box-shadow:3px 3px 0 0 var(--mat-teal); transform:translate(-1px,-1px)}
-.step-next{margin-left:auto; text-align:right; align-items:flex-end}
+.step-next{text-align:right; align-items:flex-end}
+/* Spans both columns and is pulled above them. Kept in the middle of the
+   markup on purpose -- between Previous and Next is where it belongs when the
+   page is read aloud, and `order` moves only the picture. */
+.step-count{grid-column:1/-1; order:-1}
 .step-dir{
   font:600 11px/1 "Karla",sans-serif; letter-spacing:.12em; text-transform:uppercase;
   color:var(--muted);
 }
-.step-t{font-family:"Newsreader",Georgia,serif; font-size:15.5px; line-height:1.2}
+/* A long title in a half-column has to be allowed to break, or it pushes the
+   card wider than its track and the two ends stop matching. */
+.step-t{
+  font-family:"Newsreader",Georgia,serif; font-size:14.5px; line-height:1.25;
+  overflow-wrap:anywhere;
+}
 .step-count{
   font-size:12.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted);
   white-space:nowrap;

@@ -80,23 +80,29 @@
         </form>
       {% endif %}
     </div>
+
+    {% if near %}
+    {# Step through the run you were browsing, at the foot of the details column
+       rather than across the bottom of the page: this is where the reader
+       already is once they have read the size and the price, and it keeps the
+       whole of the left-hand column for the painting. The ends wrap, so the
+       arrows never go dead; the count says where you are. #}
+    <nav class="stepper" aria-label="More work">
+      <a class="step" href="{{ url_for('site.work', slug=near.prev.slug) }}" rel="prev">
+        <span class="step-dir">&larr; Previous</span>
+        <span class="step-t">{{ near.prev.title }}</span>
+      </a>
+      <span class="step-count">{{ near.index }} of {{ near.total }}</span>
+      <a class="step step-next" href="{{ url_for('site.work', slug=near.next.slug) }}" rel="next">
+        <span class="step-dir">Next &rarr;</span>
+        <span class="step-t">{{ near.next.title }}</span>
+      </a>
+    </nav>
+    {% endif %}
   </aside>
 </article>
 
 {% if near %}
-{# Step through the run you were browsing. The ends wrap, so the arrows never
-   go dead; the count says where you are. #}
-<nav class="stepper" aria-label="More work">
-  <a class="step" href="{{ url_for('site.work', slug=near.prev.slug) }}" rel="prev">
-    <span class="step-dir">&larr; Previous</span>
-    <span class="step-t">{{ near.prev.title }}</span>
-  </a>
-  <span class="step-count">{{ near.index }} of {{ near.total }}</span>
-  <a class="step step-next" href="{{ url_for('site.work', slug=near.next.slug) }}" rel="next">
-    <span class="step-dir">Next &rarr;</span>
-    <span class="step-t">{{ near.next.title }}</span>
-  </a>
-</nav>
 <script>
 /* Arrow keys too, the way the gallery viewer works. Ignored while typing. */
 document.addEventListener('keydown', function(e){
