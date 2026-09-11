@@ -495,16 +495,49 @@ textarea{resize:vertical}
 .flash{background:#FFF6E5; border:1px solid #E8D5A8; padding:10px 14px; margin-bottom:20px}
 
 /* ---------- footer ---------- */
+/* The sign-up sits in the footer of every page, which is where someone who has
+   just scrolled a painting to the end actually is. Quiet by design: this is an
+   invitation, not a demand, and a gallery that shouts for your email is not one
+   you trust with a $385 painting. */
+.signup{
+  flex:1 1 100%;
+  display:flex; flex-wrap:wrap; gap:18px 32px; align-items:center;
+  justify-content:space-between; padding-bottom:22px; margin-bottom:22px;
+  border-bottom:1px solid var(--line);
+}
+.signup-say{display:flex; flex-direction:column; gap:3px; max-width:34rem}
+.signup-say strong{
+  font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.22rem;
+  letter-spacing:-.01em; color:var(--ink);
+}
+.signup-say span{font-size:.86rem; color:var(--muted)}
+.signup-do{display:flex; flex-wrap:wrap; gap:9px; align-items:center; flex:0 1 26rem}
+.signup-do input[type=email]{
+  flex:1 1 13rem; min-width:0; padding:11px 14px; font-size:16px;
+  border:1px solid var(--rule); border-radius:2px; background:var(--paper); color:var(--ink);
+}
+.signup-do input[type=email]:focus-visible{outline:2px solid var(--focus); outline-offset:1px}
+.btn-ghost{
+  -webkit-appearance:none; appearance:none; flex:0 0 auto; cursor:pointer;
+  background:transparent; color:var(--accent); border:1px solid var(--accent);
+  border-radius:2px; padding:11px 20px; font:600 14px/1 "Karla",sans-serif;
+  letter-spacing:.03em; transition:background .2s ease, color .2s ease;
+}
+.btn-ghost:hover{background:var(--accent); color:#fff}
+/* On the dark entry the footer sits on the cream wall like everywhere else, so
+   nothing special is needed there — but the home page paints its own ground
+   under .foot, and the field would otherwise vanish into it. */
+.home .signup-do input[type=email]{background:var(--paper)}
+@media (max-width:720px){
+  .signup{gap:14px}
+  .signup-do{flex:1 1 100%}
+  .signup-do input[type=email]{flex:1 1 100%}
+  .btn-ghost{flex:1 1 100%; text-align:center}
+}
+
 .foot{
   border-top:1px solid var(--line); padding:34px clamp(18px,5vw,56px) 56px;
   display:flex; flex-wrap:wrap; gap:24px 60px; align-items:end;
-}
-.signup{max-width:26rem; flex:1 1 20rem}
-.signup label{font-size:14px; color:var(--muted); margin-bottom:8px}
-.signup .row{display:flex; gap:8px}
-.signup button{
-  background:var(--ink); color:#fff; border:0; border-radius:2px;
-  padding:0 18px; font:600 14px/1 "Karla",sans-serif; cursor:pointer;
 }
 .foot .fine{flex:1 1 16rem; text-align:left}
 

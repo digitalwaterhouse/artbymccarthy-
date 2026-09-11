@@ -101,7 +101,11 @@ def inject():
     return {"cfg": c, "prefix": PREFIX, "stripe_on": payments.enabled(),
             "noindex": NOINDEX, "wordmark": wordmark(c["site_title"]),
             "slides": slides, "has_archive": getattr(g, "_has_archive", False),
-            "signature_name": signature_name(), "pagekey": key, "nav": nav, "endpoint": ep}
+            "signature_name": signature_name(), "pagekey": key, "nav": nav, "endpoint": ep,
+            "signup_source": ("work:" + request.view_args["slug"]
+                              if ep == "work" and has_request_context()
+                              and request.view_args and "slug" in request.view_args
+                              else (ep or "site"))}
 
 
 def admin_required(fn):
