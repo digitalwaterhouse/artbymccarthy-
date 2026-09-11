@@ -284,11 +284,28 @@ def about():
     return render_template("about.html")
 
 
+def _is_bot():
+    """A field a person never sees and a bot cannot resist.
+
+    Named `website` rather than anything that says "trap": scrapers skip inputs
+    called honeypot, and a plausible field name is the whole trick. It is hidden
+    off-screen in CSS rather than with display:none or hidden, because the
+    cruder bots skip those too.
+
+    The caller returns SUCCESS when this is true. A bot told it failed simply
+    tries again with the field left blank; a bot told it worked goes away.
+    """
+    return bool((request.form.get("website") or "").strip())
+
+
 @site.route("/commissions", methods=["GET", "POST"])
 def commissions():
     """Same page as /contact, opened on the commission pane. The URL is kept so
     existing links and the sitemap still land somewhere sensible."""
     if request.method == "POST":
+        if _is_bot():
+            return render_template("thanks.html", heading="Thank you",
+                                   msg="Your note is with the studio. Expect a reply within a few days.")
         gallery.add_inquiry("commission", request.form.get("name"),
                             request.form.get("email"), request.form.get("body"))
         notify("commission", request.form.get("name"), request.form.get("email"),
@@ -301,6 +318,9 @@ def commissions():
 @site.route("/contact", methods=["GET", "POST"])
 def contact():
     if request.method == "POST":
+        if _is_bot():
+            return render_template("thanks.html", heading="Thank you",
+                                   msg="Your message has been received.")
         gallery.add_inquiry("contact", request.form.get("name"),
                             request.form.get("email"), request.form.get("body"))
         notify("contact", request.form.get("name"), request.form.get("email"),
@@ -312,6 +332,9 @@ def contact():
 
 @site.route("/subscribe", methods=["POST"])
 def subscribe():
+    if _is_bot():
+        return render_template("thanks.html", heading="You're on the list",
+                               msg="New work, about once a month. Nothing else.")
     ok = gallery.subscribe(request.form.get("email"), request.form.get("source") or "site")
     return render_template("thanks.html",
                            heading="You're on the list" if ok else "That email didn't look right",
@@ -362,6 +385,9 @@ def buy(slug):
 @site.route("/enquire/<slug>", methods=["POST"])
 def enquire(slug):
     w = gallery.get_work(slug=slug)
+    if _is_bot():
+        return render_template("thanks.html", heading="Thank you",
+                               msg="The studio will be in touch with shipping and payment.")
     gallery.add_inquiry("purchase", request.form.get("name"), request.form.get("email"),
                         request.form.get("body"), w["id"] if w else None)
     notify("purchase", request.form.get("name"), request.form.get("email"),

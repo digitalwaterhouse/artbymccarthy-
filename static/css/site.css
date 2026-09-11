@@ -486,6 +486,11 @@ input,select,textarea{
   border:1px solid var(--rule); border-radius:2px; padding:10px 11px; width:100%;
 }
 textarea{resize:vertical}
+/* The honeypot. Positioned off-screen rather than display:none or [hidden] —
+   the cruder bots skip anything hidden those ways, and the point is that they
+   fill it in. A real person never reaches it: no tab stop, no label on screen. */
+.hp{position:absolute !important; left:-9999px !important; width:1px; height:1px;
+  overflow:hidden; opacity:0; pointer-events:none}
 .empty{color:var(--muted)}
 .flash{background:#FFF6E5; border:1px solid #E8D5A8; padding:10px 14px; margin-bottom:20px}
 

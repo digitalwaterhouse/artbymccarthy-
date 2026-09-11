@@ -23,6 +23,9 @@
          showing next &mdash; write and it reaches the studio directly.</p>
     </div>
     <form class="panel" method="post" action="{{ url_for('site.contact') }}">
+        <label class="hp" for="hp-msg">Website</label>
+        <input class="hp" type="text" name="website" id="hp-msg" tabindex="-1" autocomplete="off" aria-hidden="true">
+
       <div class="stack">
         <label>Your name <input name="name" required></label>
         <label>Email <input type="email" name="email" required></label>
@@ -43,6 +46,9 @@
       {% endif %}
     </div>
     <form class="panel" method="post" action="{{ url_for('site.commissions') }}">
+        <label class="hp" for="hp-com">Website</label>
+        <input class="hp" type="text" name="website" id="hp-com" tabindex="-1" autocomplete="off" aria-hidden="true">
+
       <h2>Start a conversation</h2>
       <p class="fine">No obligation, and nothing is owed until you have a price and a
          timeline in hand.</p>

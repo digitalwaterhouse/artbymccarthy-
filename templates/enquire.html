@@ -6,6 +6,9 @@
   <p>{{ w.medium }}{% if w.dims %}, {{ w.dims }}{% endif %}{% if w.price %} &middot; {{ w.price }}{% endif %}</p>
   <p>Leave your details and the studio will come back with shipping and payment.</p>
   <form class="stack" method="post" action="{{ url_for('site.enquire', slug=w.slug) }}">
+        <label class="hp" for="hp-buy">Website</label>
+        <input class="hp" type="text" name="website" id="hp-buy" tabindex="-1" autocomplete="off" aria-hidden="true">
+
     <label>Your name <input name="name" required></label>
     <label>Email <input type="email" name="email" required></label>
     <label>Where would it ship to? <textarea name="body" rows="4" placeholder="City and state is enough to start"></textarea></label>
