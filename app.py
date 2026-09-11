@@ -518,6 +518,67 @@ def admin_exhibition(exhibition_id):
                            works=gallery.list_works(include_draft=True))
 
 
+def _print_ctx():
+    """Shared by both print sheets — the artist's name is a setting because she
+    spells it two ways and that is hers to settle."""
+    return (cfg().get("artist_name") or "").strip()
+
+
+@site.route("/admin/exhibition/<int:exhibition_id>/checklist")
+@admin_required
+def admin_exhibition_checklist(exhibition_id):
+    e = gallery.get_exhibition(exhibition_id)
+    if not e:
+        abort(404)
+    works = gallery.works_in_show(exhibition_id)
+    total = sum(w["price_cents"] or 0 for w in works)
+    return render_template("admin/print_checklist.html", e=e, works=works,
+                           artist=_print_ctx(),
+                           total_value=gallery.money(total) if total else None,
+                           printed_on=day(gallery.today()))
+
+
+@site.route("/admin/exhibition/<int:exhibition_id>/labels")
+@admin_required
+def admin_exhibition_labels(exhibition_id):
+    e = gallery.get_exhibition(exhibition_id)
+    if not e:
+        abort(404)
+    qr = request.args.get("qr") != "0"
+    return render_template("admin/print_labels.html",
+                           works=gallery.works_in_show(exhibition_id),
+                           heading=e["title"], artist=_print_ctx(), qr=qr,
+                           back=url_for("site.admin_exhibition", exhibition_id=exhibition_id),
+                           toggle_qr_url=url_for("site.admin_exhibition_labels",
+                                                 exhibition_id=exhibition_id,
+                                                 qr="0" if qr else "1"))
+
+
+@site.route("/admin/labels")
+@admin_required
+def admin_labels():
+    """Labels for whatever the Pieces filter is currently showing, so a set of
+    labels is one click from the list you just narrowed."""
+    q = (request.args.get("q") or "").strip()
+    st = request.args.get("status") or ""
+    med = request.args.get("medium") or ""
+    place = request.args.get("place") or ""
+    coll = request.args.get("collection") or ""
+    works = gallery.search_works(
+        q=q or None,
+        status=st if st in gallery.STATUSES else None,
+        collection_id=(0 if coll == "none" else (_int(coll) if coll else None)),
+        place=(0 if place == "none" else (place or None)),
+        medium=med or None)
+    qr = request.args.get("qr") != "0"
+    args = {k: v for k, v in request.args.items() if k != "qr"}
+    return render_template("admin/print_labels.html", works=works,
+                           heading="Labels", artist=_print_ctx(), qr=qr,
+                           back=url_for("site.admin_works", **args),
+                           toggle_qr_url=url_for("site.admin_labels",
+                                                 qr="0" if qr else "1", **args))
+
+
 @site.route("/admin/exhibition/<int:exhibition_id>/delete", methods=["POST"])
 @admin_required
 def admin_exhibition_delete(exhibition_id):

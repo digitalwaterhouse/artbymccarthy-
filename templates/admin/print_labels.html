@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Labels &mdash; {{ heading }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=57">
+<style>
+  /* A print sheet, not a page of the studio. Everything here exists to come out
+     of a printer correctly; the screen view is only a preview of that. */
+  @page { size: letter; margin: 0.5in; }
+  body { background: #fff; color: #171a18; }
+  .sheet { max-width: 7.5in; margin: 0 auto; padding: 18px 0 40px; }
+  .labels { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; }
+  .lbl {
+    /* 3.5 x 2.5in cells, which is the size a framed small work carries well and
+       fits 8 to a Letter sheet with the page margin above. */
+    min-height: 2.5in; padding: 0.28in 0.3in;
+    border: 1px dashed #d8d8d2;      /* cut guide; prints light, reads as a fold line */
+    break-inside: avoid; page-break-inside: avoid;
+    display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  }
+  .lbl .artist { font-family: "Karla", sans-serif; font-size: 10.5pt; letter-spacing: .04em;
+                 text-transform: uppercase; color: #4a4a46; }
+  .lbl .title { font-family: "Newsreader", Georgia, serif; font-size: 15pt; font-style: italic;
+                line-height: 1.2; margin: 3px 0 1px; }
+  .lbl .meta { font-family: "Karla", sans-serif; font-size: 10pt; color: #3c3c38; line-height: 1.45; }
+  .lbl .price { font-family: "Karla", sans-serif; font-size: 11pt; font-weight: 600; margin-top: 6px; }
+  .lbl .price.sold { color: #C0392B; }
+  .lbl .nfs { color: #6b6b66; font-weight: 500; }
+  .lbl.withqr { flex-direction: row; align-items: center; gap: 0.22in; }
+  .lbl.withqr .body { flex: 1 1 auto; min-width: 0; }
+  .lbl .qr { flex: 0 0 auto; width: 0.95in; height: 0.95in; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+             margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .toolbar h1 { font-family: "Newsreader", Georgia, serif; font-weight: 400; font-size: 1.4rem;
+                margin: 0; margin-right: auto; }
+  @media print { .noprint { display: none !important; } .sheet { padding: 0; } }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="toolbar noprint">
+    <h1>{{ heading }} &mdash; {{ works|length }} label{{ '' if works|length == 1 else 's' }}</h1>
+    <a class="link" href="{{ toggle_qr_url }}">{{ 'Without QR codes' if qr else 'With QR codes' }}</a>
+    <a class="link" href="{{ back }}">Back</a>
+    <button class="cta" type="button" onclick="window.print()">Print</button>
+  </div>
+
+  {% if not works %}
+    <p class="empty">No pieces to label.</p>
+  {% endif %}
+
+  <div class="labels">
+    {% for w in works %}
+      <div class="lbl {% if qr %}withqr{% endif %}">
+        <div class="body">
+          <div class="artist">{{ artist }}</div>
+          <div class="title">{{ w.title }}{% if w.year %}, {{ w.year }}{% endif %}</div>
+          <div class="meta">
+            {% if w.medium %}{{ w.medium }}<br>{% endif %}
+            {% if w.dims %}{{ w.dims }}{% endif %}
+          </div>
+          <div class="price {% if w.status == 'sold' %}sold{% endif %}">
+            {% if w.status == 'sold' %}Sold
+            {% elif w.status == 'nfs' %}<span class="nfs">Not for sale</span>
+            {% elif w.price %}{{ w.price }}
+            {% else %}<span class="nfs">Price on request</span>{% endif %}
+          </div>
+        </div>
+        {% if qr %}
+          <img class="qr" src="{{ url_for('site.admin_work_qr', work_id=w.id) }}" alt="">
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+</body>
+</html>

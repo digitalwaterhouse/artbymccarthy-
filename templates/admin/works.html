@@ -50,6 +50,9 @@
   {% endif %}
   <button class="cta" type="submit">Filter</button>
   {% if filtered %}<a class="link" href="{{ url_for('site.admin_works') }}">Clear</a>{% endif %}
+  {# Labels for exactly what is on screen — narrow the list, then print it. #}
+  <a class="link" href="{{ url_for('site.admin_labels', q=q or None, status=f_status or None,
+     medium=f_medium or None, place=f_place or None, collection=f_collection or None) }}">Labels</a>
 </form>
 
 {% if filtered %}

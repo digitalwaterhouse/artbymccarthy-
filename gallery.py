@@ -64,6 +64,10 @@ DEFAULT_SETTINGS = {
     "about_caption": "",
     # quiet | rosette | rose | none -- the backdrop on about/commissions/contact
     "page_bg": "quiet",
+    # Printed on wall labels and checklists. A setting, not a constant: she
+    # writes it "Lisa Mc Carthy" with a space in her own bio and "McCarthy"
+    # everywhere else on the site, and that is hers to settle, not mine.
+    "artist_name": "Lisa McCarthy",
 }
 
 
@@ -514,6 +518,15 @@ def delete_care(care_id):
     with connect() as conn:
         conn.execute("DELETE FROM work_care WHERE id=?", (care_id,))
     return True
+
+
+def works_in_show(exhibition_id):
+    """The paintings attached to a show, in the wall order she set."""
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT w.* FROM works w JOIN exhibition_works x ON x.work_id = w.id"
+            " WHERE x.exhibition_id=? ORDER BY w.sort, w.id", (exhibition_id,)).fetchall()
+        return _hydrate(conn, rows)
 
 
 def shows_for(work_id):

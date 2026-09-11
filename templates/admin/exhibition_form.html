@@ -3,6 +3,8 @@
 {% block body %}
 <div class="adminhead">
   <h1>{{ e.title }}</h1>
+  <a class="cta" href="{{ url_for('site.admin_exhibition_checklist', exhibition_id=e.id) }}">Checklist</a>
+  <a class="cta" href="{{ url_for('site.admin_exhibition_labels', exhibition_id=e.id) }}">Labels</a>
   <a href="{{ url_for('site.admin_exhibitions') }}">all exhibitions</a>
 </div>
 
