@@ -53,6 +53,8 @@
   {# Labels for exactly what is on screen — narrow the list, then print it. #}
   <a class="link" href="{{ url_for('site.admin_labels', q=q or None, status=f_status or None,
      medium=f_medium or None, place=f_place or None, collection=f_collection or None) }}">Labels</a>
+  <a class="link" href="{{ url_for('site.admin_pricelist', q=q or None, status=f_status or None,
+     medium=f_medium or None, place=f_place or None, collection=f_collection or None) }}">Price list</a>
 </form>
 
 {% if filtered %}

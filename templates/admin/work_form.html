@@ -121,6 +121,7 @@
     <p><a class="link" href="{{ url_for('site.admin_work_qr', work_id=w.id) }}"
           download="{{ w.slug }}-qr.png">Download the PNG</a></p>
     <p class="sub codeurl">{{ url_for('site.work', slug=w.slug, _external=True) }}</p>
+    <p><a class="link" href="{{ url_for('site.admin_work_coa', work_id=w.id) }}">Certificate of authenticity</a></p>
     </div>
   </div>
 

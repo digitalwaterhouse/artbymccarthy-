@@ -4,12 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Checklist &mdash; {{ e.title }}</title>
+<title>Price list &mdash; {{ artist }}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=59">
 <style>
-  /* The document that travels with the work. It is checked twice — once when
-     the pieces go out, once when they come back — which is why there are two
-     tick columns and a line for each signature. */
   @page { size: letter; margin: 0.6in; }
   body { background: #fff; color: #171a18; }
   .sheet { max-width: 7.4in; margin: 0 auto; padding: 18px 0 40px; }
@@ -18,24 +15,25 @@
                text-transform: uppercase; color: #6b6b66; }
   .head h1 { font-family: "Newsreader", Georgia, serif; font-weight: 400; font-size: 22pt;
              margin: 4px 0 2px; }
-  .head .where { font-family: "Karla", sans-serif; font-size: 11pt; color: #3c3c38; }
+  .head .sub2 { font-family: "Karla", sans-serif; font-size: 10.5pt; color: #3c3c38; }
   .counts { font-family: "Karla", sans-serif; font-size: 10pt; color: #6b6b66;
             margin: 10px 0 14px; display: flex; flex-wrap: wrap; gap: 18px; }
-  table.ck { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
-  table.ck th { text-align: left; font-family: "Karla", sans-serif; font-size: 8.5pt;
+  table.pl { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+  table.pl th { text-align: left; font-family: "Karla", sans-serif; font-size: 8.5pt;
                 letter-spacing: .09em; text-transform: uppercase; color: #6b6b66;
                 border-bottom: 1px solid #171a18; padding: 6px 8px 6px 0; }
-  table.ck td { padding: 9px 8px 9px 0; border-bottom: 1px solid #e4e3dd; vertical-align: top; }
-  table.ck tr { break-inside: avoid; page-break-inside: avoid; }
+  table.pl td { padding: 8px 8px 8px 0; border-bottom: 1px solid #e4e3dd; vertical-align: middle; }
+  table.pl tr { break-inside: avoid; page-break-inside: avoid; }
+  .thumb96 { width: 0.62in; height: 0.62in; object-fit: contain; background: #fff;
+             border: 1px solid #e4e3dd; display: block; }
   .t { font-family: "Newsreader", Georgia, serif; font-size: 12pt; font-style: italic; }
   .sub2 { color: #6b6b66; font-size: 9.5pt; }
   .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .box { width: 0.26in; height: 0.26in; border: 1.5px solid #171a18; border-radius: 2px;
-         display: inline-block; }
-  .signoff { margin-top: 28px; display: flex; gap: 40px; flex-wrap: wrap;
-             font-family: "Karla", sans-serif; font-size: 10pt; color: #3c3c38; }
-  .signoff div { flex: 1 1 2.4in; }
-  .rule { border-bottom: 1px solid #171a18; height: 2.1em; margin-bottom: 4px; }
+  .price { font-family: "Karla", sans-serif; font-weight: 600; font-size: 11pt; }
+  .foot { margin-top: 22px; font-family: "Karla", sans-serif; font-size: 9.5pt;
+          color: #6b6b66; line-height: 1.6; border-top: 1px solid #e4e3dd; padding-top: 12px; }
+  .preparedfor { margin-top: 18px; font-family: "Karla", sans-serif; font-size: 10pt; }
+  .preparedfor .rule { border-bottom: 1px solid #171a18; height: 2em; max-width: 3.4in; margin-bottom: 4px; }
   .toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
              margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
   .toolbar h2 { font-family: "Newsreader", Georgia, serif; font-weight: 400; font-size: 1.3rem;
@@ -46,71 +44,71 @@
 <body>
 <div class="sheet">
   <div class="toolbar noprint">
-    <h2>Checklist preview</h2>
-    <a class="link" href="{{ url_for('site.admin_exhibition', exhibition_id=e.id) }}">Back to the show</a>
+    <h2>Price list preview</h2>
+    <a class="link" href="{{ toggle_img_url }}">{{ 'Without pictures' if pics else 'With pictures' }}</a>
+    <a class="link" href="{{ back }}">Back</a>
     <button class="cta" type="button" onclick="window.print()">Print</button>
   </div>
 
   <div class="head">
     <div class="who">{{ artist }}</div>
-    <h1>{{ e.title }}</h1>
-    <div class="where">
-      {% if e.venue %}{{ e.venue }}{% if e.city %}, {{ e.city }}{% endif %} &middot; {% endif %}
-      {{ exhibition_dates(e) }}
-    </div>
+    <h1>Price list</h1>
+    <div class="sub2">{{ printed_on }}{% if scope %} &middot; {{ scope }}{% endif %}</div>
   </div>
 
   <div class="counts">
     <span><strong>{{ works|length }}</strong> piece{{ '' if works|length == 1 else 's' }}</span>
-    {% if total_value %}<span>Total value <strong>{{ total_value }}</strong></span>{% endif %}
-    <span>Printed {{ printed_on }}</span>
+    {% if priced %}<span><strong>{{ priced }}</strong> priced</span>{% endif %}
+    {% if total_value %}<span>Total <strong>{{ total_value }}</strong></span>{% endif %}
   </div>
 
   {% if works %}
-  <table class="ck">
+  <table class="pl">
     <thead>
       <tr>
-        <th style="width:1.6em">#</th>
+        {% if pics %}<th style="width:0.7in"></th>{% endif %}
         <th>Work</th>
         <th>Medium &amp; size</th>
         <th class="num">Price</th>
-        <th class="num" style="width:0.7in">Out</th>
-        <th class="num" style="width:0.7in">Back</th>
       </tr>
     </thead>
     <tbody>
       {% for w in works %}
       <tr>
-        <td class="num">{{ loop.index }}</td>
+        {% if pics %}
+        <td>{% if w.images %}<img class="thumb96" src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}</td>
+        {% endif %}
         <td>
           <span class="t">{{ w.title }}</span>{% if w.year %}<span class="sub2">, {{ w.year }}</span>{% endif %}
-          {% if w.location %}<br><span class="sub2">from {{ w.location }}</span>{% endif %}
+          {% if w.edition %}<br><span class="sub2">{{ w.edition }}</span>{% endif %}
         </td>
         <td class="sub2">
           {% if w.medium %}{{ w.medium }}{% endif %}
           {% if w.dims %}<br>{{ w.dims }}{% endif %}
         </td>
-        <td class="num">
-          {% if w.status == 'sold' %}Sold
-          {% elif w.status == 'nfs' %}NFS
+        <td class="num price">
+          {% if w.status == 'sold' %}<span class="sub2">Sold</span>
+          {% elif w.status == 'nfs' %}<span class="sub2">Not for sale</span>
           {% elif w.price %}{{ w.price }}
-          {% else %}&mdash;{% endif %}
+          {% else %}<span class="sub2">On request</span>{% endif %}
         </td>
-        <td class="num"><span class="box"></span></td>
-        <td class="num"><span class="box"></span></td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
   {% else %}
-    <p class="empty">No paintings are attached to this show yet. Add them on the show&rsquo;s page.</p>
+    <p class="empty">Nothing matches that selection.</p>
   {% endif %}
 
-  <div class="signoff">
-    <div><div class="rule"></div>Released by / date</div>
-    <div><div class="rule"></div>Received by / date</div>
-    <div><div class="rule"></div>Returned to / date</div>
+  <div class="preparedfor">
+    <div class="rule"></div>Prepared for
   </div>
+
+  <p class="foot">
+    All works are original, one of a kind, and signed by the artist.
+    Prices are in US dollars and exclude shipping and applicable tax.
+    {{ site_title }}{% if site_note %} &middot; {{ site_note }}{% endif %}
+  </p>
 </div>
 </body>
 </html>

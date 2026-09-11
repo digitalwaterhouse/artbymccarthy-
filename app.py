@@ -554,6 +554,69 @@ def admin_exhibition_labels(exhibition_id):
                                                  qr="0" if qr else "1"))
 
 
+@site.route("/admin/work/<int:work_id>/coa")
+@admin_required
+def admin_work_coa(work_id):
+    """A certificate for one painting. The site's buy panel already promises
+    buyers one ("includes a signed certificate of authenticity"), so this is a
+    promise being kept rather than a feature being added.
+
+    The wording is deliberately plain and it is HERS to approve — a certificate
+    is a statement she signs, not text a tool should quietly author on her
+    behalf. It lives in the template, one place, easy to change.
+    """
+    w = gallery.get_work(work_id=work_id)
+    if not w:
+        abort(404)
+    c = cfg()
+    return render_template("admin/print_coa.html", w=w, artist=_print_ctx(),
+                           site_title=c.get("site_title") or "")
+
+
+@site.route("/admin/pricelist")
+@admin_required
+def admin_pricelist():
+    """The sheet she hands a gallery or a cafe. Same filters as Pieces, so the
+    list is whatever she just narrowed on screen."""
+    q = (request.args.get("q") or "").strip()
+    st = request.args.get("status") or ""
+    med = request.args.get("medium") or ""
+    place = request.args.get("place") or ""
+    coll = request.args.get("collection") or ""
+    works = gallery.search_works(
+        q=q or None,
+        status=st if st in gallery.STATUSES else None,
+        collection_id=(0 if coll == "none" else (_int(coll) if coll else None)),
+        place=(0 if place == "none" else (place or None)),
+        medium=med or None)
+    # A price list should not advertise what is already gone unless asked.
+    if not st:
+        works = [w for w in works if w["status"] != "draft"]
+    pics = request.args.get("pics") != "0"
+    priced = [w for w in works if w["price_cents"]]
+    total = sum(w["price_cents"] or 0 for w in priced)
+    bits = []
+    if st:
+        bits.append(gallery.status_label(st))
+    if place and place != "none":
+        bits.append("at " + place)
+    if q:
+        bits.append('matching "%s"' % q)
+    args = {k: v for k, v in request.args.items() if k != "pics"}
+    c = cfg()
+    return render_template("admin/print_pricelist.html", works=works,
+                           artist=_print_ctx(), pics=pics,
+                           priced=len(priced),
+                           total_value=gallery.money(total) if total else None,
+                           printed_on=day(gallery.today()),
+                           scope=" &middot; ".join(bits) if bits else None,
+                           site_title=c.get("site_title") or "",
+                           site_note=c.get("tagline") or "",
+                           back=url_for("site.admin_works", **args),
+                           toggle_img_url=url_for("site.admin_pricelist",
+                                                  pics="0" if pics else "1", **args))
+
+
 @site.route("/admin/labels")
 @admin_required
 def admin_labels():
