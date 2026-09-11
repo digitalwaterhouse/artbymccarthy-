@@ -643,10 +643,32 @@ def admin_inq_handled(inq_id):
     return redirect(url_for("site.admin_inquiries"))
 
 
+@site.route("/admin/inquiry/<int:inq_id>/delete", methods=["POST"])
+@admin_required
+def admin_inquiry_delete(inq_id):
+    gallery.delete_inquiry(inq_id)
+    flash("Message deleted.")
+    return redirect(url_for("site.admin_inquiries"))
+
+
 @site.route("/admin/subscribers")
 @admin_required
 def admin_subscribers():
-    return render_template("admin/subscribers.html", subs=gallery.list_subscribers())
+    everyone = gallery.list_subscribers()
+    return render_template(
+        "admin/subscribers.html",
+        subs=[s for s in everyone if not s["unsubscribed_at"]],
+        removed=[s for s in everyone if s["unsubscribed_at"]])
+
+
+@site.route("/admin/subscriber/<int:sub_id>/remove", methods=["POST"])
+@admin_required
+def admin_subscriber_remove(sub_id):
+    gallery.unsubscribe(sub_id, removed=request.form.get("undo") != "1")
+    flash("Put back on the list." if request.form.get("undo") == "1"
+          else "Taken off the list. The address is remembered so it cannot be "
+               "added back by accident.")
+    return redirect(url_for("site.admin_subscribers"))
 
 
 @site.route("/admin/subscribers.csv")
@@ -655,7 +677,7 @@ def admin_subscribers_csv():
     buf = io.StringIO()
     wtr = csv.writer(buf)
     wtr.writerow(["email", "source", "added"])
-    for s in gallery.list_subscribers():
+    for s in gallery.list_subscribers(include_removed=False):
         wtr.writerow([s["email"], s["source"], s["created_at"]])
     return Response(buf.getvalue(), mimetype="text/csv",
                     headers={"Content-Disposition": "attachment; filename=subscribers.csv"})

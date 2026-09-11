@@ -95,6 +95,9 @@ def init_db():
 # column has to be added here or it only ever appears on a fresh install, and
 # the one database that matters is the live one on Render.
 NEW_COLUMNS = {
+    "subscribers": [
+        ("unsubscribed_at", "TEXT"),
+    ],
     "works": [
         ("collection_id",  "INTEGER REFERENCES collections(id) ON DELETE SET NULL"),
         ("edition_size",   "INTEGER"),
@@ -621,6 +624,15 @@ def handle_inquiry(inq_id):
         conn.execute("UPDATE inquiries SET handled=1 WHERE id=?", (inq_id,))
 
 
+def delete_inquiry(inq_id):
+    """Gone for good. Unlike an address on the mailing list there is nothing to
+    remember here -- junk should actually leave, and a message that mattered
+    was answered from her own mail client long before this."""
+    with connect() as conn:
+        conn.execute("DELETE FROM inquiries WHERE id=?", (inq_id,))
+    return True
+
+
 def subscribe(email, source="site"):
     email = (email or "").strip().lower()
     if "@" not in email or len(email) > 200:
@@ -628,10 +640,33 @@ def subscribe(email, source="site"):
     with connect() as conn:
         conn.execute("INSERT OR IGNORE INTO subscribers (email, source, created_at)"
                      " VALUES (?,?,?)", (email, source, now()))
+        # Somebody who comes back and signs up again is giving consent again,
+        # and that outranks an old suppression. This is the ONLY thing that
+        # clears the stamp automatically -- a bulk import must never do it.
+        conn.execute("UPDATE subscribers SET unsubscribed_at=NULL WHERE email=?",
+                     (email,))
     return True
 
 
-def list_subscribers():
+def list_subscribers(include_removed=True):
+    """Everyone, newest first. Removed addresses come back too unless asked
+    otherwise, because the studio page shows them rather than pretending they
+    were never there."""
+    sql = "SELECT * FROM subscribers"
+    if not include_removed:
+        sql += " WHERE unsubscribed_at IS NULL"
+    sql += " ORDER BY created_at DESC"
     with connect() as conn:
-        return [dict(r) for r in conn.execute(
-            "SELECT * FROM subscribers ORDER BY created_at DESC").fetchall()]
+        return [dict(r) for r in conn.execute(sql).fetchall()]
+
+
+def unsubscribe(sub_id, removed=True):
+    """Take an address off the list, or put it back.
+
+    The row survives either way. Anything that mails people -- the export, the
+    copy-all box, the count -- reads the ones with no stamp, so a suppression
+    is honoured everywhere at once rather than in each place separately."""
+    with connect() as conn:
+        conn.execute("UPDATE subscribers SET unsubscribed_at=? WHERE id=?",
+                     (now() if removed else None, sub_id))
+    return True

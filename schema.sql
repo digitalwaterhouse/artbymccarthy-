@@ -85,11 +85,16 @@ CREATE TABLE IF NOT EXISTS inquiries (
     created_at TEXT NOT NULL
 );
 
+-- Coming off the list is a SUPPRESSION, not a delete. The row stays and is
+-- stamped instead, so the address is remembered as "do not mail" -- a plain
+-- delete forgets that the person asked to be left alone, and the next import
+-- or form submission silently puts them back on a list they opted out of.
 CREATE TABLE IF NOT EXISTS subscribers (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    email      TEXT UNIQUE NOT NULL,
-    source     TEXT,
-    created_at TEXT NOT NULL
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    email           TEXT UNIQUE NOT NULL,
+    source          TEXT,
+    unsubscribed_at TEXT,
+    created_at      TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS settings (

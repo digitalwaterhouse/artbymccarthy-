@@ -778,6 +778,17 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .msg header{display:flex; flex-wrap:wrap; gap:10px; align-items:baseline; margin-bottom:8px}
 .msg .kind{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); border:1px solid var(--rule); padding:2px 6px}
 .msg p{margin:0 0 8px; white-space:pre-wrap}
+/* Two controls on a message now, so they sit in a row rather than stacking. */
+.msg-acts{display:flex; flex-wrap:wrap; align-items:center; gap:18px}
+/* Addresses that asked to come off. Present, plainly secondary, and never
+   mistakable for the live list above them. */
+.offhead{
+  font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.2rem;
+  margin:34px 0 6px; color:var(--muted);
+}
+.grid-t.off{background:transparent}
+.grid-t.off tbody tr{background:#FBFBF9}
+.grid-t.off td[data-label="Email"]{color:var(--muted); text-decoration:line-through}
 
 
 /* ================= the landing =================

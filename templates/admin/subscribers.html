@@ -32,17 +32,24 @@
 </div>
 
 <table class="grid-t">
-  <thead><tr><th>Email</th><th>From</th><th>Added</th></tr></thead>
+  <thead><tr><th>Email</th><th>From</th><th>Added</th><th></th></tr></thead>
   <tbody>
   {% for s in subs %}
     <tr>
       <td data-label="Email"><a href="mailto:{{ s.email }}">{{ s.email }}</a></td>
       <td data-label="From"><span class="tag">{{ s.source or 'unknown' }}</span></td>
       <td data-label="Added"><span class="sub">{{ s.created_at|day }}</span></td>
+      <td class="right" data-label="">
+        <form method="post" action="{{ url_for('site.admin_subscriber_remove', sub_id=s.id) }}"
+              onsubmit="return confirm('Take {{ s.email }} off the list?')">
+          <button class="link danger" type="submit">remove</button>
+        </form>
+      </td>
     </tr>
   {% endfor %}
   </tbody>
 </table>
+
 
 <script>
 // Progressive: the button stays hidden unless this runs, so nobody is offered
@@ -61,7 +68,33 @@
   });
 })();
 </script>
+{% elif removed %}
+<p class="empty">Nobody on the list. {{ removed|length }} address(es) have been removed.</p>
 {% else %}
 <p class="empty">Nobody on the list yet.</p>
+{% endif %}
+
+{% if removed %}
+<h2 class="offhead">Off the list</h2>
+<p class="sub">Kept on purpose. These addresses are left out of the count, the
+   export and the copy box — remembering them is what stops someone being added
+   back to a list they asked to leave.</p>
+<table class="grid-t off">
+  <thead><tr><th>Email</th><th>Removed</th><th></th></tr></thead>
+  <tbody>
+  {% for s in removed %}
+    <tr>
+      <td data-label="Email">{{ s.email }}</td>
+      <td data-label="Removed"><span class="sub">{{ s.unsubscribed_at|day }}</span></td>
+      <td class="right" data-label="">
+        <form method="post" action="{{ url_for('site.admin_subscriber_remove', sub_id=s.id) }}">
+          <input type="hidden" name="undo" value="1">
+          <button class="link" type="submit">put back</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
 {% endif %}
 {% endblock %}
