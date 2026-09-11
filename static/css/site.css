@@ -205,7 +205,18 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
   break-inside:avoid; display:block; margin:0 0 clamp(22px,3vw,40px);
   text-decoration:none; color:inherit;
 }
-.tile img{width:100%; transition:opacity .3s ease}
+/* A SQUARE BOX ON THE WALL. This body of work is square -- 25 of the 26 are
+   10.5 x 10.5 and the stored photographs are 600x600 with it -- so a fixed 1:1
+   box makes the wall line up exactly instead of one stray 8px-short file
+   nudging everything below it down its column.
+   CONTAIN, not COVER, and that matters: the wall has never cropped a painting,
+   and the day she hangs something that is not square it letterboxes inside the
+   box rather than losing its edges. The rule survives, its premise just is not
+   true of this particular collection. */
+.tile img{
+  width:100%; aspect-ratio:1; object-fit:contain;
+  background:var(--paper); transition:opacity .3s ease;
+}
 .tile:hover img{opacity:.88}
 .tile .cap{
   display:flex; justify-content:space-between; gap:14px;
@@ -221,6 +232,9 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 .noimg{
   background:var(--paper); border:1px dashed var(--rule); color:var(--muted);
   padding:48px 16px; text-align:center; font-size:13px; letter-spacing:.06em;
+}
+.tile .noimg{
+  aspect-ratio:1; padding:0; display:flex; align-items:center; justify-content:center;
 }
 .noimg.tall{padding:140px 16px}
 
