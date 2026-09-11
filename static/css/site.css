@@ -590,7 +590,8 @@ body.admin{background:#F3F4F2; font-size:15px}
 /* Centred in the column beside the rail rather than pushed up against it:
    at 1600px the old left-aligned block left a third of the screen empty on
    the right and the tables looked like they had slipped. */
-.adminmain{padding:clamp(16px,3vw,30px); max-width:1100px; margin-inline:auto}
+.adminmain{padding:clamp(16px,3vw,30px); box-sizing:border-box;
+  width:min(1100px,100%); margin-inline:auto}
 .adminmain.narrowbox{max-width:22rem; margin:12vh auto}
 .adminhead{display:flex; align-items:center; gap:16px; margin-bottom:18px}
 .adminhead h1{font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.7rem; margin:0; margin-right:auto}
@@ -601,6 +602,28 @@ body.admin{background:#F3F4F2; font-size:15px}
 .newrow input{flex:1; box-sizing:border-box; font-size:16px}
 .newrow .cta{white-space:nowrap}
 .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap}
+/* A line of facts under a heading -- how many, how recent, where from. Reads
+   as one sentence, so the separators are middots rather than boxes. */
+.statline{margin:0 0 14px; color:var(--muted); font-size:14px}
+.statline strong{color:var(--ink); font-size:16px}
+.statline .sep{opacity:.45; padding:0 3px}
+.tag{
+  display:inline-block; font-size:11px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--muted); border:1px solid var(--rule); border-radius:2px; padding:2px 7px;
+}
+.listacts{display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 16px; margin:0 0 16px}
+.addresses summary{
+  cursor:pointer; color:var(--accent); font:600 13.5px "Karla",sans-serif;
+  text-decoration:underline; text-underline-offset:3px; min-height:34px;
+  display:flex; align-items:center;
+}
+.addresses textarea{
+  width:100%; box-sizing:border-box; margin-top:8px; padding:10px 11px; font-size:14px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; line-height:1.5;
+  background:var(--paper); border:1px solid var(--line); border-radius:3px; color:var(--ink);
+  resize:vertical;
+}
+.addresses{flex:1 1 100%; min-width:0}
 .err{background:#FBE9E7; border:1px solid #E0B4AE; padding:9px 12px}
 
 /* ---------- the working surface ----------
@@ -714,6 +737,11 @@ body.admin{background:#F3F4F2; font-size:15px}
   /* A work with no photograph yet has an empty thumbnail cell; in card
      layout that is a stray gap rather than a column. */
   .grid-t td:empty{display:none}
+  /* In card layout the column name is printed inline before the cell. A .sub
+     that IS the whole cell should sit beside it rather than wrapping to its
+     own line; one that follows a title is a genuine second line, which is why
+     this is :only-child and not every .sub. */
+  .grid-t td > .sub:only-child{display:inline}
   .grid-t td.num,.grid-t td.right{text-align:left}
   /* The thumbnail leads the card and the row controls close it, so the middle
      reads as a plain list of facts. */

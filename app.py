@@ -9,6 +9,7 @@ import csv
 import json
 import io
 import functools
+from datetime import datetime
 
 from flask import (Flask, Blueprint, render_template, request, redirect,
                    has_request_context, g,
@@ -129,6 +130,21 @@ def dollars(cents):
 
 
 app.jinja_env.globals["dollars"] = dollars
+
+
+def day(iso):
+    """2026-09-10T17:04:22Z -> 10 Sep 2026.
+
+    The studio reads dates, it does not sort them by eye, so the month is a
+    name. Anything that is not a stored timestamp comes back untouched rather
+    than raising on a page that is only listing people."""
+    try:
+        return datetime.strptime((iso or "")[:10], "%Y-%m-%d").strftime("%-d %b %Y")
+    except (ValueError, TypeError):
+        return iso or ""
+
+
+app.jinja_env.filters["day"] = day
 
 
 def notify(kind, name, email, body, work_title=None):

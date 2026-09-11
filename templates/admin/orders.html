@@ -7,7 +7,7 @@
   <tbody>
   {% for o in orders %}
     <tr>
-      <td class="sub" data-label="When">{{ o.created_at[:10] }}</td>
+      <td data-label="When"><span class="sub">{{ o.created_at|day }}</span></td>
       <td data-label="Painting">{{ o.title or '&mdash;'|safe }}</td>
       <td data-label="Buyer">{{ o.buyer_name or '' }}<span class="sub">{{ o.buyer_email or '' }}</span></td>
       <td class="addr" data-label="Ship to">{{ o.ship_line1 or '' }}{% if o.ship_line2 %}, {{ o.ship_line2 }}{% endif %}

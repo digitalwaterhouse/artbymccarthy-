@@ -2,17 +2,66 @@
 {% block title %}List{% endblock %}
 {% block body %}
 <div class="adminhead">
-  <h1>Mailing list <span class="sub">{{ subs|length }}</span></h1>
-  <a class="cta" href="{{ url_for('site.admin_subscribers_csv') }}">Export CSV</a>
+  <h1>Mailing list</h1>
+  {% if subs %}<a class="cta" href="{{ url_for('site.admin_subscribers_csv') }}">Export CSV</a>{% endif %}
 </div>
+
+{% if subs %}
+{# The count said "41" next to the heading and nothing else. What she actually
+   wants to know before writing to people is how many, how recently anyone
+   joined, and where they came from. #}
+<p class="statline">
+  <strong>{{ subs|length }}</strong> {{ 'person' if subs|length == 1 else 'people' }}
+  <span class="sep">·</span> most recent {{ subs[0].created_at|day }}
+  {% for source, rows in subs|groupby('source') %}
+    <span class="sep">·</span> {{ rows|list|length }} from {{ source or 'unknown' }}
+  {% endfor %}
+</p>
+
+{# Writing to the list means pasting addresses into a mail client. The button
+   is the quick path; the block below it is the one that works with no
+   JavaScript, on a locked-down browser, and on a phone where clipboard
+   permission prompts are their own adventure. #}
+<div class="listacts">
+  <button class="link" type="button" id="copyall" hidden>Copy all addresses</button>
+  <details class="addresses">
+    <summary>Show all addresses</summary>
+    <textarea readonly rows="4" id="alladdr">{{ subs|map(attribute='email')|join(', ') }}</textarea>
+    <p class="sub">Paste into the BCC field, never To — the list should not see each other.</p>
+  </details>
+</div>
+
 <table class="grid-t">
   <thead><tr><th>Email</th><th>From</th><th>Added</th></tr></thead>
   <tbody>
   {% for s in subs %}
-    <tr><td data-label="Email">{{ s.email }}</td><td class="sub" data-label="From">{{ s.source }}</td><td class="sub" data-label="Added">{{ s.created_at[:10] }}</td></tr>
-  {% else %}
-    <tr><td colspan="3" class="empty">Nobody yet.</td></tr>
+    <tr>
+      <td data-label="Email"><a href="mailto:{{ s.email }}">{{ s.email }}</a></td>
+      <td data-label="From"><span class="tag">{{ s.source or 'unknown' }}</span></td>
+      <td data-label="Added"><span class="sub">{{ s.created_at|day }}</span></td>
+    </tr>
   {% endfor %}
   </tbody>
 </table>
+
+<script>
+// Progressive: the button stays hidden unless this runs, so nobody is offered
+// a control that cannot work.
+(function () {
+  var b = document.getElementById('copyall'), t = document.getElementById('alladdr');
+  if (!b || !t) return;
+  b.hidden = false;
+  b.addEventListener('click', function () {
+    var done = function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy all addresses'; }, 1800); };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(t.value).then(done, function () { t.select(); });
+    } else {
+      t.select(); document.execCommand('copy'); done();
+    }
+  });
+})();
+</script>
+{% else %}
+<p class="empty">Nobody on the list yet.</p>
+{% endif %}
 {% endblock %}
