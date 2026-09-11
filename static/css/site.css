@@ -37,6 +37,26 @@
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
+/* "Available work" on the landing page drops the reader past the hero to the
+   wall. Jumping there cuts -- the page simply becomes a different page and you
+   have to work out what moved. Gliding shows the hero leaving, so the wall
+   arrives as somewhere you travelled to.
+
+   GUARDED, and not as a formality: for some readers animated scrolling is
+   nausea, not polish. Without the guard this would be smooth for everyone and
+   there is no way to opt out. The jump still works, instantly, for them.
+
+   One known wart: this also animates the Skip to content link. Focus still
+   lands immediately and correctly -- only the scroll is animated -- and
+   scroll-behavior belongs to the scrolling box, so there is no way to smooth
+   one anchor and not another in CSS alone. Not worth a script. */
+@media (prefers-reduced-motion:no-preference){
+  html{scroll-behavior:smooth}
+}
+/* Land with air above the heading rather than flush against the top edge --
+   "Available" hard against the viewport reads as a page that has been cut off
+   rather than one that has arrived. */
+.wall[id]{scroll-margin-top:clamp(14px,4vh,40px)}
 
 /* ---------- moving between pages ----------
    This is a multi-page app, so navigation is a real document load. Where the
