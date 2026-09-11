@@ -985,11 +985,45 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .filters select{flex:0 0 auto; width:auto; font-size:16px; max-width:14rem}
 .filters .cta{flex:none}
 .filters .link{flex:none}
+/* ---------- the three output buttons ----------
+   Labels / Price list / Packet each MAKE something out of whatever the filter
+   is currently showing. They are buttons now rather than underlined links,
+   because they do as much work as Search does -- but OUTLINE, not solid: four
+   filled buttons in one row and nothing tells you which one acts on the words
+   you just typed.
+
+   Sized to match .cta exactly (min-height, not padding arithmetic) so the row
+   still reads as one instrument rather than two sets of controls. */
+.filters .outgroup{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  margin-left:auto; padding-left:14px;
+  /* The rule is the whole point of the grouping: filters on one side of it,
+     things you produce on the other. */
+  border-left:1px solid var(--line);
+}
+.btn-out{
+  -webkit-appearance:none; appearance:none;
+  display:inline-flex; align-items:center; justify-content:center; flex:none;
+  min-height:43px; padding:0 17px; box-sizing:border-box;
+  background:transparent; color:var(--accent); border:1px solid var(--accent);
+  border-radius:2px; font:600 14px/1 "Karla",sans-serif; letter-spacing:.03em;
+  text-decoration:none; cursor:pointer; white-space:nowrap;
+  transition:background .2s ease, color .2s ease;
+}
+.btn-out:hover{background:var(--accent); color:#fff}
 @media (max-width:640px){
   .filters{padding:10px 12px}
   .filters input[name=q]{flex:1 1 100%}
   .filters select{flex:1 1 8rem; max-width:none}
   .filters .cta{flex:1 1 100%; text-align:center}
+  /* On a phone the row has already stacked, so the rule and the auto margin
+     have nothing left to separate -- they would just indent the group. The
+     three share a line instead, which is the width they need. */
+  .filters .outgroup{
+    width:100%; margin-left:0; padding-left:0; border-left:0;
+    padding-top:10px; border-top:1px solid var(--line);
+  }
+  .btn-out{flex:1 1 auto; min-height:40px; font-size:13.5px; padding:0 12px}
 }
 
 /* ---------- the panels below the work form ----------

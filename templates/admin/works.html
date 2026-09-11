@@ -58,14 +58,19 @@
     <option value="none" {% if f_collection == 'none' %}selected{% endif %}>&mdash; none &mdash;</option>
   </select>
   {% endif %}
-  <button class="cta" type="submit">Filter</button>
+  <button class="cta" type="submit">Search</button>
   {% if filtered %}<a class="link" href="{{ url_for('site.admin_works') }}">Clear</a>{% endif %}
-  {# Labels for exactly what is on screen — narrow the list, then print it. #}
-  <a class="link" href="{{ url_for('site.admin_labels', q=q or None, status=f_status or None,
-     medium=f_medium or None, place=f_place or None, collection=f_collection or None) }}">Labels</a>
-  <a class="link" href="{{ url_for('site.admin_pricelist', q=q or None, status=f_status or None,
-     medium=f_medium or None, place=f_place or None, collection=f_collection or None) }}">Price list</a>
-  <a class="link" href="{{ url_for('site.admin_packet') }}">Packet</a>
+  {# Everything from here MAKES something out of the list on screen, rather than
+     changing it. Outline buttons, and behind a rule: solid would put three more
+     of them alongside Search, and the row would stop saying which control is
+     the one that acts on what you just typed. #}
+  <span class="outgroup">
+    <a class="btn-out" href="{{ url_for('site.admin_labels', q=q or None, status=f_status or None,
+       medium=f_medium or None, place=f_place or None, collection=f_collection or None) }}">Labels</a>
+    <a class="btn-out" href="{{ url_for('site.admin_pricelist', q=q or None, status=f_status or None,
+       medium=f_medium or None, place=f_place or None, collection=f_collection or None) }}">Price list</a>
+    <a class="btn-out" href="{{ url_for('site.admin_packet') }}">Packet</a>
+  </span>
 </form>
 
 {% if filtered %}
