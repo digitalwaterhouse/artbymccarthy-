@@ -14,7 +14,7 @@ from datetime import datetime
 from flask import (Flask, Blueprint, render_template, request, redirect,
                    has_request_context, g,
                    url_for, session, abort, send_from_directory, jsonify,
-                   Response, flash)
+                   Response, flash, send_file)
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import gallery
@@ -151,6 +151,8 @@ def day(iso):
 app.jinja_env.filters["day"] = day
 app.jinja_env.globals["status_label"] = gallery.status_label
 app.jinja_env.globals["exhibition_dates"] = gallery.exhibition_dates
+app.jinja_env.globals["opp_kind_label"] = gallery.opp_kind_label
+app.jinja_env.globals["opp_status_label"] = gallery.opp_status_label
 
 
 def notify(kind, name, email, body, work_title=None):
@@ -505,7 +507,8 @@ def admin_works():
                            q=q, f_status=st, f_medium=med, f_place=place, f_collection=coll,
                            filtered=filtered, total=gallery.count_works(),
                            collections=gallery.list_collections(),
-                           media=gallery.media_list(), places=gallery.current_places())
+                           media=gallery.media_list(), places=gallery.current_places(),
+                           due=gallery.due_soon(REMIND_WITHIN_DAYS))
 
 
 @site.route("/admin/exhibitions", methods=["GET", "POST"])
@@ -990,7 +993,8 @@ def admin_subscribers_csv():
 def admin_settings():
     if request.method == "POST":
         keys = ["site_title", "tagline", "about", "artist_email", "commission_note",
-                "hero_title", "hero_sub", "hero_caption", "about_caption", "page_bg"]
+                "hero_title", "hero_sub", "hero_caption", "about_caption", "page_bg",
+                "artist_name", "artist_statement", "artist_bio"]
         vals = {k: request.form.get(k, "") for k in keys}
 
         # The rates are entered in dollars but stored in cents, because that is
@@ -1032,9 +1036,202 @@ def admin_settings():
     return render_template("admin/settings.html")
 
 
+# ------------------------------------------------------------- opportunities
+@site.route("/admin/opportunities", methods=["GET", "POST"])
+@admin_required
+def admin_opportunities():
+    """Calls for entry, grants, residencies. Adding one needs a name and the
+    date it closes; everything else is filled in on its own page once she has
+    decided it is worth applying to."""
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        if not title:
+            flash("A call needs a name.")
+            return redirect(url_for("site.admin_opportunities"))
+        oid = gallery.save_opportunity({"title": title,
+                                        "deadline": request.form.get("deadline")})
+        return redirect(url_for("site.admin_opportunity", opportunity_id=oid))
+    live, done = gallery.list_opportunities()
+    return render_template("admin/opportunities.html", live=live, done=done)
+
+
+@site.route("/admin/opportunity/<int:opportunity_id>", methods=["GET", "POST"])
+@admin_required
+def admin_opportunity(opportunity_id):
+    o = gallery.get_opportunity(opportunity_id)
+    if not o:
+        abort(404)
+    if request.method == "POST":
+        f = request.form
+        gallery.save_opportunity({
+            "title": f.get("title") or o["title"],
+            "org": (f.get("org") or "").strip(),
+            "kind": f.get("kind"),
+            "url": (f.get("url") or "").strip(),
+            "location": (f.get("location") or "").strip(),
+            "fee_cents": _price_cents(f.get("fee")),
+            "opens_on": f.get("opens_on"),
+            "deadline": f.get("deadline"),
+            "notified_on": f.get("notified_on"),
+            "event_on": f.get("event_on"),
+            "event_ends": f.get("event_ends"),
+            "max_works": _int(f.get("max_works")),
+            "img_longest": _int(f.get("img_longest")),
+            "img_max_mb": _float(f.get("img_max_mb")),
+            "notes": (f.get("notes") or "").strip(),
+            "status": f.get("status"),
+            # Kept rather than recomputed, so correcting a typo in the notes
+            # months later does not move the date she actually submitted.
+            "applied_on": o.get("applied_on"),
+        }, opportunity_id)
+        gallery.set_opportunity_works(opportunity_id, f.getlist("work_ids"))
+        flash("Saved.")
+        return redirect(url_for("site.admin_opportunity", opportunity_id=opportunity_id))
+    return render_template("admin/opportunity_form.html", o=o,
+                           works=gallery.list_works(include_draft=True),
+                           kinds=gallery.OPP_KINDS, statuses=gallery.OPP_STATUSES)
+
+
+@site.route("/admin/opportunity/<int:opportunity_id>/delete", methods=["POST"])
+@admin_required
+def admin_opportunity_delete(opportunity_id):
+    o = gallery.get_opportunity(opportunity_id)
+    gallery.delete_opportunity(opportunity_id)
+    flash(f"Deleted {o['title'] if o else 'it'}. The paintings that were "
+          "submitted to it are untouched.")
+    return redirect(url_for("site.admin_opportunities"))
+
+
+# ---------------------------------------------------------- submission packet
+@site.route("/admin/packet", methods=["GET", "POST"])
+@admin_required
+def admin_packet():
+    """Build the folder a call asks for: JPEGs at their spec, named to their
+    pattern, plus the image list.
+
+    GET renders the builder. POST streams a zip -- it is never written to disk
+    and never cached, because it is derived from the works every time and a
+    stale copy is worse than no copy.
+    """
+    c = cfg()
+    artist = (c.get("artist_name") or "").strip()
+    opp_id = _int(request.values.get("opportunity"))
+    o = gallery.get_opportunity(opp_id) if opp_id else None
+
+    if request.method == "POST":
+        ids = [_int(i) for i in request.form.getlist("work_ids")]
+        picked = [w for w in (gallery.get_work(work_id=i) for i in ids if i) if w]
+        if not picked:
+            flash("Tick at least one painting.")
+            return redirect(url_for("site.admin_packet", opportunity=opp_id or None))
+        pattern = request.form.get("pattern")
+        if pattern not in gallery.NAME_PATTERNS:
+            pattern = "last_title"
+        longest = _int(request.form.get("longest"), 1920) or 0
+        max_mb = _float(request.form.get("max_mb"))
+        zf, rows, skipped = gallery.build_packet(
+            picked, artist, pattern=pattern, longest=longest, max_mb=max_mb,
+            statement=c.get("artist_statement", "") if request.form.get("inc_statement") else "",
+            bio=c.get("artist_bio", "") if request.form.get("inc_bio") else "",
+            title_line=(o["title"] if o else ""),
+            note=("Submitted to %s" % o["title"]) if o else "")
+        if not rows:
+            flash("Nothing to send — none of those have a photograph yet.")
+            return redirect(url_for("site.admin_packet", opportunity=opp_id or None))
+        # Recording the submission is the point of picking a call: next year she
+        # can see this piece was already sent there. Additive, so building a
+        # second packet for the same call does not erase the first.
+        if o:
+            gallery.add_opportunity_works(o["id"], [w["id"] for w in picked if w.get("images")])
+        stem = gallery._ascii_token(o["title"] if o else "Submission")
+        name = f"{gallery.last_name(artist)}_{stem}.zip"
+        resp = send_file(zf, mimetype="application/zip",
+                         as_attachment=True, download_name=name)
+        resp.headers["Cache-Control"] = "no-store"
+        if skipped:
+            resp.headers["X-Packet-Skipped"] = str(len(skipped))
+        return resp
+
+    return render_template("admin/packet.html", o=o,
+                           works=gallery.list_works(include_draft=True),
+                           artist=artist,
+                           patterns=gallery.NAME_PATTERNS,
+                           opps=gallery.list_opportunities(include_done=False)[0],
+                           has_statement=bool((c.get("artist_statement") or "").strip()),
+                           has_bio=bool((c.get("artist_bio") or "").strip()),
+                           preselect=set(o["work_ids"]) if o else set())
+
+
 @app.errorhandler(404)
 def not_found(_):
     return render_template("404.html"), 404
+
+
+# ------------------------------------------------------- deadline reminders
+# THERE IS NO SCHEDULER ON THIS HOST. The app runs as a web process on Render
+# and nothing wakes it on a timer, so the digest is sent from an ordinary
+# request instead: cheap to check, at most once a day, and self-healing if the
+# process restarts. The trade is honest and worth stating -- if the site gets
+# no traffic at all on a given day, no digest goes out that day. It is never
+# the only warning: the same list is on the Studio home whenever she opens it.
+REMIND_WITHIN_DAYS = 14
+# One database check per worker per day. Without this the hook would query on
+# every single request to the public site for the sake of an email that is sent
+# at most once -- the stamp in settings stops the SEND, this stops the LOOKING.
+_remind_checked_on = None
+
+
+def _maybe_remind():
+    """Best effort, always silent. An exception here must never take down a
+    page a visitor asked for."""
+    global _remind_checked_on
+    try:
+        # Never from a test run. Found the hard way: exercising the new routes
+        # through the test client fired a real digest at the artist's address
+        # (it bounced, but only because this box cannot authenticate to Gmail).
+        # A test must not be able to mail a person.
+        if app.config.get("TESTING"):
+            return
+        d = gallery.today()
+        if _remind_checked_on == d:
+            return
+        to = (cfg().get("artist_email") or "").strip()
+        if not to:
+            return
+        due = gallery.due_soon(REMIND_WITHIN_DAYS)
+        _remind_checked_on = d
+        if not due:
+            return
+        if not gallery.claim_reminder_day():
+            return
+        lines = []
+        for o in due:
+            when = "today" if o["days"] == 0 else (
+                "tomorrow" if o["days"] == 1 else "in %d days" % o["days"])
+            bits = [o["title"]]
+            if o["org"]:
+                bits.append(o["org"])
+            lines.append("%s\n  closes %s (%s)%s" % (
+                " - ".join(bits), day(o["deadline"]), when,
+                "\n  " + o["url"] if o["url"] else ""))
+        n = len(due)
+        mailer.send(
+            to,
+            "%d call%s closing soon" % (n, "" if n == 1 else "s"),
+            "Deadlines inside the next %d days:\n\n%s\n\nOpen the studio: %s\n"
+            % (REMIND_WITHIN_DAYS, "\n\n".join(lines),
+               url_for("site.admin_opportunities", _external=True)))
+    except Exception:
+        pass
+
+
+@app.before_request
+def _remind_hook():
+    # Skips its own work on nearly every request: due_soon reads one small
+    # table, and the day stamp stops anything after the first send.
+    if request.method == "GET" and not request.path.endswith((".css", ".js", ".jpg",
+                                                              ".webp", ".png", ".ico")):
+        _maybe_remind()
 
 
 app.register_blueprint(site)

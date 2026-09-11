@@ -1,0 +1,63 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Opportunities{% endblock %}
+{% block body %}
+<div class="adminhead">
+  <h1>Opportunities</h1>
+  <a class="cta" href="{{ url_for('site.admin_packet') }}">Build a packet</a>
+</div>
+
+<p class="sub">Calls for entry, grants, residencies, fairs. Add one when you
+   find it, and the next deadline is always the first thing on this page. An
+   email goes to {{ cfg.artist_email or 'the contact address in Settings' }}
+   when something is inside a fortnight.</p>
+
+<form class="newrow" method="post">
+  <label class="sr" for="newopp">Name the call</label>
+  <input id="newopp" name="title" placeholder="Name the call" required>
+  <label class="sr" for="newoppdate">Closes</label>
+  <input id="newoppdate" name="deadline" type="date">
+  <button class="cta" type="submit">Add</button>
+</form>
+
+{% if live %}
+<h2 class="offhead up">Open</h2>
+<ul class="sched opps">
+  {% for o in live %}
+  <li class="u-{{ o.urgency }}">
+    <div class="when">
+      <span class="dates">{{ o.deadline|day if o.deadline else 'no deadline' }}</span>
+      {% if o.days is not none %}
+        <span class="countdown">{% if o.days == 0 %}today{% elif o.days == 1 %}tomorrow{% else %}{{ o.days }} days{% endif %}</span>
+      {% endif %}
+    </div>
+    <div class="what">
+      <a href="{{ url_for('site.admin_opportunity', opportunity_id=o.id) }}">{{ o.title }}</a>
+      <span class="sub">{{ o.org or opp_kind_label(o.kind) }}{% if o.location %}, {{ o.location }}{% endif %}
+        {%- if o.fee %} &middot; {{ o.fee }} fee{% endif %}
+        {%- if o.count %} &middot; {{ o.count }} piece{{ '' if o.count == 1 else 's' }} sent{% endif %}</span>
+    </div>
+    <span class="ostat s-{{ o.status }}">{{ opp_status_label(o.status) }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">Nothing on the list. Add the first one above.</p>
+{% endif %}
+
+{% if done %}
+<h2 class="offhead">Closed and answered</h2>
+<ul class="sched opps past">
+  {% for o in done %}
+  <li>
+    <div class="when"><span class="dates">{{ o.deadline|day if o.deadline else '&mdash;'|safe }}</span></div>
+    <div class="what">
+      <a href="{{ url_for('site.admin_opportunity', opportunity_id=o.id) }}">{{ o.title }}</a>
+      <span class="sub">{{ o.org or opp_kind_label(o.kind) }}
+        {%- if o.count %} &middot; {{ o.count }} piece{{ '' if o.count == 1 else 's' }} sent{% endif %}</span>
+    </div>
+    <span class="ostat s-{{ o.status }}">{{ opp_status_label(o.status) }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

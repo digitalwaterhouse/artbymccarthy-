@@ -6,6 +6,16 @@
   <a class="cta" href="{{ url_for('site.admin_work') }}">Add a painting</a>
 </div>
 
+{% if due %}
+<div class="alerts due">
+  {% for o in due %}
+  <a href="{{ url_for('site.admin_opportunity', opportunity_id=o.id) }}">
+    <b>{{ o.title }}</b> closes {{ o.deadline|day }} &mdash;
+    {% if o.days == 0 %}today{% elif o.days == 1 %}tomorrow{% else %}{{ o.days }} days{% endif %}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
 {% if orders or inquiries %}
 <div class="alerts">
   {% if orders %}<a href="{{ url_for('site.admin_orders') }}">{{ orders|length }} recent order(s)</a>{% endif %}
@@ -55,6 +65,7 @@
      medium=f_medium or None, place=f_place or None, collection=f_collection or None) }}">Labels</a>
   <a class="link" href="{{ url_for('site.admin_pricelist', q=q or None, status=f_status or None,
      medium=f_medium or None, place=f_place or None, collection=f_collection or None) }}">Price list</a>
+  <a class="link" href="{{ url_for('site.admin_packet') }}">Packet</a>
 </form>
 
 {% if filtered %}

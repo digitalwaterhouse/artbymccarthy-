@@ -10,6 +10,9 @@ import io
 import json
 import sqlite3
 import secrets
+import zipfile
+import tempfile
+import unicodedata
 from datetime import datetime, timedelta, timezone
 
 from PIL import Image, ImageOps
@@ -68,6 +71,14 @@ DEFAULT_SETTINGS = {
     # writes it "Lisa Mc Carthy" with a space in her own bio and "McCarthy"
     # everywhere else on the site, and that is hers to settle, not mine.
     "artist_name": "Lisa McCarthy",
+    # Written once, sent with every application. Nearly every call asks for
+    # both, they change maybe twice a year, and retyping them into a web form
+    # at midnight is how a good statement turns into a rushed one.
+    "artist_statement": "",
+    "artist_bio": "",
+    # The last date a deadline digest went out, so it goes out once a day and
+    # not once a page view. Not in the UI; see remind_due().
+    "opps_reminded_on": "",
 }
 
 
@@ -981,3 +992,402 @@ def unsubscribe(sub_id, removed=True):
         conn.execute("UPDATE subscribers SET unsubscribed_at=? WHERE id=?",
                      (now() if removed else None, sub_id))
     return True
+
+
+# --------------------------------------------------------------- opportunities
+# Calls for entry, grants, residencies, fairs. See the comment in schema.sql
+# for why this is separate from exhibitions.
+
+OPP_KINDS = ["show", "grant", "residency", "fair", "other"]
+OPP_KIND_LABELS = {"show": "juried show", "grant": "grant", "residency": "residency",
+                   "fair": "art fair", "other": "other"}
+OPP_STATUSES = ["watching", "applied", "accepted", "declined", "passed"]
+OPP_STATUS_LABELS = {"watching": "watching", "applied": "applied",
+                     "accepted": "accepted", "declined": "not accepted",
+                     "passed": "passed on it"}
+# A call is OPEN until its deadline has fully passed, same generous cutoff and
+# same reasoning as _past_cutoff() for shows: nothing here knows her timezone,
+# and a deadline reading "closed" on the morning it is actually still open is
+# the expensive direction to be wrong in.
+OPP_OPEN_STATUSES = ("watching", "applied", "accepted")
+
+
+def opp_kind_label(k):
+    return OPP_KIND_LABELS.get(k, k)
+
+
+def opp_status_label(s):
+    return OPP_STATUS_LABELS.get(s, s)
+
+
+def _days_until(date_str):
+    """Whole days from today to a YYYY-MM-DD, or None if it is not a date."""
+    try:
+        d = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return None
+    return (d - datetime.now(timezone.utc).date()).days
+
+
+def _decorate_opp(o, counts=None):
+    o["days"] = _days_until(o.get("deadline"))
+    # Closed means the deadline is behind us, regardless of what she did about
+    # it. Status says what happened; this says whether she can still act.
+    o["closed"] = o["days"] is not None and o["days"] < 0
+    o["fee"] = money(o.get("fee_cents"))
+    # Urgency for the list, computed once here so the template does no
+    # arithmetic: a deadline is either gone, this week, this month, or later.
+    if o["days"] is None:
+        o["urgency"] = "undated"
+    elif o["days"] < 0:
+        o["urgency"] = "gone"
+    elif o["days"] <= 7:
+        o["urgency"] = "soon"
+    elif o["days"] <= 30:
+        o["urgency"] = "month"
+    else:
+        o["urgency"] = "later"
+    if counts is not None:
+        o["count"] = counts.get(o["id"], 0)
+    return o
+
+
+def list_opportunities(include_done=True):
+    """Everything, split into what is still live and what is finished.
+
+    Live is sorted by DEADLINE ASCENDING and that is the whole point of the
+    screen -- the next thing she has to act on is the first thing she reads.
+    Undated calls sort last within live rather than first, because a call with
+    no deadline is never the urgent one.
+    """
+    with connect() as conn:
+        rows = [dict(r) for r in conn.execute("SELECT * FROM opportunities").fetchall()]
+        counts = {r["opportunity_id"]: r["c"] for r in conn.execute(
+            "SELECT opportunity_id, COUNT(*) c FROM opportunity_works "
+            "GROUP BY opportunity_id").fetchall()}
+    for o in rows:
+        _decorate_opp(o, counts)
+    live = [o for o in rows
+            if not o["closed"] and o["status"] in OPP_OPEN_STATUSES]
+    live_ids = {o["id"] for o in live}
+    done = [o for o in rows if o["id"] not in live_ids]
+    live.sort(key=lambda o: (o["deadline"] or "9999-99-99", o["title"]))
+    done.sort(key=lambda o: (o["deadline"] or "", o["title"]), reverse=True)
+    return live, (done if include_done else [])
+
+
+def due_soon(days=14):
+    """Live calls whose deadline falls inside the next `days`, soonest first.
+
+    Feeds both the banner in the studio and the digest email, so the two can
+    never disagree about what is urgent."""
+    live, _ = list_opportunities(include_done=False)
+    return [o for o in live
+            if o["days"] is not None and 0 <= o["days"] <= days
+            and o["status"] == "watching"]
+
+
+def get_opportunity(opportunity_id):
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM opportunities WHERE id=?",
+                           (opportunity_id,)).fetchone()
+        if row is None:
+            return None
+        o = _decorate_opp(dict(row))
+        o["work_ids"] = [r["work_id"] for r in conn.execute(
+            "SELECT work_id FROM opportunity_works WHERE opportunity_id=?",
+            (opportunity_id,)).fetchall()]
+    return o
+
+
+def save_opportunity(data, opportunity_id=None):
+    fields = ["title", "org", "kind", "url", "location", "fee_cents", "opens_on",
+              "deadline", "notified_on", "event_on", "event_ends", "max_works",
+              "img_longest", "img_max_mb", "notes", "status", "applied_on"]
+    vals = {k: (data.get(k) if data.get(k) not in ("", None) else None) for k in fields}
+    vals["title"] = (data.get("title") or "Untitled call").strip()
+    if vals["kind"] not in OPP_KINDS:
+        vals["kind"] = "show"
+    if vals["status"] not in OPP_STATUSES:
+        vals["status"] = "watching"
+    # Applying is a date, and she should not have to remember to type it. Stamp
+    # it the first time the status becomes applied and leave it alone after --
+    # editing the row later must not move the date she actually sent it.
+    if vals["status"] == "applied" and not vals["applied_on"]:
+        vals["applied_on"] = today()
+    with connect() as conn:
+        if opportunity_id:
+            sets = ", ".join(f"{k}=:{k}" for k in vals)
+            conn.execute(f"UPDATE opportunities SET {sets} WHERE id=:id",
+                         {**vals, "id": opportunity_id})
+            return opportunity_id
+        vals["created_at"] = now()
+        cols = ", ".join(vals)
+        conn.execute(f"INSERT INTO opportunities ({cols}) "
+                     f"VALUES ({', '.join(':'+k for k in vals)})", vals)
+        return conn.execute("SELECT last_insert_rowid() AS i").fetchone()["i"]
+
+
+def set_opportunity_works(opportunity_id, work_ids):
+    with connect() as conn:
+        conn.execute("DELETE FROM opportunity_works WHERE opportunity_id=?",
+                     (opportunity_id,))
+        conn.executemany(
+            "INSERT OR IGNORE INTO opportunity_works (opportunity_id, work_id) "
+            "VALUES (?,?)", [(opportunity_id, int(w)) for w in work_ids])
+    return True
+
+
+def add_opportunity_works(opportunity_id, work_ids):
+    """Add without clearing -- what the packet builder does when it records a
+    submission, because building a second packet for the same call must not
+    erase the first one."""
+    with connect() as conn:
+        conn.executemany(
+            "INSERT OR IGNORE INTO opportunity_works (opportunity_id, work_id) "
+            "VALUES (?,?)", [(opportunity_id, int(w)) for w in work_ids])
+    return True
+
+
+def delete_opportunity(opportunity_id):
+    with connect() as conn:
+        conn.execute("DELETE FROM opportunity_works WHERE opportunity_id=?",
+                     (opportunity_id,))
+        conn.execute("DELETE FROM opportunities WHERE id=?", (opportunity_id,))
+    return True
+
+
+def works_in_opportunity(opportunity_id):
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT w.* FROM works w JOIN opportunity_works ow ON ow.work_id=w.id "
+            "WHERE ow.opportunity_id=? ORDER BY w.sort, w.id", (opportunity_id,)).fetchall()
+        return _hydrate(conn, rows)
+
+
+def submissions_for(work_id):
+    """Where this painting has been sent, newest deadline first. Shown on the
+    work's own page so she can see it was already declined somewhere before
+    sending it there again."""
+    with connect() as conn:
+        rows = [dict(r) for r in conn.execute(
+            "SELECT o.* FROM opportunities o JOIN opportunity_works ow ON ow.opportunity_id=o.id "
+            "WHERE ow.work_id=? ORDER BY COALESCE(o.deadline,'') DESC, o.id DESC",
+            (work_id,)).fetchall()]
+    return [_decorate_opp(o) for o in rows]
+
+
+def claim_reminder_day(day_str=None):
+    """True exactly once per day, for whichever worker gets there first.
+
+    The digest is sent from an ordinary web request -- there is no scheduler on
+    this host -- so two gunicorn workers can reach this in the same instant.
+    The UPDATE is conditional on the stored value still being yesterday's, and
+    SQLite applies it atomically, so the loser sees rowcount 0 and sends
+    nothing. Without that guard a busy morning is a mailbox full of duplicates.
+    """
+    d = day_str or today()
+    with connect() as conn:
+        cur = conn.execute(
+            "UPDATE settings SET value=? WHERE key='opps_reminded_on' AND COALESCE(value,'')<>?",
+            (d, d))
+        if cur.rowcount:
+            return True
+        # First run ever: the key may not be in the table yet.
+        row = conn.execute("SELECT value FROM settings WHERE key='opps_reminded_on'").fetchone()
+        if row is None:
+            conn.execute("INSERT OR IGNORE INTO settings(key,value) VALUES('opps_reminded_on',?)", (d,))
+            return True
+    return False
+
+
+# ------------------------------------------------------------ submission packet
+# Every call states an image spec -- "1920px on the longest side, JPEG, under
+# 5MB, named Lastname_Title.jpg" -- and no two state the same one. Meeting it
+# by hand means opening a folder of photographs, resizing each, checking the
+# file size, renaming, and then typing the same titles and dimensions into an
+# image list. The app already holds the photographs and every one of those
+# facts, so it can simply produce the folder.
+
+# What is on disk is 600 / 1400 / 2400 wide (SIZES). The largest is the source
+# for a packet; the original upload is not kept.
+PACKET_SOURCES = [("l", "jpg"), ("m", "jpg"), ("s", "jpg")]
+# Tried in order until the file fits the call's ceiling. Stops at 64 rather
+# than grinding down to a smeared 40: past that point the right answer is a
+# smaller pixel dimension, not more compression.
+PACKET_QUALITY = [92, 86, 80, 72, 64]
+
+NAME_PATTERNS = {
+    "last_title":      "Lastname_Title.jpg",
+    "last_title_year": "Lastname_Title_Year.jpg",
+    "num_last_title":  "01_Lastname_Title.jpg",
+    "title":           "Title.jpg",
+}
+
+
+def _ascii_token(s):
+    """A filename fragment that survives every upload form on the internet.
+
+    Jurors' systems mangle accents and spaces, and some reject them outright,
+    so the title is flattened to ASCII words joined by nothing. Deliberately
+    lossy -- the readable title travels in the image list, not the filename.
+    """
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode()
+    # Upper-case the first letter and LEAVE THE REST ALONE. str.capitalize()
+    # would lower-case the rest, which turns McCarthy into Mccarthy -- her own
+    # name, misspelt, on every file a juror opens.
+    parts = [p[0].upper() + p[1:] for p in re.split(r"[^A-Za-z0-9]+", s) if p]
+    return "".join(parts) or "Untitled"
+
+
+def last_name(full_name):
+    return _ascii_token((full_name or "").split()[-1] if (full_name or "").split() else "Artist")
+
+
+def packet_filename(work, artist, pattern="last_title", n=1):
+    last = last_name(artist)
+    title = _ascii_token(work.get("title"))
+    year = work.get("year")
+    if pattern == "title":
+        stem = title
+    elif pattern == "last_title_year":
+        stem = f"{last}_{title}" + (f"_{year}" if year else "")
+    elif pattern == "num_last_title":
+        stem = f"{n:02d}_{last}_{title}"
+    else:
+        stem = f"{last}_{title}"
+    return stem + ".jpg"
+
+
+def _source_path(base):
+    for suffix, ext in PACKET_SOURCES:
+        p = os.path.join(PHOTO_DIR, f"{base}-{suffix}.{ext}")
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def packet_image(base, longest=1920, max_bytes=None):
+    """One JPEG to a call's spec. Returns (bytes, width, height, quality).
+
+    NEVER UPSCALES. If the stored copy is smaller than the call asks for, the
+    smaller file goes -- padding it with invented pixels would look worse on a
+    juror's screen and is not what "1920px maximum" asks for anyway. The
+    caller is told the real dimensions so it can say so.
+    """
+    path = _source_path(base)
+    if not path:
+        return None
+    src = Image.open(path).convert("RGB")
+    cap = longest or max(src.size)
+    out = None
+    # Quality first, pixels second. Compression is the cheap lever and a juror
+    # sees the image at screen size anyway; only when the ladder bottoms out
+    # does the picture actually have to get smaller. THE CEILING IS HONOURED --
+    # a file over the stated limit is rejected by the upload form, and finding
+    # that out at the deadline is the failure this whole feature exists to stop.
+    for attempt in range(6):
+        im = src.copy()
+        if max(im.size) > cap:
+            im.thumbnail((cap, cap), Image.LANCZOS)
+        for q in PACKET_QUALITY:
+            buf = io.BytesIO()
+            im.save(buf, "JPEG", quality=q, optimize=True, progressive=True)
+            out, used, w, h = buf.getvalue(), q, im.width, im.height
+            if not max_bytes or len(out) <= max_bytes:
+                return out, w, h, used
+        cap = int(cap * 0.75)
+        if cap < 400:
+            break
+    return out, w, h, used
+
+
+def _packet_row(w, filename, px):
+    """One line of the image list, in the order a call form asks for it."""
+    return {
+        "file": filename,
+        "title": w.get("title") or "Untitled",
+        "year": w.get("year") or "",
+        "medium": w.get("medium") or "",
+        "dimensions": dims(w) or "",
+        "price": money(w.get("price_cents")) or "",
+        "pixels": px,
+    }
+
+
+def build_packet(works, artist, pattern="last_title", longest=1920, max_mb=5.0,
+                 statement="", bio="", title_line="", note=""):
+    """Write the whole submission folder into a zip and return (fileobj, rows,
+    skipped). The caller streams it; nothing is kept on disk.
+
+    Built into a TemporaryFile rather than memory: twenty paintings at 1920px
+    is tens of megabytes, and this runs on a small instance beside everything
+    else the site is doing.
+    """
+    max_bytes = int(max_mb * 1024 * 1024) if max_mb else None
+    tmp = tempfile.TemporaryFile()
+    rows, skipped = [], []
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+        n = 0
+        for w in works:
+            if not w.get("images"):
+                # A painting with no photograph cannot be submitted, and
+                # silently leaving it out is how she finds out at the deadline.
+                skipped.append(w.get("title") or "Untitled")
+                continue
+            n += 1
+            made = packet_image(w["images"][0]["base"], longest, max_bytes)
+            if not made:
+                skipped.append(w.get("title") or "Untitled")
+                n -= 1
+                continue
+            data, iw, ih, _q = made
+            fn = packet_filename(w, artist, pattern, n)
+            z.writestr(fn, data)
+            rows.append(_packet_row(w, fn, f"{iw}×{ih}"))
+        if rows:
+            z.writestr("image-list.csv", _packet_csv(rows))
+            z.writestr("image-list.txt", _packet_txt(rows, artist, title_line, note))
+        if statement.strip():
+            z.writestr("artist-statement.txt", statement.strip() + "\n")
+        if bio.strip():
+            z.writestr("artist-bio.txt", bio.strip() + "\n")
+    tmp.seek(0)
+    return tmp, rows, skipped
+
+
+def _packet_csv(rows):
+    import csv as _csv
+    buf = io.StringIO()
+    cols = ["file", "title", "year", "medium", "dimensions", "price", "pixels"]
+    wr = _csv.DictWriter(buf, fieldnames=cols)
+    wr.writeheader()
+    for r in rows:
+        wr.writerow({k: r[k] for k in cols})
+    return buf.getvalue()
+
+
+def _packet_txt(rows, artist, title_line="", note=""):
+    """The same list as prose, because half of these forms want it pasted into
+    a textarea rather than uploaded as a file."""
+    out = []
+    if artist:
+        out.append(artist)
+    if title_line:
+        out.append(title_line)
+    out.append("")
+    for i, r in enumerate(rows, 1):
+        bits = [r["title"]]
+        if r["year"]:
+            bits.append(str(r["year"]))
+        if r["medium"]:
+            bits.append(r["medium"])
+        if r["dimensions"]:
+            bits.append(r["dimensions"])
+        if r["price"]:
+            bits.append(r["price"])
+        out.append(f"{i}. " + ", ".join(bits))
+        out.append(f"   {r['file']}  ({r['pixels']})")
+    if note:
+        out += ["", note]
+    return "\n".join(out) + "\n"

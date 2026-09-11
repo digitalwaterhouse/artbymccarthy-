@@ -9,6 +9,20 @@
   <label class="wide">Commissions note <textarea name="commission_note" rows="10">{{ cfg.commission_note }}</textarea></label>
   <p class="sub wide">Shown above the enquiry form on the Commissions page. A blank line starts a new paragraph, same as the About text.</p>
   <label>Contact email <input name="artist_email" value="{{ cfg.artist_email }}"></label>
+  <label>Name for labels and certificates <input name="artist_name" value="{{ cfg.artist_name }}"></label>
+
+  <fieldset class="wide accent-spec">
+    <legend>For applications</legend>
+    <p class="sub">Nearly every call for entry asks for these two. Written here once,
+       they go out with every submission packet as plain text files, so they are
+       never retyped into a web form at midnight.</p>
+    <label class="wide">Artist statement
+      <textarea name="artist_statement" rows="8" placeholder="What the work is about, in your words.">{{ cfg.artist_statement }}</textarea>
+    </label>
+    <label class="wide">Biography
+      <textarea name="artist_bio" rows="6" placeholder="Where you studied, where you have shown, where you work. Third person is the convention.">{{ cfg.artist_bio }}</textarea>
+    </label>
+  </fieldset>
 
   <fieldset class="wide">
     <legend>Landing page</legend>

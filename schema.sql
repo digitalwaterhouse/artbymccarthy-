@@ -162,3 +162,53 @@ CREATE TABLE IF NOT EXISTS work_care (
     created_at  TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_care_work ON work_care(work_id, happened_on, id);
+
+-- OPPORTUNITIES: calls for entry, grants, residencies, fairs. The thing that
+-- makes this worth having in the studio rather than in a notebook is the
+-- DEADLINE -- everything else on the row exists to answer "should I bother"
+-- and "what do they want".
+--
+-- img_longest / img_max_mb are not decoration: nearly every call states an
+-- image spec, and re-exporting a folder of JPEGs to it by hand is the most
+-- tedious part of applying. Stored here, they PREFILL the packet builder, so
+-- the spec is typed once when the call is added and never again.
+--
+-- Deliberately NOT joined to exhibitions. A call is a thing you apply to and
+-- usually lose; a show is a thing that is happening. Conflating them would
+-- put twenty rejections in the permanent exhibition record.
+CREATE TABLE IF NOT EXISTS opportunities (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    title        TEXT NOT NULL,
+    org          TEXT,
+    kind         TEXT NOT NULL DEFAULT 'show',   -- show | grant | residency | fair | other
+    url          TEXT,
+    location     TEXT,
+    fee_cents    INTEGER,
+    opens_on     TEXT,          -- YYYY-MM-DD
+    deadline     TEXT,          -- YYYY-MM-DD -- the date everything sorts by
+    notified_on  TEXT,          -- when they say they will let you know
+    event_on     TEXT,          -- when the show itself runs, if you get in
+    event_ends   TEXT,
+    max_works    INTEGER,       -- how many pieces they will look at
+    img_longest  INTEGER,       -- px on the longest side, per their spec
+    img_max_mb   REAL,          -- per-file ceiling, per their spec
+    notes        TEXT,
+    -- watching: found it, not applied. applied: sent. accepted / declined:
+    -- heard back. passed: looked and decided against, which is worth keeping
+    -- so the same call is not reconsidered from scratch next year.
+    status       TEXT NOT NULL DEFAULT 'watching',
+    applied_on   TEXT,
+    created_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_opps_deadline ON opportunities(deadline, id);
+
+-- Which paintings went to which call. Many-to-many for the same reason
+-- exhibition_works is: a piece gets submitted to several calls over its life,
+-- and knowing it was already rejected from one is exactly what you want in
+-- front of you before submitting it there again.
+CREATE TABLE IF NOT EXISTS opportunity_works (
+    opportunity_id INTEGER NOT NULL REFERENCES opportunities(id) ON DELETE CASCADE,
+    work_id        INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    PRIMARY KEY (opportunity_id, work_id)
+);
+CREATE INDEX IF NOT EXISTS idx_oppwork_work ON opportunity_works(work_id);

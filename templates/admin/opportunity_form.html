@@ -1,0 +1,91 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ o.title }}{% endblock %}
+{% block body %}
+<div class="adminhead">
+  <h1>{{ o.title }}</h1>
+  <a class="cta" href="{{ url_for('site.admin_packet', opportunity=o.id) }}">Build the packet</a>
+  <a href="{{ url_for('site.admin_opportunities') }}">all opportunities</a>
+</div>
+
+{% if o.days is not none and not o.closed %}
+<p class="deadlinebar u-{{ o.urgency }}">Closes {{ o.deadline|day }} &mdash;
+  {% if o.days == 0 %}today{% elif o.days == 1 %}tomorrow{% else %}{{ o.days }} days away{% endif %}</p>
+{% elif o.closed %}
+<p class="deadlinebar u-gone">Closed {{ o.deadline|day }}.</p>
+{% endif %}
+
+<form class="formgrid" method="post">
+  <label class="wide">Name <input name="title" value="{{ o.title }}" required></label>
+  <label>Organisation <input name="org" value="{{ o.org or '' }}" placeholder="Gallery, council, foundation"></label>
+  <label>Kind
+    <select name="kind">
+      {% for k in kinds %}<option value="{{ k }}"{% if o.kind == k %} selected{% endif %}>{{ opp_kind_label(k) }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Where <input name="location" value="{{ o.location or '' }}" placeholder="City, or online"></label>
+  <label>Entry fee <input name="fee" value="{{ dollars(o.fee_cents) }}" placeholder="0" inputmode="decimal"></label>
+  <label class="wide">Link <input name="url" value="{{ o.url or '' }}" placeholder="https://"></label>
+
+  <fieldset class="wide accent-dates">
+    <legend>Dates</legend>
+    <div class="formgrid bare">
+      <label>Opens <input name="opens_on" type="date" value="{{ o.opens_on or '' }}"></label>
+      <label>Closes <input name="deadline" type="date" value="{{ o.deadline or '' }}"></label>
+      <label>They answer by <input name="notified_on" type="date" value="{{ o.notified_on or '' }}"></label>
+      <label>Show opens <input name="event_on" type="date" value="{{ o.event_on or '' }}"></label>
+      <label>Show closes <input name="event_ends" type="date" value="{{ o.event_ends or '' }}"></label>
+    </div>
+    <p class="sub">Closes is the one that matters &mdash; it is what this page sorts by
+       and what the reminder email watches. The rest are for when you get in.</p>
+  </fieldset>
+
+  <fieldset class="wide accent-spec">
+    <legend>What they ask for</legend>
+    <div class="formgrid bare">
+      <label>Pieces allowed <input name="max_works" type="number" min="1" value="{{ o.max_works or '' }}" placeholder="3"></label>
+      <label>Longest side, px <input name="img_longest" type="number" min="200" step="10" value="{{ o.img_longest or '' }}" placeholder="1920"></label>
+      <label>Max file size, MB <input name="img_max_mb" type="number" min="0.1" step="0.1" value="{{ o.img_max_mb or '' }}" placeholder="5"></label>
+    </div>
+    <p class="sub">Copy their image spec in once. The packet builder reads it from here,
+       so you never work it out again at eleven at night.</p>
+  </fieldset>
+
+  <label class="wide">Notes
+    <textarea name="notes" rows="4" placeholder="What they want, who to contact, whether it was worth it.">{{ o.notes or '' }}</textarea>
+  </label>
+
+  <fieldset class="wide accent-stat">
+    <legend>Where it stands</legend>
+    <label>Status
+      <select name="status" class="os-{{ o.status }}">
+        {% for st in statuses %}<option value="{{ st }}"{% if o.status == st %} selected{% endif %}>{{ opp_status_label(st) }}</option>{% endfor %}
+      </select>
+    </label>
+    {% if o.applied_on %}<p class="sub">Applied {{ o.applied_on|day }}.</p>{% endif %}
+  </fieldset>
+
+  <fieldset class="wide">
+    <legend>Paintings sent to this</legend>
+    <p class="sub">Ticked automatically when you build a packet for this call. Kept
+       so that next year you can see a piece was already sent here.</p>
+    <div class="pickers">
+      {% for w in works %}
+      <label class="pick">
+        <input type="checkbox" name="work_ids" value="{{ w.id }}"
+               {% if w.id in o.work_ids %}checked{% endif %}>
+        {% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}
+        <span>{{ w.title }}{% if w.year %} <span class="sub">{{ w.year }}</span>{% endif %}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <div class="wide"><button class="cta" type="submit">Save</button></div>
+</form>
+
+<form method="post" action="{{ url_for('site.admin_opportunity_delete', opportunity_id=o.id) }}"
+      class="danger-row"
+      onsubmit="return confirm('Delete {{ o.title }}? The paintings sent to it stay.')">
+  <button class="link danger" type="submit">delete this call</button>
+</form>
+{% endblock %}

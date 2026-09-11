@@ -1,0 +1,81 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Submission packet{% endblock %}
+{% block body %}
+<div class="adminhead">
+  <h1>Submission packet</h1>
+  {% if o %}<a href="{{ url_for('site.admin_opportunity', opportunity_id=o.id) }}">back to {{ o.title }}</a>
+  {% else %}<a href="{{ url_for('site.admin_opportunities') }}">all opportunities</a>{% endif %}
+</div>
+
+<p class="sub">Pick the paintings and this builds the folder the call asks for:
+   JPEGs resized and renamed to their spec, and the image list with every
+   title, year, medium, size and price already filled in.</p>
+
+<form class="formgrid" method="post" action="{{ url_for('site.admin_packet') }}">
+  {% if o %}<input type="hidden" name="opportunity" value="{{ o.id }}">{% endif %}
+
+  <fieldset class="wide accent-spec">
+    <legend>{% if o %}{{ o.title }} &mdash; their spec{% else %}Their spec{% endif %}</legend>
+    {% if not o and opps %}
+    <p class="sub">Building this for a call on your list? <a href="{{ url_for('site.admin_opportunities') }}">Open it</a>
+       and start from there &mdash; the spec fills itself in and the submission gets recorded.</p>
+    {% endif %}
+    <div class="formgrid bare">
+      <label>Longest side, px
+        <input name="longest" type="number" min="200" step="10"
+               value="{{ o.img_longest or 1920 if o else 1920 }}">
+      </label>
+      <label>Max file size, MB
+        <input name="max_mb" type="number" min="0.1" step="0.1"
+               value="{{ o.img_max_mb or 5 if o else 5 }}">
+      </label>
+      <label>File names
+        <select name="pattern">
+          {% for key, example in patterns.items() %}
+          <option value="{{ key }}"{% if key == 'last_title' %} selected{% endif %}>{{ example }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <p class="sub">1920px and 5MB are what most calls ask for. Nothing is ever enlarged &mdash;
+      a photograph smaller than this goes at its own size rather than being padded out.
+      {% if o and o.max_works %}This one takes {{ o.max_works }} piece{{ '' if o.max_works == 1 else 's' }}.{% endif %}</p>
+  </fieldset>
+
+  {% if has_statement or has_bio %}
+  <fieldset class="wide">
+    <legend>Include</legend>
+    {% if has_statement %}<label class="check"><input type="checkbox" name="inc_statement" value="1" checked> Artist statement</label>{% endif %}
+    {% if has_bio %}<label class="check"><input type="checkbox" name="inc_bio" value="1" checked> Biography</label>{% endif %}
+    <p class="sub">From Settings. They go in as plain text files, ready to paste.</p>
+  </fieldset>
+  {% else %}
+  <p class="sub wide">Add an artist statement and a short biography in
+     <a href="{{ url_for('site.admin_settings') }}">Settings</a> and they will travel with every packet.</p>
+  {% endif %}
+
+  <fieldset class="wide">
+    <legend>Paintings</legend>
+    <p class="sub">Only pieces with a photograph can go. Anything without one is
+       left out and named on the way through, rather than quietly dropped.</p>
+    <div class="pickers">
+      {% for w in works %}
+      <label class="pick{% if not w.images %} nopic{% endif %}">
+        <input type="checkbox" name="work_ids" value="{{ w.id }}"
+               {% if w.id in preselect %}checked{% endif %}
+               {% if not w.images %}disabled{% endif %}>
+        {% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}
+        <span>{{ w.title }}{% if w.year %} <span class="sub">{{ w.year }}</span>{% endif %}
+          {% if not w.images %}<span class="sub">no photograph</span>{% endif %}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <div class="wide"><button class="cta" type="submit">Download the packet</button></div>
+</form>
+
+<p class="sub">The zip holds one JPEG per painting, <code>image-list.csv</code> for
+   uploading, and <code>image-list.txt</code> for the forms that want it pasted in.
+   {% if o %}Building it records these pieces as sent to {{ o.title }}.{% endif %}</p>
+{% endblock %}
