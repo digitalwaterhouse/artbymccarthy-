@@ -1169,7 +1169,7 @@ body.home{
   font-size:14px; color:rgba(237,241,240,.6); line-height:1.55;
 }
 .home .hero a:focus-visible,.home .hero button:focus-visible,
-.gm-overlay :focus-visible,.gal-fab:focus-visible{outline:2px solid var(--turq-lo); outline-offset:3px}
+.gm-overlay :focus-visible{outline:2px solid var(--turq-lo); outline-offset:3px}
 
 /* ---------- the wall, below the entry ---------- */
 /* Opaque on purpose: this is what covers the dark entry painted on the body. */
@@ -1210,21 +1210,42 @@ body.home{
    of the page rather than as a widget stuck to the glass. Anchored to the
    bottom rather than the top on purpose: the masthead wraps to two rows on a
    phone, so any top offset either collides with the nav or floats low. */
-.gal-fab{
-  position:fixed; right:max(16px,env(safe-area-inset-right));
-  bottom:clamp(72px,16vh,170px); z-index:900;
-  display:inline-flex; align-items:center; gap:9px;
-  background:var(--ground); color:#EDF1F0; border:1px solid rgba(237,241,240,.2);
-  border-radius:100px; padding:13px 20px; cursor:pointer;
-  font:600 13.5px/1 "Karla",sans-serif; letter-spacing:.05em; text-transform:uppercase;
-  box-shadow:0 10px 30px rgba(6,14,20,.4);
-  transition:transform .2s, box-shadow .2s, border-color .2s;
+/* ---------- opening the viewer from a work page ----------
+   The floating capsule that used to sit here is gone; see the note in
+   _gallery.html. In its place the lead photograph IS the control, which is
+   both the convention everywhere else people look at pictures and strictly
+   better than what it replaced -- the button always opened at slide zero,
+   this opens at the painting already on screen.
+
+   The whole image is the target, with cursor:zoom-in doing the telling. The
+   chip is a hint for people who need one, not the hit area. */
+.plate-img{position:relative; display:block}
+.plate-zoom{
+  position:absolute; inset:0; width:100%; height:100%;
+  display:flex; align-items:flex-end; justify-content:flex-end;
+  padding:clamp(10px,1.6vw,16px);
+  background:none; border:0; cursor:zoom-in;
 }
-.gal-fab svg{width:19px; height:19px; flex:0 0 auto; color:var(--turq)}
-.gal-fab:hover{transform:translateY(-2px); border-color:var(--turq); box-shadow:0 14px 36px rgba(6,14,20,.5)}
-body:has(#galleryModal:not([hidden])) .gal-fab{display:none}
-@media (max-width:600px){.gal-fab{padding:14px; gap:0} .gal-fab-label{display:none}}
-@media (prefers-reduced-motion:reduce){.gal-fab{transition:none} .gal-fab:hover{transform:none}}
+.zoomchip{
+  display:inline-flex; align-items:center; gap:7px;
+  background:rgba(13,22,30,.82); color:#EDF1F0;
+  border:1px solid rgba(237,241,240,.22); border-radius:2px;
+  padding:8px 12px; font:600 11.5px/1 "Karla",sans-serif;
+  letter-spacing:.08em; text-transform:uppercase;
+  opacity:0; transform:translateY(5px);
+  transition:opacity .18s ease, transform .18s ease, border-color .18s ease;
+}
+.zoomchip svg{width:14px; height:14px; color:var(--turq)}
+.plate-zoom:hover .zoomchip,
+.plate-zoom:focus-visible .zoomchip{opacity:1; transform:none; border-color:var(--turq)}
+.plate-zoom:focus-visible{outline:2px solid var(--turq); outline-offset:-2px}
+/* Nothing hovers on a touch screen, so there the hint simply stands. */
+@media (hover:none){
+  .zoomchip{opacity:1; transform:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .zoomchip{transition:none}
+}
 
 .gm-overlay{
   position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;

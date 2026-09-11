@@ -4,13 +4,33 @@
 {% block og %}{% if w.images %}<meta property="og:image" content="{{ img_url(w.images[0].base,'m','jpg') }}">{% endif %}{% endblock %}
 {% block body %}
 <article class="work">
+  {# Where this piece sits in the viewer, so the lead photograph can open the
+     gallery ON ITSELF rather than at slide zero. None for a draft or a piece
+     with no photograph, and then no control is drawn at all. #}
+  {% set gidx = slide_index(w.slug) %}
   <div class="plates">
     {% for im in w.images %}
       <figure>
-        <picture>
-          <source type="image/webp" srcset="{{ img_url(im.base,'m') }} 1400w, {{ img_url(im.base,'l') }} 2400w" sizes="(max-width: 900px) 94vw, 62vw">
-          <img src="{{ img_url(im.base,'l','jpg') }}" alt="{{ im.alt or w.title }}"{% if not loop.first %} loading="lazy"{% endif %}>
-        </picture>
+        {# The span is the positioning context for the zoom control. It wraps
+           the picture on every plate, not just the lead, so the two paths do
+           not drift into two different pieces of markup. #}
+        <span class="plate-img">
+          <picture>
+            <source type="image/webp" srcset="{{ img_url(im.base,'m') }} 1400w, {{ img_url(im.base,'l') }} 2400w" sizes="(max-width: 900px) 94vw, 62vw">
+            <img src="{{ img_url(im.base,'l','jpg') }}" alt="{{ im.alt or w.title }}"{% if not loop.first %} loading="lazy"{% endif %}>
+          </picture>
+          {% if loop.first and gidx is not none %}
+          <button class="plate-zoom" type="button" onclick="openGallery({{ gidx }})"
+                  aria-haspopup="dialog" aria-label="View {{ w.title }} in the gallery">
+            <span class="zoomchip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 4H4v5M15 4h5v5M15 20h5v-5M9 20H4v-5"/>
+              </svg>View larger
+            </span>
+          </button>
+          {% endif %}
+        </span>
         {% if im.kind != 'full' %}<figcaption>{{ 'Detail' if im.kind == 'detail' else 'Shown in a room' }}</figcaption>{% endif %}
       </figure>
     {% else %}

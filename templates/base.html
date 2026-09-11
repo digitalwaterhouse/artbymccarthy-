@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Karla:wght@400;500;700&family=Mrs+Saint+Delafield&display=swap">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=67">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=68">
 </head>
 <script>
 /* Flagged before first paint so the fallback fade never flickers in on a
@@ -50,6 +50,14 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
          ("contact", "Contact", url_for('site.contact'))] %}
     <a href="{{ href }}"{% if nav == key %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
     {% endfor %}
+    {# The way into the viewer from ANYWHERE, which is the job the floating
+       button used to do badly. An anchor rather than a button so it inherits
+       every nav rule untouched -- and because it has a real destination: with
+       no JavaScript the viewer does not exist at all, so the honest fallback
+       is the wall itself. Never marked current; it is an action, not a page. #}
+    {% if slides %}<a href="{{ url_for('site.index') }}#available"
+       onclick="if(window.openGallery){openGallery(0);return false}"
+       aria-haspopup="dialog">Gallery</a>{% endif %}
   </nav>
 </header>
 

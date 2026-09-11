@@ -155,6 +155,24 @@ app.jinja_env.globals["opp_kind_label"] = gallery.opp_kind_label
 app.jinja_env.globals["opp_status_label"] = gallery.opp_status_label
 
 
+def slide_index(slug):
+    """Where this painting sits in the viewer's slide list, or None.
+
+    The work page opens the viewer AT THE PIECE YOU ARE LOOKING AT rather than
+    at slide zero, which is the whole reason it beats the floating button it
+    replaces. None when the piece is not in the list at all -- a draft, or one
+    with no photograph yet -- and the template then renders no control rather
+    than one that would open on somebody else's painting.
+    """
+    for i, s in enumerate(viewer_slides()):
+        if s["slug"] == slug:
+            return i
+    return None
+
+
+app.jinja_env.globals["slide_index"] = slide_index
+
+
 def notify(kind, name, email, body, work_title=None):
     """Tell the artist. Best effort only -- the enquiry is already saved, and a
     mail server having a bad day must not turn into a lost customer."""
