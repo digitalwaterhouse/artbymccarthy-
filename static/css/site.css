@@ -643,6 +643,12 @@ body.admin{background:#F3F4F2; font-size:15px}
   font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted);
   font-weight:600; background:#F7F7F4; border-bottom:1px solid var(--rule);
 }
+/* Pieces carries every painting she owns, so its rows are tightened: the
+   title and its line of detail sit closer, and the cell padding comes in.
+   Scoped to that table -- orders and contacts are short lists and read better
+   with the room. The thumbnail still sets the row height. */
+.grid-t.tight td{padding-top:7px; padding-bottom:7px; line-height:1.35}
+.grid-t.tight .sub{margin-top:1px}
 .grid-t td.num{text-align:right; font-variant-numeric:tabular-nums}
 .grid-t td.right{text-align:right}
 .grid-t .thumb{width:66px}
