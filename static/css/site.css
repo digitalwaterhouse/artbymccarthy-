@@ -712,7 +712,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
    one long ladder. Tighter inside, same outside. */
 .formgrid label{gap:4px}
 .formgrid .wide{grid-column:1/-1}
-.formgrid fieldset{grid-column:1/-1; border:1px solid var(--line); border-radius:3px; padding:13px 14px; margin:0}
+.formgrid fieldset{grid-column:1/-1; border:1px solid var(--accent); border-radius:3px; padding:13px 14px; margin:0}
 .formgrid legend{
   font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent);
   padding:0 7px; font-weight:600;
@@ -726,7 +726,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
    chosen" text alone, which a hidden-input-plus-label trick would throw away
    along with the file names after a selection. */
 .formgrid input[type=file]{
-  padding:9px 11px; background:var(--wall); border:1px solid var(--line);
+  padding:9px 11px; background:var(--wall); border:1px solid var(--accent);
   border-radius:3px; font:400 14px "Karla",sans-serif; color:var(--muted);
   cursor:pointer; width:100%;
 }
