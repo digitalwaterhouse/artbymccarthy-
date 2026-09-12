@@ -39,6 +39,10 @@
   </div>
 
   <aside class="facts">
+    {# The details sit in their own box so the aside itself can be full-height:
+       that is what lets the stepper hang off the bottom while this part still
+       sticks to the top as you scroll. #}
+    <div class="facts-inner">
     <h1>{{ w.title }}</h1>
     <dl>
       {% if w.year %}<dt>Year</dt><dd>{{ w.year }}</dd>{% endif %}
@@ -79,6 +83,7 @@
           <button class="cta" type="submit">Enquire</button>
         </form>
       {% endif %}
+    </div>
     </div>
 
     {% if near %}

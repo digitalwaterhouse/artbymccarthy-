@@ -259,11 +259,26 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 .noimg.tall{padding:140px 16px}
 
 /* ---------- one work ---------- */
-.work{display:grid; grid-template-columns:minmax(0,1.9fr) minmax(280px,1fr); gap:clamp(28px,4vw,60px); align-items:start}
+/* STRETCH, not start. The details column is now full-height on purpose, which
+   is what gives the stepper a bottom to hang off -- see .facts below. */
+.work{display:grid; grid-template-columns:minmax(0,1.9fr) minmax(280px,1fr); gap:clamp(28px,4vw,60px); align-items:stretch}
 .plates{display:flex; flex-direction:column; gap:clamp(18px,2.5vw,30px)}
 .plates figure{margin:0}
 .plates figcaption{padding-top:8px; font-size:13px; color:var(--muted)}
-.facts{position:sticky; top:28px}
+/* Previous/Next is PINNED TO THE FOOT of the column rather than following the
+   details. It used to sit directly under the buy panel, which meant it landed
+   at a different height on every painting -- a long story pushed it down, a
+   sold piece with no price pulled it up -- so cycling through the run made it
+   hop about under the cursor. Hung off the bottom it stays put, and since
+   every piece is one square photograph the column is the same height on every
+   page, so "the bottom" is the same place each time.
+
+   The details keep their sticky behaviour inside .facts-inner; the aside
+   itself can no longer be sticky because it is now as tall as its container
+   and would have nothing to travel through. */
+.facts{display:flex; flex-direction:column; min-height:100%}
+.facts-inner{position:sticky; top:28px}
+.stepper{margin-top:auto}
 .facts h1{font-size:clamp(1.6rem,3vw,2.1rem)}
 .facts dl{display:grid; grid-template-columns:auto 1fr; gap:6px 18px; margin:18px 0 0; font-size:15px}
 .facts dt{color:var(--muted)}
@@ -477,7 +492,10 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
    wildly different sizes for no reason a reader could name. */
 .stepper{
   display:grid; grid-template-columns:1fr 1fr; gap:0 clamp(12px,2.5vw,22px);
-  margin-top:clamp(26px,3.5vw,40px);
+  /* margin-top is auto (see .facts) so it is pushed to the foot; this is the
+     floor, for the short-viewport case where there is no spare room to push
+     through and the two blocks would otherwise touch. */
+  padding-top:clamp(26px,3.5vw,40px);
 }
 /* NO BOX. A bordered card with an offset shadow is a web control; this is a
    gallery, and the catalogue convention is a rule and some type. Each step
@@ -603,7 +621,13 @@ textarea{resize:vertical}
 
 @media (max-width:860px){
   .work{grid-template-columns:1fr}
-  .facts{position:static}
+  /* Stacked, the details are no longer beside a tall picture, so there is
+     nothing to stick to and no spare column height to push the stepper
+     through. It simply follows the buy panel, which is where it belongs when
+     the page is one column. */
+  .facts-inner{position:static}
+  .facts{min-height:0}
+  .stepper{margin-top:clamp(26px,3.5vw,40px)}
 }
 
 /* ================= admin =================
