@@ -1350,6 +1350,24 @@ def list_subscribers(include_removed=True):
         return [dict(r) for r in conn.execute(sql).fetchall()]
 
 
+def delete_subscriber(sub_id):
+    """Forget an address completely. Only one already OFF the list.
+
+    Deliberately a second step, not an alternative to removing: the row is what
+    remembers that this person asked to be left alone, so deleting it is the
+    one thing that makes them addable again -- by an import, by the button on a
+    message, by anything. Taking off the list is the safe act; this is for junk
+    that was never a real person. Refuses a live subscriber outright rather
+    than silently doing both at once."""
+    with connect() as conn:
+        row = conn.execute("SELECT unsubscribed_at FROM subscribers WHERE id=?",
+                           (sub_id,)).fetchone()
+        if not row or not row["unsubscribed_at"]:
+            return False
+        conn.execute("DELETE FROM subscribers WHERE id=?", (sub_id,))
+    return True
+
+
 def unsubscribe(sub_id, removed=True):
     """Take an address off the list, or put it back.
 

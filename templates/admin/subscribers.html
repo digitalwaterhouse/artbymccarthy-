@@ -88,10 +88,19 @@
       <td data-label="Email">{{ s.email }}</td>
       <td data-label="Removed"><span class="sub">{{ s.unsubscribed_at|day }}</span></td>
       <td class="right" data-label="">
+        <div class="rowacts">
         <form method="post" action="{{ url_for('site.admin_subscriber_remove', sub_id=s.id) }}">
           <input type="hidden" name="undo" value="1">
           <button class="link" type="submit">put back</button>
         </form>
+        {# Forgetting the address is the opposite of the paragraph above, so the
+           confirm says what is actually lost: the memory that they asked to be
+           left alone. #}
+        <form method="post" action="{{ url_for('site.admin_subscriber_delete', sub_id=s.id) }}"
+              onsubmit="return confirm('Delete {{ s.email }} for good? This forgets that they asked to come off the list, so nothing stops them being added again later.')">
+          <button class="link danger" type="submit">delete for good</button>
+        </form>
+        </div>
       </td>
     </tr>
   {% endfor %}

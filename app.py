@@ -1230,6 +1230,21 @@ def admin_subscriber_remove(sub_id):
     return redirect(url_for("site.admin_subscribers"))
 
 
+@site.route("/admin/subscriber/<int:sub_id>/delete", methods=["POST"])
+@admin_required
+def admin_subscriber_delete(sub_id):
+    """Forget an address that is already off the list -- see
+    gallery.delete_subscriber for why it is only ever the second step."""
+    subs = {s["id"]: s for s in gallery.list_subscribers()}
+    email = subs[sub_id]["email"] if sub_id in subs else "that address"
+    if gallery.delete_subscriber(sub_id):
+        flash(f"Deleted {email} for good. Nothing here remembers them now, so "
+              "they can be added again like anyone else.")
+    else:
+        flash("Take an address off the list before deleting it for good.")
+    return redirect(url_for("site.admin_subscribers"))
+
+
 @site.route("/admin/contacts/add", methods=["POST"])
 @admin_required
 def admin_contact_add():
