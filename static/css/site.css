@@ -1147,6 +1147,9 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   transition:background .2s ease, color .2s ease;
 }
 .btn-out:hover{background:var(--accent); color:#fff}
+/* Small variant, for an outline button that sits in a row of text links --
+   the full-height one is a toolbar control and towers over them. */
+.btn-out.sm{min-height:32px; padding:0 12px; font-size:13px; letter-spacing:.02em}
 @media (max-width:640px){
   .filters{padding:10px 12px}
   .filters input[name=q]{flex:1 1 100%}

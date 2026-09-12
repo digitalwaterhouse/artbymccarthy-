@@ -14,7 +14,7 @@
       <form method="post" action="{{ url_for('site.admin_contact_add') }}">
         <input type="hidden" name="email" value="{{ email }}">
         <input type="hidden" name="back" value="{{ request.full_path }}">
-        <button class="link" type="submit">add to contacts</button>
+        <button class="btn-out sm" type="submit">Add to contacts</button>
       </form>
     {% endif %}
   {% endif %}
