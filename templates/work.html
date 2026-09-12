@@ -89,12 +89,12 @@
        arrows never go dead; the count says where you are. #}
     <nav class="stepper" aria-label="More work">
       <a class="step" href="{{ url_for('site.work', slug=near.prev.slug) }}" rel="prev">
-        <span class="step-dir">&larr; Previous</span>
+        <span class="step-dir"><span class="arw">&larr;</span> Previous</span>
         <span class="step-t">{{ near.prev.title }}</span>
       </a>
       <span class="step-count">{{ near.index }} of {{ near.total }}</span>
       <a class="step step-next" href="{{ url_for('site.work', slug=near.next.slug) }}" rel="next">
-        <span class="step-dir">Next &rarr;</span>
+        <span class="step-dir">Next <span class="arw">&rarr;</span></span>
         <span class="step-t">{{ near.next.title }}</span>
       </a>
     </nav>

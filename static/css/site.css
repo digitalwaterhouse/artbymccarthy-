@@ -476,25 +476,46 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
    "Previous" next to a piece called "Face" would otherwise give the two ends
    wildly different sizes for no reason a reader could name. */
 .stepper{
-  display:grid; grid-template-columns:1fr 1fr; gap:9px;
-  margin-top:clamp(22px,3vw,32px); padding-top:20px; border-top:1px solid var(--line);
+  display:grid; grid-template-columns:1fr 1fr; gap:0 clamp(12px,2.5vw,22px);
+  margin-top:clamp(26px,3.5vw,40px);
 }
+/* NO BOX. A bordered card with an offset shadow is a web control; this is a
+   gallery, and the catalogue convention is a rule and some type. Each step
+   gets its own hairline rather than one rule across the pair, so the two ends
+   read as two objects without either being drawn as a button.
+
+   The rule is the only chrome, which means it also has to be the hover
+   target -- it darkens to ink, the title underlines, and the arrow steps
+   outward, away from the piece you are on. */
 .step{
-  display:flex; flex-direction:column; gap:5px; min-width:0;
-  padding:11px 13px; border:1.5px solid var(--rule); border-radius:2px;
-  background:var(--paper); text-decoration:none; color:var(--ink);
-  box-shadow:3px 3px 0 0 transparent;
-  transition:border-color .18s, box-shadow .18s, transform .18s;
+  display:flex; flex-direction:column; gap:4px; min-width:0;
+  padding:12px 0 0; border:0; border-top:1px solid var(--rule);
+  border-radius:0; background:none; box-shadow:none;
+  text-decoration:none; color:var(--ink);
+  transition:border-color .18s ease;
 }
-.step:hover{border-color:var(--ink); box-shadow:3px 3px 0 0 var(--mat-teal); transform:translate(-1px,-1px)}
+.step:hover{border-top-color:var(--ink)}
+.step:hover .step-t{text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px}
+.step:hover .step-dir{color:var(--ink)}
+/* Without the box there is nothing to outline, so focus needs saying. */
+.step:focus-visible{outline:2px solid var(--focus); outline-offset:4px}
+/* Outward: left for Previous, right for Next. The .step-next rule must follow,
+   since both selectors carry the same weight and it is overriding the first. */
+.arw{display:inline-block; transition:transform .18s ease}
+.step:hover .arw{transform:translateX(-3px)}
+.step-next:hover .arw{transform:translateX(3px)}
+@media (prefers-reduced-motion:reduce){
+  .arw{transition:none}
+  .step:hover .arw,.step-next:hover .arw{transform:none}
+}
 .step-next{text-align:right; align-items:flex-end}
 /* Spans both columns and is pulled above them. Kept in the middle of the
    markup on purpose -- between Previous and Next is where it belongs when the
    page is read aloud, and `order` moves only the picture. */
-.step-count{grid-column:1/-1; order:-1}
+.step-count{grid-column:1/-1; order:-1; margin-bottom:13px}
 .step-dir{
   font:600 11px/1 "Karla",sans-serif; letter-spacing:.12em; text-transform:uppercase;
-  color:var(--muted);
+  color:var(--muted); transition:color .18s ease;
 }
 /* A long title in a half-column has to be allowed to break, or it pushes the
    card wider than its track and the two ends stop matching. */
