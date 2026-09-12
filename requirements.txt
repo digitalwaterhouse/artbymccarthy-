@@ -5,3 +5,9 @@ gunicorn==21.2.0
 # QR labels for individual works. Generated on the server — no third-party
 # service, nothing phoning home, and the code keeps working offline.
 qrcode==8.2
+
+# Stripe Checkout. It was missing entirely, so `import stripe` failed on the
+# server, payments.enabled() was False and every Purchase button quietly fell
+# back to the enquiry form -- with the keys set or not. Only the signature
+# check on the webhook actually needs this library.
+stripe==15.6.1

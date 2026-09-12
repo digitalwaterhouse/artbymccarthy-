@@ -463,22 +463,31 @@ def thanks():
 @site.route("/stripe/webhook", methods=["POST"])
 def webhook():
     try:
-        event = payments.parse_webhook(request.data, request.headers.get("Stripe-Signature", ""))
+        payments.parse_webhook(request.data, request.headers.get("Stripe-Signature", ""))
     except Exception:
         return "bad signature", 400
-    if event["type"] == "checkout.session.completed":
-        s = event["data"]["object"]
-        work_id = _int((s.get("metadata") or {}).get("work_id"))
+    # The signature check above is the security boundary, and verifying it is
+    # the only thing the SDK is needed for here. The event is then read back
+    # out of the RAW BODY as plain JSON rather than off the object the SDK
+    # returns: stripe-python stopped making StripeObject a dict subclass, so
+    # `.get()` on it raises AttributeError -- which 500'd this webhook on every
+    # paid checkout, leaving the painting unsold and the order unrecorded while
+    # Stripe retried into the same wall. A dict cannot break that way again,
+    # and this handler now reads the same whatever version is installed.
+    event = json.loads(request.data or b"{}")
+    kind = event.get("type")
+    obj = (event.get("data") or {}).get("object") or {}
+    work_id = _int((obj.get("metadata") or {}).get("work_id"))
+    if kind == "checkout.session.completed":
         if work_id:
             gallery.set_status(work_id, "sold")
-            details = s.get("customer_details") or {}
-            ship = ((s.get("shipping_details") or {}).get("address")
+            details = obj.get("customer_details") or {}
+            ship = ((obj.get("shipping_details") or {}).get("address")
                     or (details.get("address") or {}))
-            gallery.record_order(work_id, s.get("id"), s.get("amount_total"),
+            gallery.record_order(work_id, obj.get("id"), obj.get("amount_total"),
                                  {"name": details.get("name"), "email": details.get("email")},
                                  ship or {})
-    elif event["type"] in ("checkout.session.expired",):
-        work_id = _int((event["data"]["object"].get("metadata") or {}).get("work_id"))
+    elif kind == "checkout.session.expired":
         if work_id:
             w = gallery.get_work(work_id=work_id)
             if w and w["status"] == "reserved":
