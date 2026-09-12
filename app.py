@@ -108,6 +108,22 @@ def inject():
                               else (ep or "site"))}
 
 
+@app.after_request
+def hsts(resp):
+    # Without this the browser has no standing instruction that the site is
+    # HTTPS-only, so an address remembered from before the move to her own
+    # domain navigates over plain http first. The 301 does upgrade it, but the
+    # address bar reads http for that hop and Chrome paints "Not secure" --
+    # which is exactly why the site looks fine in an incognito window and not
+    # in a normal one. Only sent on a secure request (ProxyFix reads
+    # X-Forwarded-Proto from Render's edge) so a plain http hop is never the
+    # thing that pins the policy.
+    if request.is_secure:
+        resp.headers.setdefault("Strict-Transport-Security",
+                                "max-age=31536000; includeSubDomains")
+    return resp
+
+
 def admin_required(fn):
     @functools.wraps(fn)
     def wrapper(*a, **kw):
