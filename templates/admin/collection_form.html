@@ -3,7 +3,12 @@
 {% block body %}
 <div class="adminhead">
   <div>
-    {% if c.parent %}<a class="crumb" href="{{ url_for('site.admin_collection', collection_id=c.parent.id) }}">&larr; {{ c.parent.name }}</a>{% endif %}
+    {# The way out. The rail highlights Collections, but the page you came from
+       is the LIST, and a subcategory is two levels down from it. #}
+    <nav class="crumbs">
+      <a class="crumb" href="{{ url_for('site.admin_collections') }}">&larr; All collections</a>
+      {% if c.parent %}<a class="crumb" href="{{ url_for('site.admin_collection', collection_id=c.parent.id) }}">inside {{ c.parent.name }}</a>{% endif %}
+    </nav>
     <h1>{{ c.name }}</h1>
   </div>
   {% if works or c.children %}<a href="{{ url_for('site.collection', slug=c.slug) }}">view on the site</a>{% endif %}

@@ -1650,6 +1650,12 @@ select.os-accepted{border-color:var(--accent)}
    sitting at the far right of the header row comes back in beside it. */
 .adminhead > div{margin-right:auto}
 .adminhead .crumb{margin-bottom:4px}
+/* Two ways back on one line -- the list, and the collection this one sits
+   inside. Separated by a rule rather than a bullet, so neither reads as the
+   continuation of the other. */
+.crumbs{display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 12px; margin-bottom:4px}
+.crumbs .crumb{margin-bottom:0}
+.crumbs .crumb + .crumb{padding-left:12px; border-left:1px solid var(--line)}
 /* On a phone the card layout puts a lone .sub back on the label's line. Here
    every .sub is a fact of its own -- what it sits inside, what its
    subcategories add -- so each keeps its own line. */
