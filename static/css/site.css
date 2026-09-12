@@ -1247,6 +1247,16 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 body.home{
   background-color:var(--ground-deep);
   background-image:
+    /* THE LAST LAYER MATTERS AS MUCH AS THE FIRST, and it is listed first
+       because that is the one painted on top. The box is one viewport tall and
+       the dark region is TALLER than that on a wide window -- measured at
+       1920x913, the hero ends at 880 and the box band runs to 1194, so the
+       gradient stopped 33px inside the band and the copy was cut in half by a
+       hard edge where the washes gave way to flat --ground-deep. This fades the
+       whole thing to exactly that colour before the box ends, so wherever the
+       edge falls there is nothing to see. Do not remove it and cap the washes
+       instead: a wash centred near the bottom is strongest at the cut. */
+    linear-gradient(to bottom, rgba(10,18,26,0) 72%, var(--ground-deep) 97%),
     radial-gradient(115% 80% at 14% 22%, rgba(9,187,213,.22) 0%, rgba(9,187,213,.08) 40%, transparent 66%),
     radial-gradient(80% 85% at 94% 50%, rgba(124,103,121,.24) 0%, transparent 62%),
     radial-gradient(90% 70% at 34% 100%, rgba(190,213,102,.12) 0%, transparent 58%),
