@@ -498,8 +498,10 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
   padding-top:clamp(26px,3.5vw,40px);
   /* And the same underneath: pushed to the foot, the titles sat ON the bottom
      edge of the column, level with the cut of the photograph and with nothing
-     under them. A gallery label does not end at the frame. */
-  padding-bottom:clamp(20px,2.6vw,32px);
+     under them. A gallery label does not end at the frame. Plus a further
+     100px of plain air below that, asked for so the pair sits well clear of
+     the bottom of the page rather than close to it. */
+  padding-bottom:calc(clamp(20px,2.6vw,32px) + 100px);
 }
 /* NO BOX. A bordered card with an offset shadow is a web control; this is a
    gallery, and the catalogue convention is a rule and some type. Each step
