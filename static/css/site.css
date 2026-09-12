@@ -198,8 +198,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   box-shadow:4px 4px 0 0 rgba(9,187,213,.5);
 }
 @media (prefers-reduced-motion:reduce){
-  .masthead nav a{transition:none}
-  .masthead nav a:hover{transform:none}
+  .masthead nav a,.gm-tab{transition:none}
+  .masthead nav a:hover,.gm-tab:hover{transform:none}
 }
 @media (max-width:560px){
   .masthead nav{gap:8px}
@@ -1478,15 +1478,28 @@ body.home{
   -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); transition:background .2s;
 }
 .gm-x:hover{background:rgba(255,255,255,.28)}
-.gm-tabs{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; flex:0 0 auto}
+/* The same square buttons as the masthead, in the same dark-ground form the
+   home page uses -- capsules were a second, competing shape for what is the
+   same kind of control. Kept in sync with `.home .masthead nav a`. */
+.gm-tabs{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; flex:0 0 auto}
 .gm-tab{
-  font:600 11.5px/1 "Karla",sans-serif; letter-spacing:.09em; text-transform:uppercase;
-  color:rgba(255,255,255,.72); background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.2); border-radius:100px; padding:9px 17px; cursor:pointer;
-  transition:background .2s,color .2s,border-color .2s;
+  position:relative; display:inline-block;
+  font:600 12.5px/1 "Karla",sans-serif; letter-spacing:.09em; text-transform:uppercase;
+  color:rgba(244,246,245,.74); background:transparent;
+  border:1.5px solid rgba(237,241,240,.26); border-radius:2px; padding:9px 15px;
+  cursor:pointer; box-shadow:3px 3px 0 0 transparent;
+  transition:color .18s ease, border-color .18s ease, background .18s ease,
+             box-shadow .18s ease, transform .18s ease;
 }
-.gm-tab:hover{border-color:rgba(255,255,255,.48); color:#fff}
-.gm-tab.active{background:var(--turq); border-color:var(--turq); color:#06222A}
+.gm-tab:hover{
+  color:#fff; border-color:var(--turq);
+  box-shadow:3px 3px 0 0 rgba(9,187,213,.45); transform:translate(-1px,-1px);
+}
+.gm-tab.active{
+  background:rgba(255,255,255,.09); border-color:var(--turq); color:#fff;
+  box-shadow:4px 4px 0 0 rgba(9,187,213,.5);
+}
+.gm-tab.active:hover{box-shadow:4px 4px 0 0 rgba(9,187,213,.5); transform:none}
 .gm-frame{position:relative; flex:1 1 auto; width:100%; min-height:0;
   display:flex; align-items:center; justify-content:center}
 /* No aspect-ratio box and no object-fit:cover here: paintings are not one
