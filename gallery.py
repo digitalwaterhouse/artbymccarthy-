@@ -130,6 +130,13 @@ NEW_COLUMNS = {
     "subscribers": [
         ("unsubscribed_at", "TEXT"),
     ],
+    # The packing record lives on the join row: which pieces have physically
+    # left for this show, and which have come back. Two stamps rather than two
+    # flags, because "when did it go" is the question asked next.
+    "exhibition_works": [
+        ("out_at",  "TEXT"),
+        ("back_at", "TEXT"),
+    ],
     "works": [
         ("location",       "TEXT"),
         ("collection_id",  "INTEGER REFERENCES collections(id) ON DELETE SET NULL"),
@@ -552,7 +559,8 @@ def works_in_show(exhibition_id):
     """The paintings attached to a show, in the wall order she set."""
     with connect() as conn:
         rows = conn.execute(
-            "SELECT w.* FROM works w JOIN exhibition_works x ON x.work_id = w.id"
+            "SELECT w.*, x.out_at, x.back_at FROM works w"
+            " JOIN exhibition_works x ON x.work_id = w.id"
             " WHERE x.exhibition_id=? ORDER BY w.sort, w.id", (exhibition_id,)).fetchall()
         return _hydrate(conn, rows)
 
@@ -723,15 +731,53 @@ def save_exhibition(data, exhibition_id=None):
 
 def set_exhibition_works(exhibition_id, work_ids):
     """Replace the whole set in one go. The form posts every checkbox that is
-    ticked, so what arrives IS the answer -- working out which ones changed
-    would only invent a way to get it wrong."""
+    ticked, so what arrives IS the answer.
+
+    It does NOT do that by deleting every row and re-inserting, which is what it
+    used to do: those rows now carry the out/back stamps, and wiping them would
+    mean that editing the show's title silently threw away the record of which
+    paintings had already gone out. Only the rows that are genuinely no longer
+    in the show are removed; the rest are left exactly as they are.
+    """
+    keep = {int(w) for w in work_ids}
     with connect() as conn:
-        conn.execute("DELETE FROM exhibition_works WHERE exhibition_id=?",
-                     (exhibition_id,))
+        if keep:
+            marks = ",".join("?" * len(keep))
+            conn.execute(
+                f"DELETE FROM exhibition_works WHERE exhibition_id=? "
+                f"AND work_id NOT IN ({marks})", (exhibition_id, *keep))
+        else:
+            conn.execute("DELETE FROM exhibition_works WHERE exhibition_id=?",
+                         (exhibition_id,))
         conn.executemany(
             "INSERT OR IGNORE INTO exhibition_works (exhibition_id, work_id) "
-            "VALUES (?,?)", [(exhibition_id, int(w)) for w in work_ids])
+            "VALUES (?,?)", [(exhibition_id, w) for w in keep])
     return True
+
+
+CHECK_LEGS = {"out": "out_at", "back": "back_at"}
+
+
+def set_exhibition_check(exhibition_id, work_id, leg, on):
+    """Tick or untick one box on a show's checklist. Returns the stamp, or None.
+
+    Ticking is NOT a move: works.location changes only through move_to_place, so
+    that the current location and its history can never disagree. A piece being
+    marked out for a show and a piece being recorded as at that venue are two
+    different statements, and conflating them is how the location history starts
+    telling a story nobody typed.
+    """
+    col = CHECK_LEGS.get(leg)
+    if not col:
+        raise ValueError("unknown column")
+    stamp = now() if on else None
+    with connect() as conn:
+        cur = conn.execute(
+            f"UPDATE exhibition_works SET {col}=? WHERE exhibition_id=? AND work_id=?",
+            (stamp, exhibition_id, work_id))
+        if not cur.rowcount:
+            raise ValueError("that piece is not in this show")
+    return stamp
 
 
 def delete_exhibition(exhibition_id):

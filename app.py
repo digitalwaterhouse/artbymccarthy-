@@ -617,6 +617,24 @@ def admin_exhibition_checklist(exhibition_id):
                            printed_on=day(gallery.today()))
 
 
+@site.route("/admin/exhibition/<int:exhibition_id>/check", methods=["POST"])
+@admin_required
+def admin_exhibition_check(exhibition_id):
+    """Tick one box on the checklist, from the page, without reloading it.
+
+    The sheet is still a print document -- it goes out with the work and gets
+    signed -- but it is also the thing she has open on a phone while wrapping
+    paintings, and a square that can only be marked with a pen is no use there.
+    """
+    try:
+        stamp = gallery.set_exhibition_check(
+            exhibition_id, request.form.get("work_id", type=int),
+            request.form.get("leg", ""), request.form.get("on") == "1")
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    return jsonify({"ok": True, "stamp": day(stamp) if stamp else None})
+
+
 @site.route("/admin/exhibition/<int:exhibition_id>/labels")
 @admin_required
 def admin_exhibition_labels(exhibition_id):

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Checklist &mdash; {{ e.title }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=73">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=74">
 <style>
   /* The document that travels with the work. It is checked twice — once when
      the pieces go out, once when they come back — which is why there are two
@@ -31,7 +31,33 @@
   .sub2 { color: #6b6b66; font-size: 9.5pt; }
   .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .box { width: 0.26in; height: 0.26in; border: 1.5px solid #171a18; border-radius: 2px;
-         display: inline-block; }
+         display: inline-block; position: relative; }
+  /* The square is still the printed thing, and on paper it is ticked with a
+     pen. On screen the same square is the control: the real checkbox sits
+     underneath it, invisible but still the element that takes the click, the
+     tab stop and the keyboard -- so this stays operable without the styling
+     having to reinvent any of that. */
+  .tick { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+  .tick input { position: absolute; opacity: 0; width: 0.26in; height: 0.26in;
+                margin: 0; cursor: pointer; }
+  .tick input:checked + .box::after {
+    content: ""; position: absolute; left: 0.055in; top: 0.015in;
+    width: 0.07in; height: 0.15in; border: solid #171a18;
+    border-width: 0 2px 2px 0; transform: rotate(42deg);
+  }
+  .tick input:focus-visible + .box { outline: 2px solid #09BBD5; outline-offset: 2px; }
+  .tick:hover .box { border-color: #09BBD5; }
+  .tick .when { font-family: "Karla", sans-serif; font-size: 7.5pt; color: #6b6b66;
+                white-space: nowrap; }
+  .tick.saving { opacity: .5; }
+  .ckhint { font-family: "Karla", sans-serif; font-size: 9.5pt; color: #6b6b66;
+            margin: 0 0 12px; }
+  @media print {
+    /* Nothing interactive survives onto paper: the box prints empty unless it
+       was ticked, and the date beside it is the useful part of a tick. */
+    .tick input { display: none; }
+    .tick:hover .box { border-color: #171a18; }
+  }
   .signoff { margin-top: 28px; display: flex; gap: 40px; flex-wrap: wrap;
              font-family: "Karla", sans-serif; font-size: 10pt; color: #3c3c38; }
   .signoff div { flex: 1 1 2.4in; }
@@ -67,6 +93,8 @@
   </div>
 
   {% if works %}
+  <p class="ckhint noprint">Tick a box as each piece goes out and comes back &mdash;
+     it saves as you go. Ticking does not move the painting or change its location.</p>
   <table class="ck">
     <thead>
       <tr>
@@ -96,8 +124,17 @@
           {% elif w.price %}{{ w.price }}
           {% else %}&mdash;{% endif %}
         </td>
-        <td class="num"><span class="box"></span></td>
-        <td class="num"><span class="box"></span></td>
+        {% for leg, stamp in [('out', w.out_at), ('back', w.back_at)] %}
+        <td class="num">
+          <label class="tick">
+            <input type="checkbox" data-work="{{ w.id }}" data-leg="{{ leg }}"
+                   {% if stamp %}checked{% endif %}
+                   aria-label="{{ w.title }} — {{ 'went out' if leg == 'out' else 'came back' }}">
+            <span class="box"></span>
+            <span class="when">{{ stamp|day if stamp else '' }}</span>
+          </label>
+        </td>
+        {% endfor %}
       </tr>
       {% endfor %}
     </tbody>
@@ -112,5 +149,42 @@
     <div><div class="rule"></div>Returned to / date</div>
   </div>
 </div>
+<script>
+// Each box saves on its own. There is no Save button on a checklist because
+// the thing being recorded happens one painting at a time, with both hands
+// full -- and a page that needs a final click is a page where the last few
+// ticks are lost when she walks away from it.
+(function () {
+  var url = {{ url_for('site.admin_exhibition_check', exhibition_id=e.id)|tojson }};
+  document.querySelectorAll(".tick input").forEach(function (box) {
+    box.addEventListener("change", function () {
+      var label = box.closest(".tick");
+      var when = label.querySelector(".when");
+      var wasChecked = !box.checked;   // both of these go back if the save fails
+      var wasWhen = when.textContent;
+      label.classList.add("saving");
+      var body = new URLSearchParams({
+        work_id: box.dataset.work,
+        leg: box.dataset.leg,
+        on: box.checked ? "1" : "0"
+      });
+      fetch(url, {method: "POST", body: body, credentials: "same-origin"})
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j.ok) throw new Error(j.error || "did not save");
+          when.textContent = j.stamp || "";
+        })
+        .catch(function () {
+          // Never leave a tick on screen that is not in the database: she
+          // would pack by it and believe the record said so.
+          box.checked = wasChecked;
+          when.textContent = wasWhen;
+          alert("That did not save. Check the connection and try again.");
+        })
+        .then(function () { label.classList.remove("saving"); });
+    });
+  });
+})();
+</script>
 </body>
 </html>
