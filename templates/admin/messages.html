@@ -139,7 +139,7 @@
       </header>
       <p>{{ i.body }}</p>
       <div class="msg-acts">
-        <a class="link" href="{{ url_for('site.admin_message', inq_id=i.id) }}">reply</a>
+        <a class="btn-out sm" href="{{ url_for('site.admin_message', inq_id=i.id) }}">Reply</a>
         {{ contact_act(i.email) }}
         {% if not i.handled %}
           <form method="post" action="{{ url_for('site.admin_inq_handled', inq_id=i.id) }}">
@@ -177,8 +177,8 @@
       <p class="subj">{{ r.subject or '(no subject)' }}</p>
       <p>{{ r.body }}</p>
       <div class="msg-acts">
-        <a class="link" href="{{ url_for('site.admin_message_draft', rid=r.id) }}">
-          {{ 'open' if r.status == 'draft' else 'read' }}</a>
+        <a class="btn-out sm" href="{{ url_for('site.admin_message_draft', rid=r.id) }}">
+          {{ 'Open' if r.status == 'draft' else 'Read' }}</a>
         {{ contact_act(r.to_email) }}
         <form method="post" action="{{ url_for('site.admin_message_draft_delete', rid=r.id) }}"
               onsubmit="return confirm('Delete this {{ r.status }}? It cannot be undone.')">
