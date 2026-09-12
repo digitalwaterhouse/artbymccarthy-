@@ -73,15 +73,17 @@ DEFAULT_SETTINGS = {
     # without it, because her sentence is worth reading on its own.
     "box_image": "",
     "box_caption": "",
-    # HER WORDS, VERBATIM, lifted from the bio she wrote -- including
-    # "humor- lovingly" as she typed it. It is the best sentence on the site
-    # and it was reachable only from /about. Do not tidy it; see the About
-    # note. Editable in the admin, so she can replace it with something
-    # written for the front page whenever she likes.
-    "box_note": "What you see here are Lisa\u2019s colors - nuggets of hope "
-                "and humor- lovingly collected and kept safe in black and "
-                "white treasure boxes - just waiting to be shared with anyone "
-                "who might need or want them.",
+    # HER WORDS, cut for the front page by Paul 2026-09-11: the bio's opening
+    # clause ("What you see here are Lisa's colors -") goes, because the band
+    # already sits under her name and the sentence should start on the work;
+    # and the close is "who might need one", singular, which lands on a single
+    # box rather than on the collection. Her punctuation is untouched --
+    # "humor- lovingly" is as she typed it. DO NOT TIDY IT; see the About note.
+    # Editable in the admin, and the live database already holds a row for this
+    # key, so changing the value here only affects a fresh install.
+    "box_note": "Nuggets of hope and humor- lovingly collected and kept safe "
+                "in black and white treasure boxes - just waiting to be "
+                "shared with anyone who might need one",
     # quiet | rosette | rose | none -- the backdrop on about/commissions/contact
     "page_bg": "quiet",
     # Printed on wall labels and checklists. A setting, not a constant: she
