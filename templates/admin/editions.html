@@ -8,7 +8,7 @@
    anything up for sale. Set it on the painting, under <em>Edition</em>.</p>
 
 <table class="grid-t">
-  <thead><tr><th></th><th>Title</th><th>Edition</th><th>Status</th><th>Price</th></tr></thead>
+  <thead><tr><th></th><th>Title</th><th>Edition</th><th>Status</th><th class="num">Price</th></tr></thead>
   <tbody>
   {% for w in works %}
     <tr{% if w.status == 'draft' %} class="is-draft"{% endif %}>

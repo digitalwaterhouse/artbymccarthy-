@@ -82,7 +82,7 @@
    by <em>Sort order</em> on each one.</p>
 
 <table class="grid-t tight">
-  <thead><tr><th></th><th>Title</th><th>Collection</th><th>Where</th><th>Size</th><th>Price</th><th>Status</th><th>Ships</th><th></th></tr></thead>
+  <thead><tr><th></th><th>Title</th><th>Collection</th><th>Where</th><th>Size</th><th class="num">Price</th><th>Status</th><th>Ships</th><th></th></tr></thead>
   <tbody>
   {% for w in works %}
     <tr id="w{{ w.id }}"{% if w.status == 'draft' %} class="is-draft"{% endif %}>

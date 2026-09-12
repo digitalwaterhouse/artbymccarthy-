@@ -820,8 +820,13 @@ body.admin{background:#F3F4F2; font-size:15px}
 .grid-t.tight .sub{margin-top:1px}
 .grid-t.tight .thumb{width:60px}
 .grid-t.tight .thumb img{width:50px; height:50px}
-.grid-t td.num{text-align:right; font-variant-numeric:tabular-nums}
-.grid-t td.right{text-align:right}
+/* A right-aligned column needs its HEADING right-aligned too, or the word
+   sits at the left edge of the column with its numbers stacked under the
+   other end of it. `.grid-t th,.grid-t td` sets text-align:left and outweighs
+   a bare `.num`, so the heading has to be named here explicitly -- the same
+   specificity trap that left the show checklist's headings adrift. */
+.grid-t th.num,.grid-t td.num{text-align:right; font-variant-numeric:tabular-nums}
+.grid-t th.right,.grid-t td.right{text-align:right}
 .grid-t .thumb{width:66px}
 /* Same rule as the wall: a square box, and CONTAIN so nothing is cropped.
    cover was quietly trimming the edges off a photograph that was not exactly
