@@ -11,6 +11,43 @@
    email goes to {{ cfg.artist_email or 'the contact address in Settings' }}
    when something is inside a fortnight.</p>
 
+{# HOW FAR, and the filter over it. A call two hours away is a different
+   proposition from one across the county -- the work has to be driven there
+   and driven back -- so the distance sits on the row next to the deadline,
+   and the two together are what decide whether she applies. Straight-line
+   miles from the studio address in Settings; the screen says "as the crow
+   flies" rather than implying a drive time nobody measured. #}
+{% if here %}
+<form class="oppfilter" method="get">
+  <span class="oppfilter-t">Within</span>
+  {% for m in [25, 75, 200] %}
+  <a class="chip{% if within == m %} on{% endif %}"
+     href="{{ url_for('site.admin_opportunities', within=(none if within == m else m), sort=(order if order == 'distance' else none)) }}">{{ m }} mi</a>
+  {% endfor %}
+  <a class="chip{% if order == 'distance' %} on{% endif %}"
+     href="{{ url_for('site.admin_opportunities', within=within or none, sort=(none if order == 'distance' else 'distance')) }}">nearest first</a>
+  {% if within or order == 'distance' %}
+  <a class="chip clear" href="{{ url_for('site.admin_opportunities') }}">clear</a>
+  {% endif %}
+  {# What she typed, not what Nominatim matched: "Town of Bedford, Westchester
+     County, New York, United States" is four lines of chrome in a filter bar.
+     The full match is shown once, in Settings, where it is the confirmation
+     that the right place was found. #}
+  <span class="sub">from {{ cfg.studio_location or cfg.studio_place }}, as the crow flies</span>
+</form>
+{% else %}
+<p class="sub oppfilter-none">Put where you work in
+  <a href="{{ url_for('site.admin_settings') }}#name">Your site</a> and every call
+  will show how far away it is.</p>
+{% endif %}
+
+{% if pending %}
+<form class="oppfilter" method="post" action="{{ url_for('site.admin_opportunities_locate') }}">
+  <button class="link" type="submit">Work out the distance for {{ pending }} call{{ '' if pending == 1 else 's' }} &rarr;</button>
+  <span class="sub">They have a place typed but no distance yet.</span>
+</form>
+{% endif %}
+
 <form class="newrow" method="post">
   <label class="sr" for="newopp">Name the call</label>
   <input id="newopp" name="title" placeholder="Name the call" required>
@@ -32,16 +69,24 @@
     </div>
     <div class="what">
       <a href="{{ url_for('site.admin_opportunity', opportunity_id=o.id) }}">{{ o.title }}</a>
+      {# The call's OWN page. It was stored and editable but nothing ever
+         linked to it, so reading the actual call meant copying a URL out of a
+         text box. rel=noopener because it is somebody else's site. #}
+      {% if o.url %}<a class="outlink" href="{{ o.url }}" target="_blank" rel="noopener noreferrer"
+         title="Open the call">the call &nearr;</a>{% endif %}
       <span class="sub">{{ o.org or opp_kind_label(o.kind) }}{% if o.location %}, {{ o.location }}{% endif %}
         {%- if o.fee %} &middot; {{ o.fee }} fee{% endif %}
         {%- if o.count %} &middot; {{ o.count }} piece{{ '' if o.count == 1 else 's' }} sent{% endif %}</span>
     </div>
+    {% if o.miles is not none %}<span class="miles n-{{ o.near }}">{{ o.miles }} mi</span>{% endif %}
     <span class="ostat s-{{ o.status }}">{{ opp_status_label(o.status) }}</span>
   </li>
   {% endfor %}
 </ul>
 {% else %}
-<p class="empty">Nothing on the list. Add the first one above.</p>
+<p class="empty">{% if within %}Nothing open inside {{ within }} miles.
+  <a href="{{ url_for('site.admin_opportunities') }}">Show them all</a>.
+{% else %}Nothing on the list. Add the first one above.{% endif %}</p>
 {% endif %}
 
 {% if done %}
@@ -52,6 +97,7 @@
     <div class="when"><span class="dates">{{ o.deadline|day if o.deadline else '&mdash;'|safe }}</span></div>
     <div class="what">
       <a href="{{ url_for('site.admin_opportunity', opportunity_id=o.id) }}">{{ o.title }}</a>
+      {% if o.url %}<a class="outlink" href="{{ o.url }}" target="_blank" rel="noopener noreferrer">the call &nearr;</a>{% endif %}
       <span class="sub">{{ o.org or opp_kind_label(o.kind) }}
         {%- if o.count %} &middot; {{ o.count }} piece{{ '' if o.count == 1 else 's' }} sent{% endif %}</span>
     </div>

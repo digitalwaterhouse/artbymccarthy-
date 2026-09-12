@@ -8,6 +8,7 @@ import os
 import csv
 import json
 import io
+import time
 import functools
 from datetime import datetime
 
@@ -1294,7 +1295,8 @@ def admin_settings():
         keys = ["site_title", "tagline", "about", "artist_email", "commission_note",
                 "hero_title", "hero_sub", "hero_caption", "about_caption",
                 "box_caption", "box_note", "page_bg",
-                "artist_name", "artist_statement", "artist_bio"]
+                "artist_name", "artist_statement", "artist_bio",
+                "studio_location"]
         # PRESENT, not "every key with a default". The page is now a stack of
         # small forms -- one per place on the site -- so a post carries the
         # front page's four fields and nothing else. Reading the whole list
@@ -1351,6 +1353,27 @@ def admin_settings():
         if old_box and vals.get("box_image", old_box) != old_box:
             gallery.drop_image_files(old_box)
 
+        # The studio address is stored with the two numbers geocoded from it, so
+        # Opportunities can say how far a call is. Looked up only when the text
+        # changes, and a failure leaves the address typed and the distance
+        # unknown rather than refusing the save.
+        if "studio_location" in request.form:
+            typed = (request.form.get("studio_location") or "").strip()
+            if typed != (cfg().get("studio_location") or "").strip():
+                # locate_studio writes the address itself, along with the two
+                # numbers, so it owns this key rather than the bulk save below.
+                # Called even when she CLEARS the field: that is what drops the
+                # stale coordinates with it.
+                vals.pop("studio_location", None)
+                if app.config.get("TESTING"):
+                    gallery.save_settings({"studio_location": typed,
+                                           "studio_lat": "", "studio_lon": "",
+                                           "studio_place": ""})
+                elif not gallery.locate_studio(typed) and typed:
+                    flash("Could not find \"%s\" on the map -- calls will show no "
+                          "distance until it is written differently. "
+                          "\"Town, State\" works best." % typed)
+
         gallery.save_settings(vals)
         # Back to the card she was working in, and marked as saved there rather
         # than in a banner at the top of a long page: on a screen this tall the
@@ -1377,8 +1400,37 @@ def admin_opportunities():
         oid = gallery.save_opportunity({"title": title,
                                         "deadline": request.form.get("deadline")})
         return redirect(url_for("site.admin_opportunity", opportunity_id=oid))
-    live, done = gallery.list_opportunities()
-    return render_template("admin/opportunities.html", live=live, done=done)
+    # Plain GET so a filtered view is bookmarkable -- "everything inside 75
+    # miles" is a view she comes back to, not a mode she sets each visit.
+    within = _int(request.args.get("within"))
+    order = "distance" if request.args.get("sort") == "distance" else "deadline"
+    live, done = gallery.list_opportunities(within=within, order=order)
+    return render_template("admin/opportunities.html", live=live, done=done,
+                           within=within, order=order,
+                           here=gallery.studio_point(),
+                           pending=len(gallery.ungeocoded_opportunities()))
+
+
+@site.route("/admin/opportunities/locate", methods=["POST"])
+@admin_required
+def admin_opportunities_locate():
+    """Work out coordinates for the rows that have a location but no distance.
+
+    A button rather than something that happens quietly on a page view: this
+    talks to somebody else's server, one row a second, and the person who
+    pressed it is the right person to be waiting for it. Capped per press so a
+    long list never hangs the request -- press it again for the next batch.
+    """
+    done = 0
+    for row in gallery.ungeocoded_opportunities()[:12]:
+        gallery.locate_opportunity(row["id"], row["location"])
+        done += 1
+        if done < 12:
+            time.sleep(1.05)      # Nominatim asks for one request a second
+    left = len(gallery.ungeocoded_opportunities())
+    flash("Worked out %d location%s.%s" % (done, "" if done == 1 else "s",
+          (" %d still to do -- press it again." % left) if left else ""))
+    return redirect(url_for("site.admin_opportunities"))
 
 
 @site.route("/admin/opportunity/<int:opportunity_id>", methods=["GET", "POST"])
@@ -1411,6 +1463,11 @@ def admin_opportunity(opportunity_id):
             "applied_on": o.get("applied_on"),
         }, opportunity_id)
         gallery.set_opportunity_works(opportunity_id, f.getlist("work_ids"))
+        # Only when the text actually changed, and never in a way that can lose
+        # her edit: locate_opportunity swallows every failure, so a geocoder
+        # that is down or slow costs a distance, not the save.
+        if not app.config.get("TESTING"):
+            gallery.locate_opportunity(opportunity_id, (f.get("location") or "").strip())
         flash("Saved.")
         return redirect(url_for("site.admin_opportunity", opportunity_id=opportunity_id))
     return render_template("admin/opportunity_form.html", o=o,

@@ -224,6 +224,12 @@
       <input name="artist_name" value="{{ cfg.artist_name }}">
       <span class="sub">Also signs the quotation on the front page.</span>
     </label>
+    <label class="wide">Where you work
+      <input name="studio_location" value="{{ cfg.studio_location }}" placeholder="Bedford, NY">
+      <span class="sub">Never shown to visitors. Opportunities measures from here, so
+        every call for entry says how far away it is.
+        {%- if cfg.studio_place %} Found: {{ cfg.studio_place }}.{% endif %}</span>
+    </label>
     <div class="setsave">{{ savedpill('name') }}<button class="cta" type="submit">Save</button></div>
   </form>
 </section>

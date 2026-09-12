@@ -3,6 +3,10 @@
 {% block body %}
 <div class="adminhead">
   <h1>{{ o.title }}</h1>
+  {# The call's own page, at the top where she reads it FROM -- the link was
+     stored and editable but appeared nowhere clickable, so opening the call
+     meant copying a URL out of a text box. #}
+  {% if o.url %}<a class="link" href="{{ o.url }}" target="_blank" rel="noopener noreferrer">Open the call &nearr;</a>{% endif %}
   <a class="cta" href="{{ url_for('site.admin_packet', opportunity=o.id) }}">Build the packet</a>
   <a href="{{ url_for('site.admin_opportunities') }}">all opportunities</a>
 </div>
@@ -22,9 +26,24 @@
       {% for k in kinds %}<option value="{{ k }}"{% if o.kind == k %} selected{% endif %}>{{ opp_kind_label(k) }}</option>{% endfor %}
     </select>
   </label>
-  <label>Where <input name="location" value="{{ o.location or '' }}" placeholder="City, or online"></label>
+  <label>Where <input name="location" value="{{ o.location or '' }}" placeholder="City, or online">
+    {% if o.miles is not none %}
+    {# Nominatim answers with the whole hierarchy down to "United States";
+       three parts is enough to show the right place was found. #}
+    <span class="sub">{{ (o.geo_place or o.location).split(',')[:3]|join(',') }}
+      &middot; <strong>{{ o.miles }} miles</strong> from the studio, as the crow flies</span>
+    {% elif o.location and o.geocoded_at %}
+    <span class="sub">Not found on the map, so this one shows no distance. Try &ldquo;City, State&rdquo;.</span>
+    {% elif o.location %}
+    <span class="sub">Save to work out how far away it is.</span>
+    {% endif %}
+  </label>
   <label>Entry fee <input name="fee" value="{{ dollars(o.fee_cents) }}" placeholder="0" inputmode="decimal"></label>
-  <label class="wide">Link <input name="url" value="{{ o.url or '' }}" placeholder="https://"></label>
+  <label class="wide">Link
+    <input name="url" value="{{ o.url or '' }}" placeholder="https://" inputmode="url">
+    <span class="sub">The page the call is on. It shows on the Opportunities list
+      as &ldquo;the call&rdquo;, so the prospectus is one click from the deadline.</span>
+  </label>
 
   <fieldset class="wide accent-dates">
     <legend>Dates</legend>

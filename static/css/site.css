@@ -1763,7 +1763,7 @@ body.home{
    edge anywhere on this site means a painting has gone. Gold carries urgency
    instead, the same gold that already means "reserved" in the status column,
    and the countdown chip is filled rather than outlined so it still shouts. */
-.sched.opps li{grid-template-columns:13rem minmax(0,1fr) auto}
+.sched.opps li{grid-template-columns:13rem minmax(0,1fr) auto auto}
 .sched.opps li.u-soon{border-left-color:var(--gold)}
 .sched.opps li.u-month{border-left-color:var(--turq)}
 .sched.opps li.u-later,.sched.opps li.u-undated{border-left-color:var(--rule)}
@@ -1790,7 +1790,50 @@ body.home{
 @media (max-width:640px){
   .sched.opps li{grid-template-columns:minmax(0,1fr)}
   .ostat{justify-self:start; margin-top:4px}
+  .miles{justify-self:start}
+  .oppfilter{gap:6px}
 }
+
+/* HOW FAR. Beside the deadline because the two are read together: a call two
+   hours away is a different proposition from one across the county, and the
+   answer to "should I bother" is both dates and miles at once.
+
+   Banded rather than shaded by degree -- the question is not how many miles,
+   it is whether this is a morning, a day, or a trip. Turquoise is the live
+   edge used everywhere else in the studio; far is simply quiet, because far
+   is not a warning, it is just further. */
+.miles{
+  align-self:center; justify-self:end; white-space:nowrap;
+  font-size:11.5px; font-weight:700; letter-spacing:.03em;
+  font-variant-numeric:tabular-nums; color:var(--muted);
+  border:1px solid var(--rule); border-radius:2px; padding:2px 7px;
+}
+.miles.n-here{border-color:var(--turq); background:var(--turq); color:#06222A}
+.miles.n-close{border-color:var(--turq); color:var(--accent)}
+.miles.n-day{border-color:var(--rule); color:var(--ink)}
+.miles.n-far{border-color:var(--line); color:var(--muted)}
+
+/* The radius control. Links, not a form control: each one is a URL, so a
+   filtered view can be bookmarked and the back button behaves. */
+.oppfilter{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 14px}
+.oppfilter-t{font-size:13px; color:var(--muted)}
+.oppfilter .sub{display:inline}
+.oppfilter-none{margin:0 0 14px}
+.chip{
+  font-size:12.5px; color:var(--muted); text-decoration:none; white-space:nowrap;
+  border:1px solid var(--line); border-radius:99px; padding:5px 12px;
+  background:var(--paper); transition:color .15s, border-color .15s;
+}
+.chip:hover{color:var(--accent); border-color:var(--rule)}
+.chip.on{border-color:var(--accent); color:var(--accent); font-weight:600}
+.chip.clear{border-style:dashed}
+/* The call's own page. Quiet next to the title -- it is a way out of the
+   studio, not the thing being named. */
+.outlink{
+  margin-left:10px; font-size:12px; color:var(--muted); text-decoration:none;
+  white-space:nowrap; border-bottom:1px solid var(--line);
+}
+.outlink:hover{color:var(--accent); border-bottom-color:var(--accent)}
 
 /* The one line at the top of a call's own page. Same urgency vocabulary as
    the list, so moving between the two teaches nothing new. */

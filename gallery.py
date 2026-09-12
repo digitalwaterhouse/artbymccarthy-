@@ -96,6 +96,23 @@ DEFAULT_SETTINGS = {
     # The last date a deadline digest went out, so it goes out once a day and
     # not once a page view. Not in the UI; see remind_due().
     "opps_reminded_on": "",
+    # WHERE SHE WORKS, and the point it measures from. A call for entry two
+    # hours away is a different proposition from one across the county -- the
+    # work has to be driven there and driven back -- so Opportunities shows a
+    # distance, and this is the other end of it. Typed as a place name; the
+    # two numbers are geocoded from it once and cached so nothing looks a
+    # coordinate up on a page view.
+    # Seeded with the real answer rather than left blank, so the distances are
+    # there the first time she opens Opportunities instead of after a trip to
+    # Settings. These are DEFAULTS: the live database has no row for these keys
+    # yet, so they apply until she saves a location, and typing a different one
+    # geocodes it and overwrites all four. Bedford is in WESTCHESTER COUNTY,
+    # NEW YORK -- not New Bedford, which is in Massachusetts and is a different
+    # place two hundred miles away.
+    "studio_location": "Bedford, NY",
+    "studio_lat": "41.2041304",
+    "studio_lon": "-73.6425090",
+    "studio_place": "Town of Bedford, Westchester County, New York, United States",
 }
 
 
@@ -141,6 +158,18 @@ NEW_COLUMNS = {
     # collections table already existed, so this cannot live in schema.sql.
     "collections": [
         ("parent_id", "INTEGER REFERENCES collections(id) ON DELETE SET NULL"),
+    ],
+    # Where a call is, as two numbers. Geocoded from `location` when the row is
+    # saved and then left alone -- a call does not move, and Nominatim asks for
+    # one request a second, which is not a thing to spend on a page view.
+    # geo_query records WHAT was looked up, so a corrected location re-geocodes
+    # and an unchanged one never does.
+    "opportunities": [
+        ("lat",         "REAL"),
+        ("lon",         "REAL"),
+        ("geo_query",   "TEXT"),
+        ("geo_place",   "TEXT"),
+        ("geocoded_at", "TEXT"),
     ],
     "works": [
         ("location",       "TEXT"),
@@ -1415,6 +1444,121 @@ def _days_until(date_str):
     return (d - datetime.now(timezone.utc).date()).days
 
 
+# ------------------------------------------------------------------ distance
+# Nominatim is OpenStreetMap's own geocoder: free, no key, and it asks two
+# things in return -- a User-Agent that identifies the caller, and no more than
+# one request a second. Both are honoured here. Nothing on a public page ever
+# calls this; it runs when SHE saves a row, which is a human-paced action.
+GEO_UA = "artbymccarthy.com opportunity map (contact: paull1967@gmail.com)"
+GEO_URL = "https://nominatim.openstreetmap.org/search"
+
+
+def geocode(place):
+    """(lat, lon, matched_name) for a place name, or None. Never raises.
+
+    A geocoder that throws takes the save with it, and she would lose the row
+    she just typed because a third party was slow. Every failure here is a
+    missing distance and nothing else.
+    """
+    import urllib.parse, urllib.request
+    q = (place or "").strip()
+    if not q:
+        return None
+    url = GEO_URL + "?" + urllib.parse.urlencode(
+        {"q": q, "format": "json", "limit": 1, "addressdetails": 0})
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": GEO_UA})
+        with urllib.request.urlopen(req, timeout=6) as r:
+            rows = json.loads(r.read().decode("utf-8"))
+    except Exception:
+        return None
+    if not rows:
+        return None
+    try:
+        return float(rows[0]["lat"]), float(rows[0]["lon"]), rows[0].get("display_name") or q
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def miles_between(lat1, lon1, lat2, lon2):
+    """Great-circle miles. Straight-line, and the screen says so -- turning it
+    into driving distance means a routing service and a key, and for "is this
+    worth the trip" the crow's flight is the right resolution anyway."""
+    import math
+    R = 3958.7613
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp, dl = math.radians(lat2 - lat1), math.radians(lon2 - lon1)
+    h = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * R * math.asin(min(1.0, math.sqrt(h)))
+
+
+def studio_point():
+    """(lat, lon) of the studio, or None if she has not set a location."""
+    c = settings()
+    try:
+        return float(c.get("studio_lat")), float(c.get("studio_lon"))
+    except (TypeError, ValueError):
+        return None
+
+
+def locate_studio(place):
+    """Geocode the studio address and store it. Returns the matched name."""
+    hit = geocode(place)
+    if not hit:
+        save_settings({"studio_location": place or "", "studio_lat": "",
+                       "studio_lon": "", "studio_place": ""})
+        return None
+    lat, lon, name = hit
+    save_settings({"studio_location": place or "", "studio_lat": str(lat),
+                   "studio_lon": str(lon), "studio_place": name})
+    return name
+
+
+def locate_opportunity(opportunity_id, place, force=False):
+    """Geocode one call's location, unless the same text is already looked up.
+
+    `geo_query` is the guard: re-saving a row without touching its location
+    must not spend another request, and correcting a typo must.
+    """
+    with connect() as conn:
+        row = conn.execute("SELECT location, geo_query, lat FROM opportunities "
+                           "WHERE id=?", (opportunity_id,)).fetchone()
+    if row is None:
+        return None
+    place = (place if place is not None else row["location"]) or ""
+    if not force and row["lat"] is not None and (row["geo_query"] or "") == place.strip():
+        return None
+    if not place.strip():
+        with connect() as conn:
+            conn.execute("UPDATE opportunities SET lat=NULL, lon=NULL, geo_query=NULL,"
+                         " geo_place=NULL, geocoded_at=NULL WHERE id=?", (opportunity_id,))
+        return None
+    hit = geocode(place)
+    with connect() as conn:
+        if hit:
+            conn.execute("UPDATE opportunities SET lat=?, lon=?, geo_query=?, geo_place=?,"
+                         " geocoded_at=? WHERE id=?",
+                         (hit[0], hit[1], place.strip(), hit[2], now(), opportunity_id))
+        else:
+            # Remember the miss too, or every page load retries a place name
+            # that Nominatim does not know.
+            conn.execute("UPDATE opportunities SET lat=NULL, lon=NULL, geo_query=?,"
+                         " geo_place=NULL, geocoded_at=? WHERE id=?",
+                         (place.strip(), now(), opportunity_id))
+    return hit
+
+
+def ungeocoded_opportunities():
+    """Rows with a location typed but no coordinates worked out yet."""
+    with connect() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT id, title, location FROM opportunities"
+            " WHERE location IS NOT NULL AND TRIM(location) <> ''"
+            "   AND lat IS NULL"
+            "   AND (geo_query IS NULL OR TRIM(geo_query) <> TRIM(location))"
+            " ORDER BY id").fetchall()]
+
+
 def _decorate_opp(o, counts=None):
     o["days"] = _days_until(o.get("deadline"))
     # Closed means the deadline is behind us, regardless of what she did about
@@ -1438,26 +1582,55 @@ def _decorate_opp(o, counts=None):
     return o
 
 
-def list_opportunities(include_done=True):
+def _decorate_distance(o, here):
+    """How far this call is from the studio, if both ends are known."""
+    o["miles"] = None
+    o["near"] = None
+    if here and o.get("lat") is not None and o.get("lon") is not None:
+        m = miles_between(here[0], here[1], o["lat"], o["lon"])
+        o["miles"] = int(round(m))
+        # Named bands rather than a raw number alone: the question is never
+        # "how many miles", it is "can I drive there and back in a day".
+        o["near"] = "here" if m <= 25 else "close" if m <= 75 else \
+                    "day" if m <= 200 else "far"
+    return o
+
+
+def list_opportunities(include_done=True, within=None, order="deadline"):
     """Everything, split into what is still live and what is finished.
 
     Live is sorted by DEADLINE ASCENDING and that is the whole point of the
     screen -- the next thing she has to act on is the first thing she reads.
     Undated calls sort last within live rather than first, because a call with
     no deadline is never the urgent one.
+
+    `within` is a radius in miles and filters the LIVE list only: what is
+    already closed is a record, and a record does not get filtered by how far
+    away it was. A call with no location survives the filter rather than being
+    hidden -- a grant or an online call has no distance to fail, and dropping
+    those would quietly empty the screen.
     """
+    here = studio_point()
     with connect() as conn:
         rows = [dict(r) for r in conn.execute("SELECT * FROM opportunities").fetchall()]
         counts = {r["opportunity_id"]: r["c"] for r in conn.execute(
             "SELECT opportunity_id, COUNT(*) c FROM opportunity_works "
             "GROUP BY opportunity_id").fetchall()}
     for o in rows:
-        _decorate_opp(o, counts)
+        _decorate_distance(_decorate_opp(o, counts), here)
     live = [o for o in rows
             if not o["closed"] and o["status"] in OPP_OPEN_STATUSES]
+    if within:
+        live = [o for o in live if o["miles"] is None or o["miles"] <= within]
     live_ids = {o["id"] for o in live}
     done = [o for o in rows if o["id"] not in live_ids]
-    live.sort(key=lambda o: (o["deadline"] or "9999-99-99", o["title"]))
+    if order == "distance" and here:
+        # Undated and unplaced both sort last, for the same reason: they are
+        # the rows that cannot answer the question the sort was asked.
+        live.sort(key=lambda o: (o["miles"] is None, o["miles"] or 0,
+                                 o["deadline"] or "9999-99-99"))
+    else:
+        live.sort(key=lambda o: (o["deadline"] or "9999-99-99", o["title"]))
     done.sort(key=lambda o: (o["deadline"] or "", o["title"]), reverse=True)
     return live, (done if include_done else [])
 
@@ -1479,7 +1652,7 @@ def get_opportunity(opportunity_id):
                            (opportunity_id,)).fetchone()
         if row is None:
             return None
-        o = _decorate_opp(dict(row))
+        o = _decorate_distance(_decorate_opp(dict(row)), studio_point())
         o["work_ids"] = [r["work_id"] for r in conn.execute(
             "SELECT work_id FROM opportunity_works WHERE opportunity_id=?",
             (opportunity_id,)).fetchall()]
