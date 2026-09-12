@@ -323,12 +323,17 @@ def collection(slug):
     if not c:
         abort(404)
     works = gallery.list_works(collection_id=c["id"])
+    # A collection with subcategories shows its own pieces first and then each
+    # subcategory under its own heading -- grouping is the entire point of
+    # having them, so the page must not just pour everything into one grid.
+    groups = [(k, gallery.list_works(collection_id=k["id"])) for k in c["children"]]
+    groups = [g for g in groups if g[1]]
     # An empty collection is a page with nothing on it, and the slug is
     # guessable. Signed in it still renders, so she can see one before it
     # has anything in it.
-    if not works and not session.get("admin"):
+    if not works and not groups and not session.get("admin"):
         abort(404)
-    return render_template("collection.html", c=c, works=works)
+    return render_template("collection.html", c=c, works=works, groups=groups)
 
 
 @site.route("/about")
@@ -760,8 +765,13 @@ def admin_collections():
         if not name:
             flash("A collection needs a name.")
         else:
-            gallery.save_collection({"name": name})
+            parent_id = _int(request.form.get("parent_id")) or None
+            new_id = gallery.save_collection({"name": name, "parent_id": parent_id})
             flash(f"Added {name}.")
+            # A subcategory named from its parent's page sends you STRAIGHT
+            # INTO it, because the next thing you do is put pieces in it.
+            if parent_id and request.form.get("open"):
+                return redirect(url_for("site.admin_collection", collection_id=new_id))
         return redirect(url_for("site.admin_collections"))
     return render_template("admin/collections.html",
                            collections=gallery.list_collections())
@@ -779,23 +789,42 @@ def admin_collection(collection_id):
             "blurb": (request.form.get("blurb") or "").strip(),
             "sort": _int(request.form.get("sort"), 0),
             "slug": (request.form.get("slug") or "").strip() or None,
+            "parent_id": _int(request.form.get("parent_id")) or None,
         }, collection_id)
-        flash("Saved.")
+        # The pieces are edited on the same form, so one Save means one trip.
+        # Ticking a painting that is filed somewhere else MOVES it -- a piece
+        # has one collection -- and the flash says so out loud.
+        added, removed = gallery.set_collection_works(
+            collection_id, request.form.getlist("work_ids"))
+        bits = []
+        if added:
+            bits.append(f"{added} piece{'s' if added != 1 else ''} put in")
+        if removed:
+            bits.append(f"{removed} taken out")
+        flash("Saved." + (" " + ", ".join(bits) + "." if bits else ""))
         return redirect(url_for("site.admin_collection", collection_id=collection_id))
+    # Everything she owns, drafts included: the picker is where a piece is put
+    # IN, so it has to offer the ones that are not in it yet.
+    all_works = gallery.list_works(include_draft=True)
+    member_ids = {w["id"] for w in all_works if w["collection_id"] == collection_id}
     return render_template("admin/collection_form.html", c=c,
-                           works=gallery.list_works(include_draft=True,
-                                                    collection_id=collection_id))
+                           all_works=all_works, member_ids=member_ids,
+                           works=[w for w in all_works if w["id"] in member_ids],
+                           collections=gallery.list_collections())
 
 
 @site.route("/admin/collection/<int:collection_id>/delete", methods=["POST"])
 @admin_required
 def admin_collection_delete(collection_id):
     c = gallery.get_collection(collection_id=collection_id)
+    kids = len(c["children"]) if c else 0
     gallery.delete_collection(collection_id)
     # Said out loud, because "delete" next to a count of paintings reads as if
     # it might take them with it.
     flash(f"Deleted {c['name'] if c else 'it'}. Its paintings are still here, "
-          "now in no collection.")
+          "now in no collection."
+          + (f" Its {kids} subcategor{'ies are' if kids != 1 else 'y is'} now "
+             "listed on their own." if kids else ""))
     return redirect(url_for("site.admin_collections"))
 
 

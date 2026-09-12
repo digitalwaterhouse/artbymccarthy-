@@ -54,7 +54,7 @@
   <label class="sr" for="fcoll">Collection</label>
   <select id="fcoll" name="collection">
     <option value="">Any collection</option>
-    {% for c in collections %}<option value="{{ c.id }}" {% if f_collection == c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    {% for c in collections %}<option value="{{ c.id }}" {% if f_collection == c.id|string %}selected{% endif %}>{% if c.depth %}&nbsp;&nbsp;&nbsp;&nbsp;&#8627; {% endif %}{{ c.name }}</option>{% endfor %}
     <option value="none" {% if f_collection == 'none' %}selected{% endif %}>&mdash; none &mdash;</option>
   </select>
   {% endif %}
@@ -89,7 +89,7 @@
       <td class="thumb" data-label="">{% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}</td>
       <td data-label="Title"><a href="{{ url_for('site.admin_work', work_id=w.id) }}">{{ w.title }}</a>
           <span class="sub">{{ w.year or '' }} {{ w.medium or '' }}</span></td>
-      <td data-label="Collection">{% if w.collection %}<a href="{{ url_for('site.admin_collection', collection_id=w.collection.id) }}">{{ w.collection.name }}</a>{% else %}<span class="sub">&mdash;</span>{% endif %}</td>
+      <td data-label="Collection">{% if w.collection %}<a href="{{ url_for('site.admin_collection', collection_id=w.collection.id) }}">{{ w.collection.path }}</a>{% else %}<span class="sub">&mdash;</span>{% endif %}</td>
       <td data-label="Where">{% if w.location %}{{ w.location }}{% else %}<span class="sub">&mdash;</span>{% endif %}</td>
       <td data-label="Size">{{ w.dims or '&mdash;'|safe }}</td>
       <td class="num" data-label="Price">{{ w.price or '&mdash;'|safe }}</td>

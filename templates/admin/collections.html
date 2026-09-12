@@ -7,35 +7,48 @@
 
 <p class="sub">A collection is a body of work — the Box Series, the pieces from
    Colombo. Each painting belongs to one, or to none, and every collection gets
-   its own page on the site that you can send someone straight to.</p>
+   its own page on the site that you can send someone straight to. A collection
+   can sit <em>under</em> another one — Fireflies and Faces inside Sri Lanka —
+   and the one above gathers them all on its page.</p>
 
 <form class="newrow" method="post">
   <label class="sr" for="newcollection">Name a new collection</label>
   <input id="newcollection" name="name" placeholder="Name a new collection" required>
+  {% set parents = collections | selectattr('depth', 'equalto', 0) | list %}
+  {% if parents %}
+  <label class="sr" for="newparent">Inside</label>
+  <select id="newparent" name="parent_id">
+    <option value="">— on its own —</option>
+    {% for c in parents %}<option value="{{ c.id }}">inside {{ c.name }}</option>{% endfor %}
+  </select>
+  {% endif %}
   <button class="cta" type="submit">Add</button>
 </form>
 
-<table class="grid-t">
+<table class="grid-t tree">
   <thead><tr><th>Collection</th><th class="num">Pieces</th><th>On the site</th><th></th></tr></thead>
   <tbody>
   {% for c in collections %}
     <tr>
-      <td data-label="Collection"><a href="{{ url_for('site.admin_collection', collection_id=c.id) }}">{{ c.name }}</a>
+      <td data-label="Collection">{% if c.depth %}<span class="nestmark" aria-hidden="true">↳</span>{% endif %}<a href="{{ url_for('site.admin_collection', collection_id=c.id) }}">{{ c.name }}</a>
+          {% if c.depth %}<span class="sub">inside {{ c.parent.name }}</span>{% endif %}
           {% if c.blurb %}<span class="sub">{{ c.blurb }}</span>{% endif %}</td>
-      <td class="num" data-label="Pieces">{{ c.count }}{% if c.draft_count %}<span class="sub">+{{ c.draft_count }} draft</span>{% endif %}</td>
+      {# A parent's own count first, then what its subcategories bring with
+         them -- the page shows both, so the list has to as well. #}
+      <td class="num" data-label="Pieces">{{ c.count }}{% if c.total > c.count %}<span class="sub">+{{ c.total - c.count }} in its subcategories</span>{% endif %}{% if c.draft_count %}<span class="sub">+{{ c.draft_count }} draft</span>{% endif %}</td>
       <td data-label="On the site">
-        {% if c.count %}<a href="{{ url_for('site.collection', slug=c.slug) }}">/collection/{{ c.slug }}</a>
+        {% if c.total %}<a href="{{ url_for('site.collection', slug=c.slug) }}">/collection/{{ c.slug }}</a>
         {% else %}<span class="sub">empty — not shown</span>{% endif %}
       </td>
       <td class="right" data-label="">
         <form method="post" action="{{ url_for('site.admin_collection_delete', collection_id=c.id) }}"
-              onsubmit="return confirm('Delete the collection {{ c.name }}? The paintings in it stay, in no collection.')">
+              onsubmit="return confirm('Delete the collection {{ c.name }}? The paintings in it stay, in no collection.{% if c.children %} Its subcategories stay too, on their own.{% endif %}')">
           <button class="link danger" type="submit">delete</button>
         </form>
       </td>
     </tr>
   {% else %}
-    <tr><td colspan="4" class="empty">No collections yet. Name one above, then put pieces in it from each painting's own page.</td></tr>
+    <tr><td colspan="4" class="empty">No collections yet. Name one above, then choose its pieces on its own page.</td></tr>
   {% endfor %}
   </tbody>
 </table>

@@ -2,8 +2,11 @@
 {% block title %}{{ c.name }}{% endblock %}
 {% block body %}
 <div class="adminhead">
-  <h1>{{ c.name }}</h1>
-  {% if works %}<a href="{{ url_for('site.collection', slug=c.slug) }}">view on the site</a>{% endif %}
+  <div>
+    {% if c.parent %}<a class="crumb" href="{{ url_for('site.admin_collection', collection_id=c.parent.id) }}">&larr; {{ c.parent.name }}</a>{% endif %}
+    <h1>{{ c.name }}</h1>
+  </div>
+  {% if works or c.children %}<a href="{{ url_for('site.collection', slug=c.slug) }}">view on the site</a>{% endif %}
 </div>
 
 <form class="formgrid" method="post">
@@ -13,22 +16,69 @@
   </label>
   <label>Sort order <input name="sort" value="{{ c.sort }}" inputmode="numeric"></label>
   <label>Web address <input name="slug" value="{{ c.slug }}"></label>
+  {# One level only: a collection that already holds subcategories cannot be
+     put inside another one, so it is not offered the choice. #}
+  {% if not c.children %}
+  {% set parents = collections | selectattr('depth', 'equalto', 0) | rejectattr('id', 'equalto', c.id) | list %}
+  {% if parents %}
+  <label class="wide">Inside
+    <select name="parent_id">
+      <option value="">— on its own —</option>
+      {% for p in parents %}
+        <option value="{{ p.id }}" {% if c.parent_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+      {% endfor %}
+    </select>
+    <span class="sub">Put this collection inside another one and it becomes a subcategory of it — Fireflies inside Sri Lanka.</span>
+  </label>
+  {% endif %}
+  {% endif %}
+
+  <fieldset class="wide">
+    <legend>Pieces in this collection</legend>
+    <p class="sub">Tick a painting to put it in, untick it to take it out. A
+       painting belongs to <strong>one</strong> collection, so ticking one that
+       is filed somewhere else moves it here — where it is now is written beside
+       it. Taking a piece out leaves the painting itself alone.</p>
+    <div class="pickers">
+      {% for w in all_works %}
+      <label class="pick">
+        <input type="checkbox" name="work_ids" value="{{ w.id }}"
+               {% if w.id in member_ids %}checked{% endif %}>
+        {% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}
+        <span>{{ w.title }}{% if w.status == 'draft' %} <span class="sub">draft</span>{% endif %}
+          {% if w.collection and w.collection_id != c.id %}<span class="sub">in {{ w.collection.path }}</span>{% endif %}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </fieldset>
+
   <div class="wide"><button class="cta" type="submit">Save</button></div>
 </form>
 
-<h2>In this collection</h2>
-{% if works %}
-<p class="sub">A piece joins a collection on its own page, under <em>Collection</em>.</p>
-<div class="shots">
-  {% for w in works %}
-    <figure>
-      {% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}
-      <figcaption><a href="{{ url_for('site.admin_work', work_id=w.id) }}">{{ w.title }}</a>
-        {% if w.status == 'draft' %}<span class="sub">draft</span>{% endif %}</figcaption>
-    </figure>
+{% if not c.parent %}
+<h2>Subcategories</h2>
+<p class="sub">A group inside this collection — Fireflies, Faces. Its pieces
+   show under their own heading on this collection's page, and it gets a page
+   of its own as well.</p>
+{% if c.children %}
+<ul class="plainlist">
+  {% for k in c.children %}
+    <li><a href="{{ url_for('site.admin_collection', collection_id=k.id) }}">{{ k.name }}</a></li>
   {% endfor %}
-</div>
-{% else %}
-<p class="empty">Nothing in it yet. Open a painting and choose this collection on its page.</p>
+</ul>
 {% endif %}
+<form class="newrow" method="post" action="{{ url_for('site.admin_collections') }}">
+  <input type="hidden" name="parent_id" value="{{ c.id }}">
+  <input type="hidden" name="open" value="1">
+  <label class="sr" for="newsub">Name a subcategory</label>
+  <input id="newsub" name="name" placeholder="Name a subcategory of {{ c.name }}" required>
+  <button class="cta" type="submit">Add</button>
+</form>
+{% endif %}
+
+<form method="post" action="{{ url_for('site.admin_collection_delete', collection_id=c.id) }}"
+      class="danger-row"
+      onsubmit="return confirm('Delete the collection {{ c.name }}? The paintings in it stay, in no collection.{% if c.children %} Its subcategories stay too, on their own.{% endif %}')">
+  <button class="link danger" type="submit">delete this collection</button>
+</form>
 {% endblock %}

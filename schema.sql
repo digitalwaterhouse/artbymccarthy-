@@ -2,12 +2,20 @@
 -- pieces. A painting belongs to one or to none; it is not a tag list, because
 -- a piece shown in four places at once is a piece with no home. Deleting a
 -- collection frees its pieces rather than taking them with it.
+--
+-- A collection may sit UNDER another one (Sri Lanka > Fireflies), and that is
+-- the whole of the nesting: ONE level. A piece still belongs to exactly one
+-- collection -- the child, when there is one -- so the one-home rule above is
+-- untouched, and the parent's page gathers its children's work under headings.
+-- Deeper trees would mean a piece could be filed at any of four depths and
+-- nobody could say where it lives.
 CREATE TABLE IF NOT EXISTS collections (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     slug       TEXT UNIQUE NOT NULL,
     name       TEXT NOT NULL,
     blurb      TEXT,
     sort       INTEGER NOT NULL DEFAULT 0,
+    parent_id  INTEGER REFERENCES collections(id) ON DELETE SET NULL,
     created_at TEXT NOT NULL
 );
 

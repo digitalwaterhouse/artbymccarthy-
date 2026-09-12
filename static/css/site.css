@@ -1638,3 +1638,44 @@ select.os-accepted{border-color:var(--accent)}
    discovered at the deadline. */
 .pick.nopic{opacity:.5; cursor:not-allowed}
 .pick.nopic span .sub{display:block; font-size:11.5px}
+
+/* ---------- collections that hold collections ----------
+   A subcategory is shown as a row indented under the collection it sits in,
+   not as a second table: the list is short, and two tables would ask you to
+   work out which one a name is in. The arrow is decorative -- the row also
+   says "inside <name>" in words, which is what a screen reader reads. */
+.nestmark{color:var(--muted); margin-right:7px}
+/* A heading that carries the collection it sits under on the line above it.
+   The auto margin has to move from the h1 to the stack, or the link that was
+   sitting at the far right of the header row comes back in beside it. */
+.adminhead > div{margin-right:auto}
+.adminhead .crumb{margin-bottom:4px}
+/* On a phone the card layout puts a lone .sub back on the label's line. Here
+   every .sub is a fact of its own -- what it sits inside, what its
+   subcategories add -- so each keeps its own line. */
+.grid-t.tree td > .sub{display:block}
+/* The "inside" menu shares the add-a-collection row. It must be allowed to
+   SHRINK: left at its intrinsic width it eats the whole 34rem row and the name
+   field collapses to a sliver. */
+.newrow:has(select){max-width:46rem; flex-wrap:wrap}
+.newrow select{flex:0 1 15rem; min-width:9rem; font-size:16px; box-sizing:border-box}
+.newrow input{min-width:11rem}
+.plainlist{list-style:none; margin:0 0 14px; padding:0; display:flex;
+  flex-wrap:wrap; gap:8px 18px}
+.plainlist a{color:var(--accent)}
+/* On the site: a subcategory's pieces sit under their own heading inside the
+   parent's page, with the heading a link to that subcategory's own page. */
+.subhead{
+  display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+  margin:44px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--rule);
+}
+.subhead h2{margin:0; font-size:22px}
+.subhead a{font:600 12px/1 "Karla",sans-serif; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--muted); text-decoration:none}
+.subhead a:hover{color:var(--accent)}
+.crumb{
+  display:block; font:600 12px/1.4 "Karla",sans-serif; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--muted); text-decoration:none;
+  margin-bottom:10px;
+}
+.crumb:hover{color:var(--accent)}

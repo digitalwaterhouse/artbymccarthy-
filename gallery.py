@@ -137,6 +137,11 @@ NEW_COLUMNS = {
         ("out_at",  "TEXT"),
         ("back_at", "TEXT"),
     ],
+    # One level of nesting under a collection (Sri Lanka > Fireflies). The
+    # collections table already existed, so this cannot live in schema.sql.
+    "collections": [
+        ("parent_id", "INTEGER REFERENCES collections(id) ON DELETE SET NULL"),
+    ],
     "works": [
         ("location",       "TEXT"),
         ("collection_id",  "INTEGER REFERENCES collections(id) ON DELETE SET NULL"),
@@ -159,6 +164,8 @@ def _migrate(conn):
     # this migration has yet to add takes the whole script down with it.
     conn.execute("CREATE INDEX IF NOT EXISTS idx_works_collection "
                  "ON works(collection_id, sort, id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_collections_parent "
+                 "ON collections(parent_id, sort, name)")
 
 
 # ------------------------------------------------------------------ settings
@@ -240,7 +247,14 @@ def _hydrate(conn, rows):
     for img in conn.execute(q, ids).fetchall():
         by_work.setdefault(img["work_id"], []).append(dict(img))
     names = {r["id"]: dict(r) for r in
-             conn.execute("SELECT id, slug, name FROM collections").fetchall()}
+             conn.execute("SELECT id, slug, name, parent_id FROM collections").fetchall()}
+    # A subcategory is named with the collection it sits under ("Sri Lanka
+    # \u2192 Fireflies") wherever a piece shows where it is filed: on its own the
+    # word "Fireflies" does not say which body of work it belongs to.
+    for c in names.values():
+        par = names.get(c.get("parent_id"))
+        c["path"] = f'{par["name"]} \u2192 {c["name"]}' if par else c["name"]
+        c["parent"] = par
     for w in works:
         w["images"] = by_work.get(w["id"], [])
         w["price"] = money(w["price_cents"])
@@ -346,8 +360,12 @@ def search_works(q=None, status=None, collection_id=None, place=None, medium=Non
     if collection_id == 0:
         sql += " AND collection_id IS NULL"
     elif collection_id:
-        sql += " AND collection_id=?"
-        args.append(collection_id)
+        # Asking for a collection means asking for its subcategories too --
+        # filtering by Sri Lanka and being shown none of the Fireflies pieces
+        # reads as a broken filter, not as a distinction.
+        fam = collection_family(collection_id)
+        sql += " AND collection_id IN (%s)" % ",".join("?" * len(fam))
+        args += fam
     if place == 0:
         sql += " AND (location IS NULL OR location='')"
     elif place:
@@ -578,14 +596,49 @@ def shows_for(work_id):
 
 # --------------------------------------------------------------- collections
 # A named body of work. One collection per piece, or none -- see schema.sql
-# for why this is not a tag list.
+# for why this is not a tag list, and why nesting stops at one level.
+
+def _nest(rows):
+    """Parents in hanging order, each followed by its own children.
+
+    A child whose parent has vanished is shown at the top level rather than
+    hidden: an orphan is still a body of work, and a collection that silently
+    disappears from the list is worse than one filed in the wrong place."""
+    by_id = {c["id"]: c for c in rows}
+    tops, kids = [], {}
+    for c in rows:
+        pid = c.get("parent_id")
+        if pid and pid in by_id and pid != c["id"]:
+            kids.setdefault(pid, []).append(c)
+        else:
+            tops.append(c)
+    out = []
+    for c in tops:
+        c["depth"] = 0
+        c["parent"] = None
+        c["path"] = c["name"]
+        c["children"] = kids.get(c["id"], [])
+        out.append(c)
+        for k in c["children"]:
+            k["depth"] = 1
+            k["parent"] = c
+            k["path"] = f'{c["name"]} \u2192 {k["name"]}'
+            k["children"] = []
+            out.append(k)
+    return out
+
 
 def list_collections(with_counts=True):
     """Collections in hanging order, each with how many pieces are in it.
 
+    Flat, but ordered as the tree reads: a subcategory comes directly after the
+    collection it sits under, and carries depth/path so a <select> or a table
+    can show the nesting without a second query.
+
     The count is of PUBLIC pieces: a collection whose only members are still
     drafts reads as empty on the site, and the studio list should say the same
-    number the visitor will see rather than a more flattering one."""
+    number the visitor will see rather than a more flattering one. `total` adds
+    the children's pieces in, because that is what a parent's page shows."""
     with connect() as conn:
         rows = [dict(r) for r in conn.execute(
             "SELECT * FROM collections ORDER BY sort, name").fetchall()]
@@ -601,23 +654,60 @@ def list_collections(with_counts=True):
             for c in rows:
                 c["count"] = counts.get(c["id"], 0)
                 c["draft_count"] = drafts.get(c["id"], 0)
-    return rows
+    out = _nest(rows)
+    if with_counts:
+        for c in out:
+            c["total"] = c["count"] + sum(k["count"] for k in c["children"])
+            c["total_draft"] = (c["draft_count"]
+                                + sum(k["draft_count"] for k in c["children"]))
+    return out
 
 
 def get_collection(slug=None, collection_id=None):
+    """One collection, with its parent and children attached.
+
+    Both are looked up here rather than at each call site: every page that
+    shows a collection needs to say what it sits under or what sits under it."""
     with connect() as conn:
         if slug is not None:
             row = conn.execute("SELECT * FROM collections WHERE slug=?", (slug,)).fetchone()
         else:
             row = conn.execute("SELECT * FROM collections WHERE id=?",
                                (collection_id,)).fetchone()
-    return dict(row) if row else None
+        if not row:
+            return None
+        c = dict(row)
+        c["parent"] = None
+        if c.get("parent_id"):
+            par = conn.execute("SELECT * FROM collections WHERE id=?",
+                               (c["parent_id"],)).fetchone()
+            c["parent"] = dict(par) if par else None
+            if not c["parent"]:
+                c["parent_id"] = None
+        c["children"] = [dict(r) for r in conn.execute(
+            "SELECT * FROM collections WHERE parent_id=? AND id<>? "
+            "ORDER BY sort, name", (c["id"], c["id"]))] if not c["parent_id"] else []
+    return c
+
+
+def collection_family(collection_id):
+    """This collection and anything filed under it.
+
+    What a parent's page and the studio's collection filter both mean by
+    "Sri Lanka": the pieces filed there AND the ones filed in its
+    subcategories."""
+    with connect() as conn:
+        kids = [r["id"] for r in conn.execute(
+            "SELECT id FROM collections WHERE parent_id=? AND id<>?",
+            (collection_id, collection_id))]
+    return [collection_id] + kids
 
 
 def save_collection(data, collection_id=None):
     vals = {"name": (data.get("name") or "").strip(),
             "blurb": data.get("blurb") or "",
-            "sort": data.get("sort") or 0}
+            "sort": data.get("sort") or 0,
+            "parent_id": _valid_parent(data.get("parent_id"), collection_id)}
     vals["slug"] = unique_slug(data.get("slug") or slugify(vals["name"]),
                                collection_id, table="collections")
     with connect() as conn:
@@ -633,13 +723,81 @@ def save_collection(data, collection_id=None):
         return conn.execute("SELECT last_insert_rowid() AS i").fetchone()["i"]
 
 
+def _current_parent(collection_id):
+    if not collection_id:
+        return None
+    with connect() as conn:
+        row = conn.execute("SELECT parent_id FROM collections WHERE id=?",
+                           (collection_id,)).fetchone()
+    return row["parent_id"] if row else None
+
+
+def _valid_parent(parent_id, collection_id=None):
+    """The one rule that keeps the tree one level deep, enforced here rather
+    than in the form: a subcategory cannot itself have subcategories, nothing
+    can be its own parent, and a collection that already has children cannot be
+    filed under something else (that would make grandchildren).
+
+    An EMPTY choice means "on its own" and clears the parent. An impossible one
+    leaves the collection where it is: a refused move must not have the side
+    effect of turning a subcategory loose."""
+    try:
+        parent_id = int(parent_id)
+    except (TypeError, ValueError):
+        return None if parent_id in (None, "", 0, "0") else _current_parent(collection_id)
+    if not parent_id:
+        return None
+    if collection_id and parent_id == int(collection_id):
+        return _current_parent(collection_id)
+    with connect() as conn:
+        par = conn.execute("SELECT parent_id FROM collections WHERE id=?",
+                           (parent_id,)).fetchone()
+        if not par or par["parent_id"]:
+            return _current_parent(collection_id)
+        if collection_id and conn.execute(
+                "SELECT 1 FROM collections WHERE parent_id=? LIMIT 1",
+                (collection_id,)).fetchone():
+            return _current_parent(collection_id)
+    return parent_id
+
+
+def set_collection_works(collection_id, work_ids):
+    """Say exactly which pieces are in this collection.
+
+    The counterpart to choosing a collection on the painting's own page -- the
+    same fact written from the other end, which is the end you are at when you
+    are filing twenty paintings at once.
+
+    A piece has ONE collection, so ticking one that belongs elsewhere MOVES it.
+    Unticking only ever clears pieces that were in THIS collection: it must not
+    reach into another one and empty it."""
+    ids = {int(i) for i in work_ids if str(i).strip().isdigit()}
+    with connect() as conn:
+        now_in = {r["id"] for r in conn.execute(
+            "SELECT id FROM works WHERE collection_id=?", (collection_id,))}
+        removed = now_in - ids
+        added = ids - now_in
+        if removed:
+            conn.execute("UPDATE works SET collection_id=NULL WHERE id IN (%s)"
+                         % ",".join("?" * len(removed)), list(removed))
+        if added:
+            conn.execute("UPDATE works SET collection_id=? WHERE id IN (%s)"
+                         % ",".join("?" * len(added)),
+                         [collection_id] + list(added))
+    return len(added), len(removed)
+
+
 def delete_collection(collection_id):
     """Delete the collection, keep the paintings.
 
     The pieces are detached rather than deleted -- the same reasoning as the
     inquiries in delete_work. Nobody types "delete the Box Series" meaning
-    "delete the eleven paintings in it"."""
+    "delete the eleven paintings in it". Subcategories are promoted to
+    collections in their own right for the same reason: deleting the parent
+    must not quietly take four other bodies of work with it."""
     with connect() as conn:
+        conn.execute("UPDATE collections SET parent_id=NULL WHERE parent_id=?",
+                     (collection_id,))
         conn.execute("UPDATE works SET collection_id=NULL WHERE collection_id=?",
                      (collection_id,))
         conn.execute("DELETE FROM collections WHERE id=?", (collection_id,))

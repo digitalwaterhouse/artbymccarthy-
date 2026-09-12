@@ -1,14 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ c.name }} &mdash; {{ cfg.site_title }}{% endblock %}
 {% block desc %}{{ c.blurb or (c.name ~ ', a body of work by ' ~ cfg.site_title) }}{% endblock %}
-{% block body %}
-<section class="intro">
-  <h1>{{ c.name }}</h1>
-  {% if c.blurb %}<p class="lede">{{ c.blurb }}</p>{% endif %}
-</section>
-{% if works %}
+{% macro grid(items) %}
 <div class="grid">
-  {% for w in works %}
+  {% for w in items %}
   <a class="tile{% if w.status == 'sold' %} sold{% endif %}" href="{{ url_for('site.work', slug=w.slug) }}">
     {% if w.images %}
       <picture>
@@ -24,7 +19,27 @@
   </a>
   {% endfor %}
 </div>
-{% else %}
+{% endmacro %}
+{% block body %}
+<section class="intro">
+  {# A subcategory says what it is part of, and the way back up is the first
+     thing on the page rather than the browser's back button. #}
+  {% if c.parent %}<a class="crumb" href="{{ url_for('site.collection', slug=c.parent.slug) }}">&larr; {{ c.parent.name }}</a>{% endif %}
+  <h1>{{ c.name }}</h1>
+  {% if c.blurb %}<p class="lede">{{ c.blurb }}</p>{% endif %}
+</section>
+{% if works %}{{ grid(works) }}{% endif %}
+{# Each subcategory keeps its own heading: the grouping is the reason it
+   exists, so pouring them all into one grid would throw it away. #}
+{% for k, items in groups %}
+  <div class="subhead">
+    <h2>{{ k.name }}</h2>
+    <a href="{{ url_for('site.collection', slug=k.slug) }}">see only these</a>
+  </div>
+  {% if k.blurb %}<p class="lede">{{ k.blurb }}</p>{% endif %}
+  {{ grid(items) }}
+{% endfor %}
+{% if not works and not groups %}
 <p class="empty">Nothing in this collection yet.</p>
 {% endif %}
 {% endblock %}

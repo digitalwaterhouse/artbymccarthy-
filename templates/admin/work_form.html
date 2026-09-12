@@ -34,8 +34,10 @@
   <label>Collection
     <select name="collection_id">
       <option value="">— none —</option>
+      {# Indented, not flattened: "Fireflies" on its own does not say which
+         body of work it belongs to. #}
       {% for c in collections %}
-        <option value="{{ c.id }}" {% if w and w.collection_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+        <option value="{{ c.id }}" {% if w and w.collection_id == c.id %}selected{% endif %}>{% if c.depth %}&nbsp;&nbsp;&nbsp;&nbsp;&#8627; {% endif %}{{ c.name }}</option>
       {% endfor %}
     </select>
   </label>
