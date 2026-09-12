@@ -29,6 +29,18 @@ PORT = int(os.environ.get("PORT", "5070"))
 # root, out of this app's reach, so the meta tag is the only lever here.
 NOINDEX = os.environ.get("NOINDEX", "1") == "1"
 
+# The landing headline when she has not set one in the admin. It used to fall
+# through to `tagline`, which is "Original Works" -- a category label, and the
+# first words on the site said nothing about the work. This is HER phrase,
+# taken from her own bio ("kept safe in black and white treasure boxes"), with
+# only the first letter raised for a headline. It names the object, which is
+# the thing the photographs cannot do: these are shadow boxes, not pictures.
+# `hero_title` still wins whenever it is filled in, so this is a default and
+# not a decision taken away from her. It cannot simply be the default value of
+# hero_title, because that key has a real (empty) row in settings and a stored
+# empty string beats a default.
+HERO_HEAD = "Black and white treasure boxes"
+
 # Flask serves /static from the app root, not the blueprint, so on a subpath
 # the stylesheet would 404 -- the prefix has to be pushed into it here.
 app = Flask(__name__, static_url_path=(PREFIX + "/static") if PREFIX else "/static")
@@ -277,7 +289,7 @@ def index():
     c = cfg()
     hero = {
         "base": c.get("hero_image") or "",
-        "title": c.get("hero_title") or c.get("tagline") or "Original paintings",
+        "title": c.get("hero_title") or HERO_HEAD,
         "sub": c.get("hero_sub") or "",
         "caption": c.get("hero_caption") or "",
     }
@@ -1027,7 +1039,8 @@ def admin_subscribers_csv():
 def admin_settings():
     if request.method == "POST":
         keys = ["site_title", "tagline", "about", "artist_email", "commission_note",
-                "hero_title", "hero_sub", "hero_caption", "about_caption", "page_bg",
+                "hero_title", "hero_sub", "hero_caption", "about_caption",
+                "box_caption", "box_note", "page_bg",
                 "artist_name", "artist_statement", "artist_bio"]
         vals = {k: request.form.get(k, "") for k in keys}
 
@@ -1065,6 +1078,20 @@ def admin_settings():
             vals["about_image"] = ""
         if old_about and vals.get("about_image", old_about) != old_about:
             gallery.drop_image_files(old_about)
+
+        # Same three moves again for the box photograph on the landing page.
+        old_box = cfg().get("box_image") or ""
+        fb = request.files.get("box_photo")
+        if fb and fb.filename:
+            try:
+                vals["box_image"] = gallery.store_photo(fb.read())
+            except ValueError as e:
+                flash(str(e))
+        elif request.form.get("clear_box"):
+            vals["box_image"] = ""
+        if old_box and vals.get("box_image", old_box) != old_box:
+            gallery.drop_image_files(old_box)
+
         gallery.save_settings(vals)
         return redirect(url_for("site.admin_settings"))
     return render_template("admin/settings.html")

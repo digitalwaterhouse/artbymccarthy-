@@ -1,0 +1,37 @@
+{# ---- the box band ------------------------------------------------------
+   Between the hero and the wall, and still on the dark entry: the same
+   reasoning that put the hero there. Every photograph on this site is
+   straight-on, so the work reads flat, and the one fact that makes these
+   objects rather than pictures -- that they are boxes, 2.5in deep, with
+   things kept safe inside -- was nowhere a visitor could see it.
+
+   Two halves, and each stands alone. The photograph is a box shot from an
+   angle so the depth reads; until she takes one, the band renders as her
+   sentence and the measurements, which is worth having on its own. The
+   sentence is hers, verbatim, and is attributed so it reads as a painter
+   talking about her work rather than as shop copy. #}
+<section class="boxband{% if not cfg.box_image %} nophoto{% endif %}">
+  {% if cfg.box_image %}
+  <figure class="boxband-shot">
+    <picture>
+      <source type="image/webp" srcset="{{ img_url(cfg.box_image,'s') }} 600w, {{ img_url(cfg.box_image,'m') }} 1400w" sizes="(max-width: 900px) 88vw, 38vw">
+      <img src="{{ img_url(cfg.box_image,'m','jpg') }}" alt="{{ cfg.box_caption or 'One of the boxes, seen from an angle' }}" loading="lazy">
+    </picture>
+    {% if cfg.box_caption %}<figcaption>{{ cfg.box_caption }}</figcaption>{% endif %}
+  </figure>
+  {% endif %}
+
+  <div class="boxband-say">
+    <p class="eyebrow">What these are</p>
+    {% if cfg.box_note %}
+    <blockquote>
+      <p>{{ cfg.box_note }}</p>
+      {% if cfg.artist_name %}<cite>{{ cfg.artist_name }}</cite>{% endif %}
+    </blockquote>
+    {% endif %}
+    <p class="boxband-spec">
+      Each one is 10.5&Prime; &times; 10.5&Prime; and 2.5&Prime; deep &mdash; a box you
+      look into, not a picture you look at.
+    </p>
+  </div>
+</section>

@@ -1255,6 +1255,57 @@ body.home{
 .home .hero a:focus-visible,.home .hero button:focus-visible,
 .gm-overlay :focus-visible{outline:2px solid var(--turq-lo); outline-offset:3px}
 
+/* ---------- the box band, still on the dark entry ---------- */
+/* Transparent like the hero, so it sits on the same ground -- past 100vh the
+   gradient has ended on --ground-deep, which is the colour it continues in.
+   A black shadow box photographed against a dark page loses its frame and
+   floats, which is the whole reason the entry is dark in the first place. */
+.boxband{
+  background:transparent; color:#EDF1F0;
+  display:grid; grid-template-columns:minmax(0,38%) minmax(0,1fr);
+  gap:clamp(24px,4vw,56px); align-items:center;
+  padding:clamp(36px,5vw,62px) clamp(18px,5vw,56px) clamp(52px,7vw,88px);
+  border-top:1px solid rgba(237,241,240,.10);
+}
+/* Until she photographs a box from an angle there is one thing to read, so it
+   takes the middle rather than sitting in a column beside an empty one. */
+.boxband.nophoto{grid-template-columns:1fr}
+.boxband.nophoto .boxband-say{max-width:44rem; margin-inline:auto; text-align:center}
+
+.boxband-shot{margin:0}
+.boxband-shot img{
+  display:block; width:100%; height:auto;
+  filter:drop-shadow(0 26px 60px rgba(0,0,0,.55));
+}
+.boxband-shot figcaption{margin-top:12px; font-size:13px; color:rgba(237,241,240,.55)}
+
+/* Her own sentence, so it is set as a quotation and not as body copy: serif,
+   near the size of the h1 above it, with her name under it. No quote marks --
+   the attribution does that work, and glyphs would fight the hero's type. */
+.boxband-say blockquote{margin:0; padding:0; border:0}
+.boxband-say blockquote p{
+  font-family:"Newsreader",Georgia,serif; font-weight:400;
+  font-size:clamp(1.2rem,2.2vw,1.65rem); line-height:1.4;
+  letter-spacing:-.01em; color:#F7F9F8; margin:0;
+}
+.boxband-say cite{
+  display:block; margin-top:14px; font-style:normal; font-size:11.5px;
+  letter-spacing:.2em; text-transform:uppercase; color:rgba(237,241,240,.5);
+}
+/* The measurements are mine and factual, so they are set as the hero caption
+   is -- under a hairline, quiet, clearly not part of the quotation. */
+.boxband-spec{
+  margin:22px 0 0; padding-top:16px;
+  border-top:1px solid rgba(237,241,240,.16);
+  font-size:14px; line-height:1.55; color:rgba(237,241,240,.62);
+}
+
+@media (max-width:900px){
+  /* Stacked, the photograph leads and the words follow it. */
+  .boxband{grid-template-columns:1fr; gap:clamp(20px,5vw,32px)}
+  .boxband-shot img{max-height:56vh; width:auto; margin-inline:auto}
+}
+
 /* ---------- the wall, below the entry ---------- */
 /* Opaque on purpose: this is what covers the dark entry painted on the body. */
 /* The sign-up row where the home page carries it: between the dark entry and

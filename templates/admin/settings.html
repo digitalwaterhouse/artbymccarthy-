@@ -67,6 +67,35 @@
     <label class="wide">Caption under the portrait <input name="about_caption" value="{{ cfg.about_caption }}"></label>
   </fieldset>
 
+  <fieldset class="wide">
+    <legend>What these are</legend>
+    {% if cfg.box_image %}
+    <div class="shots">
+      <figure>
+        <img src="{{ img_url(cfg.box_image,'s','jpg') }}" alt="Current box photograph">
+        <figcaption>On the front page now</figcaption>
+      </figure>
+    </div>
+    {% endif %}
+    <label class="wide">Photograph of a box
+      <input type="file" name="box_photo" accept="image/jpeg,image/png,image/webp">
+    </label>
+    <p class="sub">One piece seen from an ANGLE, or edge-on in raking light, so the
+      2.5&Prime; depth reads. Every other photograph on the site is straight-on, which
+      makes the work look flat &mdash; this is the only place a visitor can see that
+      these are boxes. A plain surface near a window is enough.</p>
+    {% if cfg.box_image %}
+    <label class="check"><input type="checkbox" name="clear_box" value="1"> Remove it</label>
+    {% endif %}
+    <label class="wide">Caption under it <input name="box_caption" value="{{ cfg.box_caption }}"></label>
+    <label class="wide">The sentence beside it
+      <textarea name="box_note" rows="4">{{ cfg.box_note }}</textarea>
+    </label>
+    <p class="sub">Shown as a quotation with the artist's name under it, between the
+      opening photograph and the work. It starts as her own sentence from the About
+      page. Leave it empty to show only the measurements.</p>
+  </fieldset>
+
   <label class="wide">Background design
     <select name="page_bg">
       {% for v, lbl in [("quiet","Barely there"),("rosette","Engine-turned rosette"),("rose","Rose curve"),("none","None")] %}

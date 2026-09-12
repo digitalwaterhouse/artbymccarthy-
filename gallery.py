@@ -65,6 +65,23 @@ DEFAULT_SETTINGS = {
     # not a work, because the artist is not for sale.
     "about_image": "",
     "about_caption": "",
+    # THE BOX BAND on the landing page. These pieces are shadow boxes, 2.5in
+    # deep, and every photograph on the site is straight-on -- so the one thing
+    # that makes them objects rather than pictures is the one thing a visitor
+    # cannot see. box_image is a photo base like the two above: a single box
+    # shot from an angle, or edge-on in raking light. The band still renders
+    # without it, because her sentence is worth reading on its own.
+    "box_image": "",
+    "box_caption": "",
+    # HER WORDS, VERBATIM, lifted from the bio she wrote -- including
+    # "humor- lovingly" as she typed it. It is the best sentence on the site
+    # and it was reachable only from /about. Do not tidy it; see the About
+    # note. Editable in the admin, so she can replace it with something
+    # written for the front page whenever she likes.
+    "box_note": "What you see here are Lisa\u2019s colors - nuggets of hope "
+                "and humor- lovingly collected and kept safe in black and "
+                "white treasure boxes - just waiting to be shared with anyone "
+                "who might need or want them.",
     # quiet | rosette | rose | none -- the backdrop on about/commissions/contact
     "page_bg": "quiet",
     # Printed on wall labels and checklists. A setting, not a constant: she
