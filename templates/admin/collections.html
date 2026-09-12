@@ -29,7 +29,7 @@
   <thead><tr><th>Collection</th><th class="num">Pieces</th><th>On the site</th><th></th></tr></thead>
   <tbody>
   {% for c in collections %}
-    <tr>
+    <tr{% if c.depth %} class="is-sub"{% endif %}>
       <td data-label="Collection">{% if c.depth %}<span class="nestmark" aria-hidden="true">↳</span>{% endif %}<a href="{{ url_for('site.admin_collection', collection_id=c.id) }}">{{ c.name }}</a>
           {% if c.depth %}<span class="sub">inside {{ c.parent.name }}</span>{% endif %}
           {% if c.blurb %}<span class="sub">{{ c.blurb }}</span>{% endif %}</td>

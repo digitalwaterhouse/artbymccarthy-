@@ -1664,7 +1664,12 @@ select.os-accepted{border-color:var(--accent)}
 /* On a phone the card layout puts a lone .sub back on the label's line. Here
    every .sub is a fact of its own -- what it sits inside, what its
    subcategories add -- so each keeps its own line. */
-.grid-t.tree td > .sub{display:block}
+.grid-t.tree td > .sub{display:block; line-height:1.3; margin-top:1px}
+/* A subcategory's row is set TIGHTER and indented, so the nesting is visible
+   down the left edge of the table rather than depending on reading the arrow
+   and the words. Same trick as .grid-t.tight: less leading, less padding. */
+.grid-t.tree tr.is-sub td{padding-top:6px; padding-bottom:6px; line-height:1.3}
+.grid-t.tree tr.is-sub td:first-child{padding-left:30px}
 /* The "inside" menu shares the add-a-collection row. It must be allowed to
    SHRINK: left at its intrinsic width it eats the whole 34rem row and the name
    field collapses to a sliver. */
