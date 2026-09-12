@@ -981,17 +981,168 @@ def admin_shipped(order_id):
     return redirect(url_for("site.admin_orders"))
 
 
+# ------------------------------------------------------------------ messages
+# Three folders over one exchange. The inbox is what the website's forms
+# collected; drafts and sent are what she wrote back, kept here rather than in
+# whatever mail client happened to be open -- which is the difference between
+# a record of the conversation and a memory of it.
+#
+# WHAT THIS INBOX IS NOT: a mailbox. Nothing can arrive here except through the
+# site's own contact, commission and purchase forms. Mail somebody sends
+# straight to her address lands in her Gmail as it always has, because this app
+# has no MX record, no mailbox and no inbound webhook. Worth saying out loud
+# before anyone waits here for a message that was never coming.
+
+MSG_FOLDERS = ("inbox", "drafts", "sent")
+
+
+def _quoted(inq):
+    """The original, quoted under the reply, the way a mail client does it."""
+    when = (inq.get("created_at") or "")[:16].replace("T", " ")
+    head = "On %s, %s wrote:" % (when, inq.get("name") or inq.get("email") or "they")
+    body = (inq.get("body") or "").strip()
+    if not body:
+        return "\n\n"
+    quoted = "\n".join("> " + line for line in body.splitlines())
+    return "\n\n\n%s\n%s" % (head, quoted)
+
+
+@site.route("/admin/messages")
 @site.route("/admin/inquiries")
 @admin_required
 def admin_inquiries():
-    return render_template("admin/inquiries.html", inquiries=gallery.list_inquiries())
+    folder = request.args.get("folder", "inbox")
+    if folder not in MSG_FOLDERS:
+        folder = "inbox"
+    rows = []
+    if folder == "inbox":
+        rows = gallery.list_inquiries()
+    elif folder == "drafts":
+        rows = gallery.list_replies("draft")
+    else:
+        rows = gallery.list_replies("sent")
+    return render_template("admin/messages.html", folder=folder, rows=rows,
+                           counts=gallery.message_counts(), open_msg=None,
+                           reply=None)
+
+
+@site.route("/admin/messages/<int:inq_id>")
+@admin_required
+def admin_message(inq_id):
+    """Read one incoming message, with the reply box already under it."""
+    inq = gallery.get_inquiry(inq_id)
+    if inq is None:
+        flash("That message is gone.")
+        return redirect(url_for("site.admin_inquiries"))
+    # An unsent draft for this message is the one to reopen -- otherwise she
+    # would start a second reply and lose the first without being told.
+    draft = next((r for r in gallery.replies_for_inquiry(inq_id)
+                  if r["status"] == "draft"), None)
+    if draft is None:
+        subject = "Re: %s" % (inq.get("title") or "your message")
+        draft = {"id": None, "to_email": inq.get("email") or "",
+                 "to_name": inq.get("name") or "", "subject": subject,
+                 "body": _quoted(inq), "error": None}
+    return render_template("admin/messages.html", folder="inbox",
+                           rows=gallery.list_inquiries(),
+                           counts=gallery.message_counts(), open_msg=inq,
+                           reply=draft, thread=gallery.replies_for_inquiry(inq_id))
+
+
+@site.route("/admin/messages/draft/<int:rid>")
+@admin_required
+def admin_message_draft(rid):
+    reply = gallery.get_reply(rid)
+    if reply is None:
+        flash("That draft is gone.")
+        return redirect(url_for("site.admin_inquiries", folder="drafts"))
+    inq = gallery.get_inquiry(reply["inquiry_id"]) if reply["inquiry_id"] else None
+    folder = "sent" if reply["status"] == "sent" else "drafts"
+    return render_template("admin/messages.html", folder=folder,
+                           rows=gallery.list_replies(reply["status"]),
+                           counts=gallery.message_counts(), open_msg=inq,
+                           reply=reply, thread=[])
+
+
+@site.route("/admin/messages/new")
+@admin_required
+def admin_message_new():
+    return render_template(
+        "admin/messages.html", folder="drafts", rows=gallery.list_replies("draft"),
+        counts=gallery.message_counts(), open_msg=None,
+        reply={"id": None, "to_email": "", "to_name": "", "subject": "",
+               "body": "", "error": None}, thread=[])
+
+
+@site.route("/admin/messages/save", methods=["POST"])
+@admin_required
+def admin_message_save():
+    rid = request.form.get("rid", type=int)
+    inq_id = request.form.get("inquiry_id", type=int)
+    try:
+        rid = gallery.save_reply(
+            rid, inq_id, request.form.get("to_email"), request.form.get("to_name"),
+            request.form.get("subject"), request.form.get("body"))
+    except ValueError as exc:
+        flash(str(exc))
+        return redirect(request.form.get("back") or url_for("site.admin_inquiries"))
+    if request.form.get("action") == "send":
+        return _send_reply(rid)
+    flash("Draft saved.")
+    return redirect(url_for("site.admin_message_draft", rid=rid))
+
+
+def _send_reply(rid):
+    reply = gallery.get_reply(rid)
+    if reply is None:
+        flash("That draft is gone.")
+        return redirect(url_for("site.admin_inquiries"))
+    if reply["status"] == "sent":
+        flash("That message was already sent.")
+        return redirect(url_for("site.admin_inquiries", folder="sent"))
+    if not (reply["body"] or "").strip():
+        flash("Write something first.")
+        return redirect(url_for("site.admin_message_draft", rid=rid))
+
+    # Replies leave as the site's verified sending identity, because that is
+    # the only domain this app can prove it is allowed to send for. Reply-To is
+    # her real address, so when the buyer answers it lands in her own inbox and
+    # the conversation carries on where she actually reads mail.
+    reply_to = (cfg().get("artist_email") or "").strip()
+    ok = mailer.send(reply["to_email"], reply["subject"] or "(no subject)",
+                     reply["body"], reply_to=reply_to or None)
+    if ok:
+        gallery.mark_reply_sent(rid)
+        flash("Sent to %s." % reply["to_email"])
+        return redirect(url_for("site.admin_inquiries", folder="sent"))
+    gallery.mark_reply_failed(rid, "the mail server would not accept it")
+    flash("That would not send — it is still in Drafts, nothing was lost.")
+    return redirect(url_for("site.admin_message_draft", rid=rid))
+
+
+@site.route("/admin/messages/draft/<int:rid>/send", methods=["POST"])
+@admin_required
+def admin_message_send(rid):
+    return _send_reply(rid)
+
+
+@site.route("/admin/messages/draft/<int:rid>/delete", methods=["POST"])
+@admin_required
+def admin_message_draft_delete(rid):
+    reply = gallery.get_reply(rid)
+    gallery.delete_reply(rid)
+    flash("Draft deleted." if reply and reply["status"] == "draft"
+          else "Message deleted.")
+    return redirect(url_for("site.admin_inquiries",
+                            folder="sent" if reply and reply["status"] == "sent"
+                            else "drafts"))
 
 
 @site.route("/admin/inquiry/<int:inq_id>/handled", methods=["POST"])
 @admin_required
 def admin_inq_handled(inq_id):
     gallery.handle_inquiry(inq_id)
-    return redirect(url_for("site.admin_inquiries"))
+    return redirect(request.form.get("back") or url_for("site.admin_inquiries"))
 
 
 @site.route("/admin/inquiry/<int:inq_id>/delete", methods=["POST"])

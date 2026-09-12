@@ -85,6 +85,29 @@ CREATE TABLE IF NOT EXISTS inquiries (
     created_at TEXT NOT NULL
 );
 
+-- What she writes back. Drafts and sent mail are the same row at two points in
+-- its life, which is why there is one table and a status rather than two: a
+-- draft becomes sent in place, so nothing has to be copied between tables and
+-- a half-written reply can never be lost by the act of sending it.
+--
+-- inquiry_id is ON DELETE SET NULL on purpose. Deleting a piece of junk from
+-- the inbox must not take a reply she actually sent out with it -- same
+-- reasoning as detaching inquiries from a deleted work.
+CREATE TABLE IF NOT EXISTS replies (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    inquiry_id INTEGER REFERENCES inquiries(id) ON DELETE SET NULL,
+    to_email   TEXT NOT NULL,
+    to_name    TEXT,
+    subject    TEXT,
+    body       TEXT,
+    status     TEXT NOT NULL DEFAULT 'draft',   -- draft | sent
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    sent_at    TEXT,
+    error      TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_replies_status ON replies(status, id DESC);
+
 -- Coming off the list is a SUPPRESSION, not a delete. The row stays and is
 -- stamped instead, so the address is remembered as "do not mail" -- a plain
 -- delete forgets that the person asked to be left alone, and the next import

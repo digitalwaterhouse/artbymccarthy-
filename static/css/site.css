@@ -993,7 +993,47 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   .msg header{gap:6px 12px}
 }
 
+/* Three folders across the top of Messages. Squared and underlined rather than
+   boxed: this is a place marker inside a page, not a second navigation bar
+   competing with the rail on the left. */
+.folders{display:flex; flex-wrap:wrap; gap:22px; margin:0 0 20px;
+  border-bottom:1px solid var(--rule); padding-bottom:0}
+.folders a{
+  text-decoration:none; color:var(--muted); padding:0 0 10px; margin-bottom:-1px;
+  font:600 13px/1 "Karla",sans-serif; letter-spacing:.08em; text-transform:uppercase;
+  border-bottom:2px solid transparent; display:inline-flex; align-items:center; gap:7px;
+}
+.folders a:hover{color:var(--ink)}
+.folders a.on{color:var(--ink); border-bottom-color:var(--accent)}
+/* The waiting count. Only drawn when there is one, so an empty folder is a
+   plain word rather than a permanent zero nobody reads. */
+.folders .n{
+  background:var(--accent); color:#fff; border-radius:999px; min-width:18px;
+  padding:2px 6px; font-size:11px; letter-spacing:0; text-align:center;
+}
+.back{display:inline-block; margin-bottom:14px; font-size:13.5px; color:var(--muted);
+  text-decoration:none}
+.back:hover{color:var(--ink)}
+
 .msgs{display:flex; flex-direction:column; gap:12px}
+.msg .who{font-weight:700; color:var(--ink); text-decoration:none}
+.msg .who:hover{text-decoration:underline; text-underline-offset:3px}
+.msg .subj{font-weight:700; margin-bottom:4px}
+.msg.open{border-color:var(--ink)}
+/* A reply that has already gone, shown under the message it answers. Indented
+   and quieter than the incoming mail so the two sides of the exchange are
+   distinguishable at a glance without colour doing all the work. */
+.msg.sent-note{background:#FBFBF9; margin-left:clamp(0px,4vw,34px)}
+.msg .answered{color:var(--accent)}
+.msg .failed{color:#A3372B}
+.sendfail{background:#FDF0EE; border:1px solid #E8C4BD; padding:10px 14px; margin:0 0 14px}
+
+.compose{display:flex; flex-direction:column; gap:12px; max-width:46rem;
+  background:var(--paper); border:1px solid var(--line); padding:clamp(14px,2.4vw,20px)}
+.compose textarea{font:400 15px/1.55 "Karla",sans-serif}
+.compose-acts{display:flex; flex-wrap:wrap; align-items:center; gap:16px}
+.compose-acts .spacer{flex:1}
+.fineprint{margin:0; font-size:12.5px; color:var(--muted); line-height:1.5}
 .msg{background:#fff; border:1px solid var(--line); padding:13px 15px}
 .msg.done{opacity:.55}
 .msg header{display:flex; flex-wrap:wrap; gap:10px; align-items:baseline; margin-bottom:8px}

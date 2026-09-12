@@ -1,0 +1,172 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Messages{% endblock %}
+{% block body %}
+<div class="adminhead">
+  <h1>Messages</h1>
+  <a class="cta" href="{{ url_for('site.admin_message_new') }}">Write a message</a>
+</div>
+
+{# Three folders, and the counts that say whether anything is waiting. Inbox
+   counts the UNANSWERED ones only -- a number that never goes down is a number
+   she learns to ignore. #}
+<nav class="folders">
+  {% for key, label, n in [
+       ('inbox',  'Inbox',  counts.inbox),
+       ('drafts', 'Drafts', counts.drafts),
+       ('sent',   'Sent',   counts.sent)] %}
+  <a href="{{ url_for('site.admin_inquiries', folder=key) }}"
+     {% if folder == key %}class="on" aria-current="page"{% endif %}>
+    {{ label }}{% if n %} <span class="n">{{ n }}</span>{% endif %}
+  </a>
+  {% endfor %}
+</nav>
+
+{% if reply is not none %}
+  {# ---- reading one message, and answering it ---- #}
+  <a class="back" href="{{ url_for('site.admin_inquiries', folder=folder) }}">&larr; {{ folder|capitalize }}</a>
+
+  {% if open_msg %}
+  <article class="msg open">
+    <header>
+      <span class="kind">{{ open_msg.kind }}</span>
+      <strong>{{ open_msg.name or 'someone' }}</strong>
+      <a href="mailto:{{ open_msg.email }}">{{ open_msg.email }}</a>
+      {% if open_msg.title %}<span class="sub">about {{ open_msg.title }}</span>{% endif %}
+      <span class="sub">{{ open_msg.created_at|day }} at {{ open_msg.created_at[11:16] }}</span>
+    </header>
+    <p>{{ open_msg.body }}</p>
+  </article>
+  {% endif %}
+
+  {% if thread %}
+    {% for t in thread if t.status == 'sent' %}
+    <article class="msg sent-note">
+      <header><span class="kind">sent</span>
+        <span class="sub">{{ t.sent_at|day }} at {{ t.sent_at[11:16] }}</span></header>
+      <p>{{ t.body }}</p>
+    </article>
+    {% endfor %}
+  {% endif %}
+
+  {% if reply.status == 'sent' %}
+    <article class="msg sent-note">
+      <header>
+        <span class="kind">sent</span>
+        <strong>{{ reply.to_name or reply.to_email }}</strong>
+        <span class="sub">{{ reply.sent_at|day }} at {{ reply.sent_at[11:16] }}</span>
+      </header>
+      <p class="subj">{{ reply.subject }}</p>
+      <p>{{ reply.body }}</p>
+      <div class="msg-acts">
+        <form method="post" action="{{ url_for('site.admin_message_draft_delete', rid=reply.id) }}"
+              onsubmit="return confirm('Delete this sent message from the record? It cannot be undone.')">
+          <button class="link danger" type="submit">delete</button>
+        </form>
+      </div>
+    </article>
+  {% else %}
+    {% if reply.error %}
+      <p class="sendfail">This did not send last time: {{ reply.error }}. It is still here.</p>
+    {% endif %}
+    <form class="compose" method="post" action="{{ url_for('site.admin_message_save') }}">
+      <input type="hidden" name="rid" value="{{ reply.id or '' }}">
+      <input type="hidden" name="inquiry_id" value="{{ open_msg.id if open_msg else '' }}">
+      <input type="hidden" name="back" value="{{ request.full_path }}">
+      <label>To
+        <input type="email" name="to_email" required value="{{ reply.to_email or '' }}"
+               placeholder="them@example.com">
+      </label>
+      <label>Subject
+        <input type="text" name="subject" value="{{ reply.subject or '' }}"
+               placeholder="Re: your message">
+      </label>
+      <label>Message
+        <textarea name="body" rows="12" placeholder="Write back…">{{ reply.body or '' }}</textarea>
+      </label>
+      <div class="compose-acts">
+        <button class="cta" type="submit" name="action" value="send">Send</button>
+        <button class="link" type="submit" name="action" value="save">Save draft</button>
+        {% if reply.id %}
+        <span class="spacer"></span>
+        {% endif %}
+      </div>
+      <p class="fineprint">
+        Goes out from the website&rsquo;s address, with replies set to come back to
+        {{ cfg.artist_email or 'your email in Settings' }} &mdash; so when they answer,
+        it lands in your normal inbox.
+      </p>
+    </form>
+    {% if reply.id %}
+    <form method="post" action="{{ url_for('site.admin_message_draft_delete', rid=reply.id) }}"
+          onsubmit="return confirm('Throw this draft away?')">
+      <button class="link danger" type="submit">Delete draft</button>
+    </form>
+    {% endif %}
+  {% endif %}
+
+{% elif folder == 'inbox' %}
+  {# ---- the inbox list ---- #}
+  <div class="msgs">
+  {% for i in rows %}
+    <article class="msg {{ 'done' if i.handled else '' }}">
+      <header>
+        <span class="kind">{{ i.kind }}</span>
+        <a class="who" href="{{ url_for('site.admin_message', inq_id=i.id) }}">{{ i.name or 'someone' }}</a>
+        <a href="mailto:{{ i.email }}">{{ i.email }}</a>
+        {% if i.title %}<span class="sub">about {{ i.title }}</span>{% endif %}
+        <span class="sub">{{ i.created_at|day }} at {{ i.created_at[11:16] }}</span>
+        {% if i.handled %}<span class="sub answered">answered</span>{% endif %}
+      </header>
+      <p>{{ i.body }}</p>
+      <div class="msg-acts">
+        <a class="link" href="{{ url_for('site.admin_message', inq_id=i.id) }}">reply</a>
+        {% if not i.handled %}
+          <form method="post" action="{{ url_for('site.admin_inq_handled', inq_id=i.id) }}">
+            <input type="hidden" name="back" value="{{ request.full_path }}">
+            <button class="link" type="submit">mark handled</button>
+          </form>
+        {% endif %}
+        <form method="post" action="{{ url_for('site.admin_inquiry_delete', inq_id=i.id) }}"
+              onsubmit="return confirm('Delete this message from {{ i.name or i.email or 'someone' }}? It cannot be undone.')">
+          <button class="link danger" type="submit">delete</button>
+        </form>
+      </div>
+    </article>
+  {% else %}
+    <p class="empty">No messages.</p>
+  {% endfor %}
+  </div>
+
+{% else %}
+  {# ---- drafts and sent ---- #}
+  <div class="msgs">
+  {% for r in rows %}
+    <article class="msg">
+      <header>
+        <span class="kind">{{ 'draft' if r.status == 'draft' else 'sent' }}</span>
+        <a class="who" href="{{ url_for('site.admin_message_draft', rid=r.id) }}">
+          {{ r.to_name or r.to_email }}</a>
+        {% if r.to_name %}<span class="sub">{{ r.to_email }}</span>{% endif %}
+        <span class="sub">
+          {% if r.status == 'sent' %}{{ r.sent_at|day }} at {{ r.sent_at[11:16] }}
+          {% else %}saved {{ r.updated_at|day }}{% endif %}
+        </span>
+        {% if r.error %}<span class="sub failed">didn&rsquo;t send</span>{% endif %}
+      </header>
+      <p class="subj">{{ r.subject or '(no subject)' }}</p>
+      <p>{{ r.body }}</p>
+      <div class="msg-acts">
+        <a class="link" href="{{ url_for('site.admin_message_draft', rid=r.id) }}">
+          {{ 'open' if r.status == 'draft' else 'read' }}</a>
+        <form method="post" action="{{ url_for('site.admin_message_draft_delete', rid=r.id) }}"
+              onsubmit="return confirm('Delete this {{ r.status }}? It cannot be undone.')">
+          <button class="link danger" type="submit">delete</button>
+        </form>
+      </div>
+    </article>
+  {% else %}
+    <p class="empty">{{ 'Nothing saved.' if folder == 'drafts' else 'Nothing sent yet.' }}</p>
+  {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

@@ -972,6 +972,121 @@ def delete_inquiry(inq_id):
     return True
 
 
+# ---------------------------------------------------------------- replies
+# The outgoing half of the Messages section. An enquiry used to end at a
+# mailto: link, which meant the answer happened somewhere this app could not
+# see and there was no record here of what was said or whether it was said at
+# all. These three folders -- inbox, drafts, sent -- keep the whole exchange in
+# one place, which is the whole point of the change.
+
+REPLY_STATUSES = ("draft", "sent")
+
+
+def get_inquiry(inq_id):
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT i.*, w.title FROM inquiries i LEFT JOIN works w ON w.id=i.work_id"
+            " WHERE i.id=?", (inq_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def list_replies(status=None, limit=300):
+    sql = ("SELECT r.*, i.name AS inq_name, i.kind AS inq_kind FROM replies r"
+           " LEFT JOIN inquiries i ON i.id=r.inquiry_id")
+    args = []
+    if status:
+        sql += " WHERE r.status=?"
+        args.append(status)
+    # Drafts sort by when they were last touched; sent mail by when it went.
+    sql += " ORDER BY COALESCE(r.sent_at, r.updated_at) DESC, r.id DESC LIMIT ?"
+    args.append(limit)
+    with connect() as conn:
+        return [dict(r) for r in conn.execute(sql, args).fetchall()]
+
+
+def get_reply(rid):
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM replies WHERE id=?", (rid,)).fetchone()
+    return dict(row) if row else None
+
+
+def replies_for_inquiry(inq_id):
+    with connect() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT * FROM replies WHERE inquiry_id=? ORDER BY id", (inq_id,)).fetchall()]
+
+
+def save_reply(rid, inquiry_id, to_email, to_name, subject, body):
+    """Create or update a draft. Returns its id.
+
+    A sent reply is never rewritten: once it has left, the row is the record of
+    what was actually said, and editing it would quietly make that record a lie.
+    """
+    to_email = (to_email or "").strip()
+    if "@" not in to_email:
+        raise ValueError("that doesn't look like an email address")
+    stamp = now()
+    with connect() as conn:
+        if rid:
+            row = conn.execute("SELECT status FROM replies WHERE id=?", (rid,)).fetchone()
+            if row is None:
+                raise ValueError("that draft is gone")
+            if row["status"] == "sent":
+                raise ValueError("that message has already been sent")
+            conn.execute(
+                "UPDATE replies SET inquiry_id=?, to_email=?, to_name=?, subject=?,"
+                " body=?, updated_at=?, error=NULL WHERE id=?",
+                (inquiry_id, to_email, to_name, subject, body, stamp, rid))
+            return rid
+        cur = conn.execute(
+            "INSERT INTO replies (inquiry_id,to_email,to_name,subject,body,status,"
+            "created_at,updated_at) VALUES (?,?,?,?,?,'draft',?,?)",
+            (inquiry_id, to_email, to_name, subject, body, stamp, stamp))
+        return cur.lastrowid
+
+
+def mark_reply_sent(rid):
+    stamp = now()
+    with connect() as conn:
+        conn.execute(
+            "UPDATE replies SET status='sent', sent_at=?, updated_at=?, error=NULL"
+            " WHERE id=?", (stamp, stamp, rid))
+        row = conn.execute("SELECT inquiry_id FROM replies WHERE id=?", (rid,)).fetchone()
+        # Answering something IS handling it. Making her then tick a second box
+        # is how an inbox fills with messages she has already dealt with.
+        if row and row["inquiry_id"]:
+            conn.execute("UPDATE inquiries SET handled=1 WHERE id=?", (row["inquiry_id"],))
+
+
+def mark_reply_failed(rid, error):
+    """Sending failed, so the row stays a draft and says why.
+
+    The alternative -- marking it sent and hoping -- is the worst outcome
+    available: she would believe she had answered somebody and never find out
+    otherwise.
+    """
+    with connect() as conn:
+        conn.execute("UPDATE replies SET status='draft', error=?, updated_at=?"
+                     " WHERE id=?", ((error or "")[:300], now(), rid))
+
+
+def delete_reply(rid):
+    with connect() as conn:
+        conn.execute("DELETE FROM replies WHERE id=?", (rid,))
+    return True
+
+
+def message_counts():
+    with connect() as conn:
+        q = lambda sql: conn.execute(sql).fetchone()[0]
+        return {
+            "inbox": q("SELECT COUNT(*) FROM inquiries WHERE handled=0"),
+            "inbox_all": q("SELECT COUNT(*) FROM inquiries"),
+            "drafts": q("SELECT COUNT(*) FROM replies WHERE status='draft'"),
+            "sent": q("SELECT COUNT(*) FROM replies WHERE status='sent'"),
+        }
+
+
 def subscribe(email, source="site"):
     email = (email or "").strip().lower()
     if "@" not in email or len(email) > 200:
