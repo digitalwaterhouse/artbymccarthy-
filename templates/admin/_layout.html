@@ -30,7 +30,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}Studio{% endblock %} &mdash; {{ cfg.site_title }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=85">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=86">
 </head>
 <body class="admin">
 <div class="adminshell">
@@ -63,7 +63,7 @@
          ("admin_orders",      "Orders",   url_for('site.admin_orders'), "orders"),
          ("admin_inquiries",   "Messages", url_for('site.admin_inquiries'), "messages"),
          ("admin_subscribers", "Contacts", url_for('site.admin_subscribers'), "contacts"),
-         ("admin_settings",    "Settings", url_for('site.admin_settings'), "settings")] %}
+         ("admin_settings",    "Your site", url_for('site.admin_settings'), "settings")] %}
     <a href="{{ href }}"{% if endpoint == ep or (ep == 'admin_exhibitions' and endpoint == 'admin_exhibition') or (ep == 'admin_opportunities' and endpoint in ['admin_opportunity','admin_packet']) or (ep == 'admin_inquiries' and endpoint in ['admin_message','admin_message_draft','admin_message_new']) %} class="on" aria-current="page"{% endif %}>{{ icon(ic) }}<span>{{ label }}</span></a>
     {% endfor %}
   </nav>

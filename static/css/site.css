@@ -890,11 +890,13 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
    controls inside their own panels; filling all three made them compete with
    Save, which is the page's one real commitment. */
 .panel .cta,
-.formgrid input[type=file]::file-selector-button{
+.formgrid input[type=file]::file-selector-button,
+.setform input[type=file]::file-selector-button{
   background:transparent; color:var(--accent); border:1px solid var(--accent);
 }
 .panel .cta:hover,
-.formgrid input[type=file]:hover::file-selector-button{
+.formgrid input[type=file]:hover::file-selector-button,
+.setform input[type=file]:hover::file-selector-button{
   background:var(--accent); color:#fff;
 }
 
@@ -903,20 +905,24 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
    styles the button half while leaving the native picker and its "no file
    chosen" text alone, which a hidden-input-plus-label trick would throw away
    along with the file names after a selection. */
-.formgrid input[type=file]{
+.formgrid input[type=file],
+.setform input[type=file]{
   padding:9px 11px; background:var(--wall); border:1px solid var(--accent);
   border-radius:3px; font:400 14px "Karla",sans-serif; color:var(--muted);
   cursor:pointer; width:100%;
 }
-.formgrid input[type=file]::file-selector-button{
+.formgrid input[type=file]::file-selector-button,
+.setform input[type=file]::file-selector-button{
   -webkit-appearance:none; appearance:none;
   background:var(--accent); color:#fff; border:1px solid var(--accent);
   border-radius:2px; padding:9px 18px; margin-right:12px;
   font:600 13.5px/1 "Karla",sans-serif; letter-spacing:.04em; cursor:pointer;
   transition:background .2s ease, border-color .2s ease;
 }
-.formgrid input[type=file]:hover::file-selector-button{background:#24404b; border-color:#24404b}
-.formgrid input[type=file]:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
+.formgrid input[type=file]:hover::file-selector-button,
+.setform input[type=file]:hover::file-selector-button{background:#24404b; border-color:#24404b}
+.formgrid input[type=file]:focus-visible,
+.setform input[type=file]:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
 .rates{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px}
 /* A dollar sign sitting inside the field, so the unit is visible while typing
    and not only in the legend above. */
@@ -957,6 +963,155 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .shots figure.lead{outline:2px solid var(--turq); outline-offset:-1px}
 .shots figure.lead figcaption{color:var(--accent); font-weight:600}
 .shot-acts{display:flex; align-items:center; gap:8px; justify-content:space-between; flex-wrap:wrap}
+
+/* ---------- Your site: the settings page ----------
+   It used to be one form of nineteen fields under one Save, with a shipping
+   rate sitting at the same weight as the first sentence on the front page and
+   nothing on screen showing what any of them changed. That is a configuration
+   screen, and it made writing a line of her own site feel like filing a form.
+
+   So the page is now a stack of PLACES -- the front page, the About page, the
+   band about the boxes -- each one carrying a true miniature of itself built
+   from the stored values, and each saving alone. The chrome goes with it: no
+   bordered fieldsets, no uppercase legends. A serif name, a sentence of plain
+   English, the thing itself, then the fields. */
+.setlede{margin:-6px 0 18px; color:var(--muted); font-size:14.5px; max-width:64ch}
+/* A long page needs a way in. Quiet links, not a second navigation bar. */
+.setjump{display:flex; flex-wrap:wrap; gap:7px; margin:0 0 22px}
+.setjump a{
+  font-size:12.5px; color:var(--muted); text-decoration:none;
+  border:1px solid var(--line); border-radius:99px; padding:5px 12px;
+  background:var(--paper); transition:color .15s, border-color .15s;
+}
+.setjump a:hover{color:var(--accent); border-color:var(--rule)}
+.setcard{
+  background:var(--paper); border:1px solid var(--line); border-radius:4px;
+  padding:clamp(16px,2.4vw,24px); margin:0 0 18px;
+  /* so a jump link does not tuck the card's name under the top edge -- and so
+     the redirect back to #front after a save lands with air above it. */
+  scroll-margin-top:18px;
+}
+.setcard-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
+.setcard-head h2{
+  font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.35rem;
+  margin:0; margin-right:auto; color:var(--ink); letter-spacing:-.005em;
+}
+.setsay{margin:7px 0 0; color:var(--muted); font-size:14px; line-height:1.55; max-width:66ch}
+
+/* The miniature. Same ground, same serif, same order as the real page: this is
+   the part that turns a field called hero_sub into "the line under it". It is
+   deliberately not interactive -- it is a photograph of her site, not a copy
+   of it to fiddle with. */
+.setprev{
+  margin:16px 0 4px; border:1px solid var(--line); border-radius:3px;
+  padding:16px 18px; background:var(--wall); overflow:hidden;
+}
+.setprev.dark{
+  background:linear-gradient(160deg,var(--ground),var(--ground-deep));
+  border-color:#0A121A; color:#EDF1F0;
+}
+.setprev-note{margin:12px 0 0; font-size:12.5px; color:rgba(237,241,240,.55)}
+.setprev-hero,.setprev-box,.setprev-about{display:grid; gap:16px; align-items:center}
+.setprev-hero{grid-template-columns:132px minmax(0,1fr)}
+.setprev-box{grid-template-columns:118px minmax(0,1fr)}
+.setprev-about{grid-template-columns:minmax(0,1fr) 118px; align-items:start}
+.setprev-hero.noart,.setprev-box.noart,.setprev-about.noart{grid-template-columns:1fr}
+.setprev img{
+  width:100%; aspect-ratio:1/1; object-fit:contain; display:block; border-radius:2px;
+}
+.setprev.dark img{filter:drop-shadow(0 10px 22px rgba(0,0,0,.5))}
+.setprev figure{margin:0}
+.setprev figcaption{margin-top:7px; font-size:11.5px; color:rgba(237,241,240,.55); line-height:1.4}
+.setprev:not(.dark) figcaption{color:var(--muted)}
+.pv-eyebrow{
+  margin:0 0 7px; font-size:9.5px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--turq); font-weight:700;
+}
+.pv-head{
+  font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.45rem;
+  line-height:1.08; letter-spacing:-.015em; margin:0 0 .35rem; color:#F7F9F8;
+}
+.pv-sub{margin:0; font-size:13px; line-height:1.5; color:rgba(237,241,240,.72)}
+.setprev:not(.dark) .pv-sub{color:var(--muted)}
+.pv-cap{
+  margin:12px 0 0; padding-top:9px; border-top:1px solid rgba(237,241,240,.16);
+  font-size:11.5px; color:rgba(237,241,240,.6);
+}
+.pv-quote{
+  font-family:"Newsreader",Georgia,serif; font-size:1.02rem; line-height:1.45;
+  margin:0 0 6px; color:#F3F6F5;
+}
+.pv-quote::before{content:"\201C"} .pv-quote::after{content:"\201D"}
+.pv-cite{margin:0 0 10px; font-size:11.5px; letter-spacing:.06em; color:rgba(237,241,240,.6)}
+.pv-prose p{margin:0 0 7px; font-size:12.5px; line-height:1.55; color:var(--ink)}
+.pv-prose p:last-child{margin-bottom:0}
+.pv-prose .pv-h1{font-family:"Newsreader",Georgia,serif; font-size:1.2rem; margin:0 0 8px; color:var(--ink)}
+.pv-empty{color:var(--muted); font-style:italic}
+/* Four lines of an About page is a preview; the whole thing is the page. */
+.setprev-about .pv-prose{max-height:9.5rem; overflow:hidden; position:relative;
+  -webkit-mask-image:linear-gradient(#000 72%,transparent); mask-image:linear-gradient(#000 72%,transparent)}
+
+/* The fields. Same grid as the studio's other forms, but with no panel of its
+   own -- the card is already the panel, and a box inside a box is the look
+   this page was trying to get away from. */
+.setform{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px 16px; margin-top:18px;
+}
+.setform .wide{grid-column:1/-1}
+.setform label{gap:5px}
+.setform label > .sub{margin-top:1px; line-height:1.45}
+.setform .check{flex-direction:row; align-items:center; gap:9px; color:var(--ink); min-height:40px}
+.setform .check input{width:auto; min-width:20px; min-height:20px}
+.setform input,.setform select,.setform textarea{box-sizing:border-box; max-width:100%}
+.setform textarea{font:400 15px/1.55 "Karla",sans-serif}
+/* Counts the words in an application box, because the call for entry is what
+   asks for a number. Sits under the field, right, out of the reading line. */
+.wordcount{align-self:flex-end; font-size:11.5px; color:var(--muted); letter-spacing:.02em}
+
+/* Save belongs to its card and says which card it is. Above a hairline so the
+   fields end somewhere, and right-aligned because that is where a hand leaves
+   a form. */
+.setsave{
+  grid-column:1/-1; display:flex; align-items:center; justify-content:flex-end;
+  gap:12px; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:15px; margin-top:2px;
+}
+/* Nothing changed yet, so the button is an offer rather than a pending job --
+   nine filled buttons down a page all read as nine things you have left undone.
+   It fills the moment the card is touched. JS-set: with the script missing
+   every button stays filled and working, which is the right way round. */
+.setsave .cta.idle{background:transparent; color:var(--accent)}
+.setsave .cta.idle:hover{background:var(--accent); color:#fff}
+.savedpill{
+  font:600 12.5px "Karla",sans-serif; color:#0E6E60; letter-spacing:.02em;
+  background:#E6F5F2; border:1px solid #B7DED6; border-radius:99px; padding:4px 12px;
+  transition:opacity .5s ease;
+}
+.savedpill::before{content:"\2713\00a0"}
+.savedpill.gone{opacity:0}
+
+/* Four named backdrops, each with its sentence. A dropdown hid three of the
+   four behind a click and described none of them. */
+.setpick{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px}
+.setpick .pick{
+  flex-direction:row; align-items:flex-start; gap:10px; margin:0;
+  border:1px solid var(--line); border-radius:3px; padding:11px 13px;
+  background:var(--wall); cursor:pointer; transition:border-color .15s, background .15s;
+}
+.setpick .pick:hover{border-color:var(--rule); background:var(--paper)}
+.setpick .pick.on{border-color:var(--accent); background:var(--paper)}
+.setpick .pick input{width:auto; min-width:18px; min-height:18px; margin-top:2px}
+.setpick .pick strong{display:block; color:var(--ink); font-size:14px; font-weight:600}
+.setpick .pick .sub{margin-top:2px}
+@media (max-width:760px){
+  .setform{grid-template-columns:1fr}
+  .setprev-hero,.setprev-box{grid-template-columns:96px minmax(0,1fr); gap:12px}
+  /* The portrait leads on a phone, the way it does on the About page itself. */
+  .setprev-about{grid-template-columns:1fr}
+  .setprev-about figure{order:-1; max-width:130px}
+  .setsave{justify-content:stretch}
+  .setsave .cta{flex:1; text-align:center}
+}
 
 /* ---------- the studio on a phone ----------
    A six-column table cannot be read at 390px, and the old rule was that there

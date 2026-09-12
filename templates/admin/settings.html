@@ -1,113 +1,263 @@
 {% extends "admin/_layout.html" %}
-{% block title %}Settings{% endblock %}
+{% block title %}Your site{% endblock %}
 {% block body %}
-<h1>Settings</h1>
-<form class="formgrid" method="post" enctype="multipart/form-data">
-  <label class="wide">Site title <input name="site_title" value="{{ cfg.site_title }}"></label>
-  <label class="wide">Tagline <input name="tagline" value="{{ cfg.tagline }}"></label>
-  <label class="wide">About text <textarea name="about" rows="8">{{ cfg.about }}</textarea></label>
-  <label class="wide">Commissions note <textarea name="commission_note" rows="10">{{ cfg.commission_note }}</textarea></label>
-  <p class="sub wide">Shown above the enquiry form on the Commissions page. A blank line starts a new paragraph, same as the About text.</p>
-  <label>Contact email <input name="artist_email" value="{{ cfg.artist_email }}"></label>
-  <label>Name for labels and certificates <input name="artist_name" value="{{ cfg.artist_name }}"></label>
+{#- One card per PLACE ON THE SITE, not one form per table of settings.
 
-  <fieldset class="wide accent-spec">
-    <legend>For applications</legend>
-    <p class="sub">Nearly every call for entry asks for these two. Written here once,
-       they go out with every submission packet as plain text files, so they are
-       never retyped into a web form at midnight.</p>
-    <label class="wide">Artist statement
-      <textarea name="artist_statement" rows="8" placeholder="What the work is about, in your words.">{{ cfg.artist_statement }}</textarea>
-    </label>
-    <label class="wide">Biography
-      <textarea name="artist_bio" rows="6" placeholder="Where you studied, where you have shown, where you work. Third person is the convention.">{{ cfg.artist_bio }}</textarea>
-    </label>
-  </fieldset>
+    What was here before was a single form of nineteen fields under one Save:
+    a headline, a portrait, a shipping rate and a password all at the same
+    weight, none of them showing what they changed. That is the shape of a
+    configuration screen, and it made changing a sentence on the front page
+    feel like an administrative act rather than like writing.
 
-  <fieldset class="wide">
-    <legend>Landing page</legend>
-    {% if cfg.hero_image %}
-    <div class="shots">
-      <figure>
-        <img src="{{ img_url(cfg.hero_image,'s','jpg') }}" alt="Current landing photograph">
-        <figcaption>On the front page now</figcaption>
-      </figure>
+    So: every card is named for somewhere a visitor goes, shows that place as
+    it looks RIGHT NOW built from the stored values, and saves on its own. The
+    small forms are the point -- changing the headline posts four fields and
+    touches nothing else, which is why the route saves only the keys it is
+    handed. Nothing here is new configuration; it is the same nineteen fields,
+    put where she can see what they do. -#}
+
+{%- macro savedpill(sec) -%}
+  {% if request.args.get('saved') == sec %}<span class="savedpill" role="status">Saved</span>{% endif %}
+{%- endmacro -%}
+
+<div class="adminhead">
+  <h1>Your site</h1>
+  <a class="link" href="{{ url_for('site.index') }}" target="_blank" rel="noopener">Open the site &nearr;</a>
+</div>
+<p class="setlede">Every word a visitor reads. Each part saves on its own, so
+  changing one line is one small change &mdash; nothing else is touched.</p>
+
+<nav class="setjump" aria-label="Sections">
+  {% for id, label in [("front","Front page"),("boxes","What these are"),("about","About page"),
+                       ("commissions","Commissions"),("name","Name and contact"),
+                       ("applications","For applications"),("shipping","Shipping"),
+                       ("paper","Backdrop"),("password","Password")] %}
+  <a href="#{{ id }}">{{ label }}</a>
+  {% endfor %}
+</nav>
+
+{# ------------------------------------------------------------ front page -#}
+<section class="setcard" id="front">
+  <div class="setcard-head">
+    <h2>The front page</h2>
+    <a class="link" href="{{ url_for('site.index') }}" target="_blank" rel="noopener">See it &nearr;</a>
+  </div>
+  <p class="setsay">One painting, whole, on a dark ground, and the first words
+    anyone reads on your site.</p>
+
+  {# The preview is the real thing in miniature -- same dark ground, same
+     serif, same order -- so the fields below are visibly the words on that
+     screen and not four boxes called hero_*. #}
+  <div class="setprev dark">
+    <div class="setprev-hero{% if not cfg.hero_image %} noart{% endif %}">
+      {% if cfg.hero_image %}
+      <img src="{{ img_url(cfg.hero_image,'s','jpg') }}" alt="">
+      {% endif %}
+      <div>
+        <p class="pv-eyebrow">&ldquo;The Box Series&rdquo; &middot; Multimedia</p>
+        <p class="pv-head">{{ cfg.hero_title or cfg.tagline or "Black and white treasure boxes" }}</p>
+        {% if cfg.hero_sub %}<p class="pv-sub">{{ cfg.hero_sub }}</p>
+        {% elif cfg.about %}<p class="pv-sub">{{ cfg.about.split("\n")[0] }}</p>{% endif %}
+        {% if cfg.hero_caption %}<p class="pv-cap">{{ cfg.hero_caption }}</p>{% endif %}
+      </div>
     </div>
-    {% endif %}
-    <label class="wide">Photograph
+    {% if not cfg.hero_image %}<p class="setprev-note">No photograph chosen &mdash; your newest photographed work is showing here.</p>{% endif %}
+  </div>
+
+  <form class="setform" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="section" value="front">
+    <label class="wide">Headline
+      <input name="hero_title" value="{{ cfg.hero_title }}" placeholder="Black and white treasure boxes">
+      <span class="sub">Leave it empty and your tagline is used.</span>
+    </label>
+    <label class="wide">The line under it
+      <input name="hero_sub" value="{{ cfg.hero_sub }}">
+      <span class="sub">Empty falls back to the first line of your About text.</span>
+    </label>
+    <label class="wide">Caption for the photograph
+      <input name="hero_caption" value="{{ cfg.hero_caption }}" placeholder="Title, year, medium">
+    </label>
+    <label class="wide">Change the photograph
       <input type="file" name="hero_photo" accept="image/jpeg,image/png,image/webp">
+      <span class="sub">It does not have to be for sale. Leave this alone to keep the one you have.</span>
     </label>
-    <p class="sub">The one piece the front page opens with. It does not have to be for sale.
-      Leave empty and the newest photographed work is used instead.</p>
     {% if cfg.hero_image %}
-    <label class="check"><input type="checkbox" name="clear_hero" value="1"> Remove it and fall back to the newest work</label>
+    <label class="check wide"><input type="checkbox" name="clear_hero" value="1"> Remove it and show my newest work instead</label>
     {% endif %}
-    <label class="wide">Headline <input name="hero_title" value="{{ cfg.hero_title }}" placeholder="{{ cfg.tagline }}"></label>
-    <label class="wide">Line under the headline <input name="hero_sub" value="{{ cfg.hero_sub }}"></label>
-    <label class="wide">Caption for the photograph <input name="hero_caption" value="{{ cfg.hero_caption }}" placeholder="Title, year, medium"></label>
-  </fieldset>
+    <div class="setsave">{{ savedpill('front') }}<button class="cta" type="submit">Save the front page</button></div>
+  </form>
+</section>
 
-  <fieldset class="wide">
-    <legend>About page</legend>
-    {% if cfg.about_image %}
-    <div class="shots">
+{# ---------------------------------------------------------- the box band -#}
+<section class="setcard" id="boxes">
+  <div class="setcard-head">
+    <h2>&ldquo;What these are&rdquo;</h2>
+    <a class="link" href="{{ url_for('site.index') }}#available" target="_blank" rel="noopener">See it &nearr;</a>
+  </div>
+  <p class="setsay">The band between the front photograph and the work, where a
+    visitor finds out these are boxes 2.5&Prime; deep and not pictures.</p>
+
+  <div class="setprev dark">
+    <div class="setprev-box{% if not cfg.box_image %} noart{% endif %}">
+      {% if cfg.box_image %}
       <figure>
-        <img src="{{ img_url(cfg.about_image,'s','jpg') }}" alt="Current portrait">
-        <figcaption>On the About page now</figcaption>
+        <img src="{{ img_url(cfg.box_image,'s','jpg') }}" alt="">
+        {% if cfg.box_caption %}<figcaption>{{ cfg.box_caption }}</figcaption>{% endif %}
       </figure>
+      {% endif %}
+      <div>
+        <p class="pv-eyebrow">What these are</p>
+        {% if cfg.box_note %}
+        <p class="pv-quote">{{ cfg.box_note }}</p>
+        {% if cfg.artist_name %}<p class="pv-cite">{{ cfg.artist_name }}</p>{% endif %}
+        {% endif %}
+        <p class="pv-sub">Each one is 10.5&Prime; &times; 10.5&Prime; and 2.5&Prime; deep &mdash; a box you look into, not a picture you look at.</p>
+      </div>
     </div>
+  </div>
+
+  <form class="setform" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="section" value="boxes">
+    <label class="wide">The sentence beside it
+      <textarea name="box_note" rows="3">{{ cfg.box_note }}</textarea>
+      <span class="sub">Shown as a quotation with your name under it. Empty shows only the measurements.</span>
+    </label>
+    <label class="wide">Caption under the photograph
+      <input name="box_caption" value="{{ cfg.box_caption }}">
+    </label>
+    <label class="wide">Change the photograph
+      <input type="file" name="box_photo" accept="image/jpeg,image/png,image/webp">
+      <span class="sub">One piece seen from an ANGLE, or edge-on in raking light, so the
+        depth reads. Every other photograph on the site is straight-on, which makes the
+        work look flat &mdash; this is the only place a visitor sees that these are boxes.
+        A plain surface near a window is enough.</span>
+    </label>
+    {% if cfg.box_image %}
+    <label class="check wide"><input type="checkbox" name="clear_box" value="1"> Remove it</label>
     {% endif %}
-    <label class="wide">Portrait
+    <div class="setsave">{{ savedpill('boxes') }}<button class="cta" type="submit">Save this band</button></div>
+  </form>
+</section>
+
+{# ------------------------------------------------------------ about page -#}
+<section class="setcard" id="about">
+  <div class="setcard-head">
+    <h2>The About page</h2>
+    <a class="link" href="{{ url_for('site.about') }}" target="_blank" rel="noopener">See it &nearr;</a>
+  </div>
+  <p class="setsay">You, in your own words, with your portrait beside it. A blank
+    line starts a new paragraph.</p>
+
+  <div class="setprev">
+    <div class="setprev-about{% if not cfg.about_image %} noart{% endif %}">
+      <div class="pv-prose">
+        <p class="pv-h1">About</p>
+        {% if cfg.about %}
+          {% for p in cfg.about.split("\n") %}{% if p.strip() %}<p>{{ p }}</p>{% endif %}{% endfor %}
+        {% else %}<p class="pv-empty">Nothing written yet.</p>{% endif %}
+      </div>
+      {% if cfg.about_image %}
+      <figure>
+        <img src="{{ img_url(cfg.about_image,'s','jpg') }}" alt="">
+        {% if cfg.about_caption %}<figcaption>{{ cfg.about_caption }}</figcaption>{% endif %}
+      </figure>
+      {% endif %}
+    </div>
+  </div>
+
+  <form class="setform" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="section" value="about">
+    <label class="wide">About text
+      <textarea name="about" rows="9">{{ cfg.about }}</textarea>
+    </label>
+    <label class="wide">Caption under the portrait
+      <input name="about_caption" value="{{ cfg.about_caption }}">
+    </label>
+    <label class="wide">Change the portrait
       <input type="file" name="about_photo" accept="image/jpeg,image/png,image/webp">
     </label>
-    <p class="sub">A photograph of the artist, shown beside the About text.</p>
     {% if cfg.about_image %}
-    <label class="check"><input type="checkbox" name="clear_about" value="1"> Remove the portrait</label>
+    <label class="check wide"><input type="checkbox" name="clear_about" value="1"> Remove the portrait</label>
     {% endif %}
-    <label class="wide">Caption under the portrait <input name="about_caption" value="{{ cfg.about_caption }}"></label>
-  </fieldset>
+    <div class="setsave">{{ savedpill('about') }}<button class="cta" type="submit">Save the About page</button></div>
+  </form>
+</section>
 
-  <fieldset class="wide">
-    <legend>What these are</legend>
-    {% if cfg.box_image %}
-    <div class="shots">
-      <figure>
-        <img src="{{ img_url(cfg.box_image,'s','jpg') }}" alt="Current box photograph">
-        <figcaption>On the front page now</figcaption>
-      </figure>
-    </div>
-    {% endif %}
-    <label class="wide">Photograph of a box
-      <input type="file" name="box_photo" accept="image/jpeg,image/png,image/webp">
+{# ---------------------------------------------------------- commissions -#}
+<section class="setcard" id="commissions">
+  <div class="setcard-head">
+    <h2>The Commissions page</h2>
+    <a class="link" href="{{ url_for('site.commissions') }}" target="_blank" rel="noopener">See it &nearr;</a>
+  </div>
+  <p class="setsay">What somebody reads just before they ask you for a piece.
+    Shown above the enquiry form.</p>
+  <form class="setform" method="post">
+    <input type="hidden" name="section" value="commissions">
+    <label class="wide">Commissions note
+      <textarea name="commission_note" rows="9">{{ cfg.commission_note }}</textarea>
+      <span class="sub">A blank line starts a new paragraph, same as the About text.</span>
     </label>
-    <p class="sub">One piece seen from an ANGLE, or edge-on in raking light, so the
-      2.5&Prime; depth reads. Every other photograph on the site is straight-on, which
-      makes the work look flat &mdash; this is the only place a visitor can see that
-      these are boxes. A plain surface near a window is enough.</p>
-    {% if cfg.box_image %}
-    <label class="check"><input type="checkbox" name="clear_box" value="1"> Remove it</label>
-    {% endif %}
-    <label class="wide">Caption under it <input name="box_caption" value="{{ cfg.box_caption }}"></label>
-    <label class="wide">The sentence beside it
-      <textarea name="box_note" rows="4">{{ cfg.box_note }}</textarea>
+    <div class="setsave">{{ savedpill('commissions') }}<button class="cta" type="submit">Save this page</button></div>
+  </form>
+</section>
+
+{# ------------------------------------------------------- name and contact -#}
+<section class="setcard" id="name">
+  <div class="setcard-head"><h2>Your name and how people reach you</h2></div>
+  <p class="setsay">Used at the top of every page, in the browser tab, on labels
+    and certificates, and as the address enquiries come to.</p>
+  <form class="setform" method="post">
+    <input type="hidden" name="section" value="name">
+    <label class="wide">Site title
+      <input name="site_title" value="{{ cfg.site_title }}">
+      <span class="sub">The name at the top of every page and in the browser tab.</span>
     </label>
-    <p class="sub">Shown as a quotation with the artist's name under it, between the
-      opening photograph and the work. It starts as her own sentence from the About
-      page. Leave it empty to show only the measurements.</p>
-  </fieldset>
+    <label class="wide">Tagline
+      <input name="tagline" value="{{ cfg.tagline }}">
+      <span class="sub">Also the front-page headline whenever that is left empty.</span>
+    </label>
+    <label>Contact email
+      <input name="artist_email" value="{{ cfg.artist_email }}" inputmode="email">
+      <span class="sub">Where enquiries arrive.</span>
+    </label>
+    <label>Name for labels and certificates
+      <input name="artist_name" value="{{ cfg.artist_name }}">
+      <span class="sub">Also signs the quotation on the front page.</span>
+    </label>
+    <div class="setsave">{{ savedpill('name') }}<button class="cta" type="submit">Save</button></div>
+  </form>
+</section>
 
-  <label class="wide">Background design
-    <select name="page_bg">
-      {% for v, lbl in [("quiet","Barely there"),("rosette","Engine-turned rosette"),("rose","Rose curve"),("none","None")] %}
-      <option value="{{ v }}"{% if cfg.page_bg == v %} selected{% endif %}>{{ lbl }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <p class="sub wide">Applies to the About, Commissions and Contact pages.</p>
+{# ------------------------------------------------------- for applications -#}
+<section class="setcard" id="applications">
+  <div class="setcard-head"><h2>For applications</h2></div>
+  <p class="setsay">Nearly every call for entry asks for these two. Written here
+    once, they go out with every submission packet as plain text files &mdash; so
+    they are never retyped into a web form at midnight.</p>
+  <form class="setform" method="post">
+    <input type="hidden" name="section" value="applications">
+    <label class="wide">Artist statement
+      <textarea name="artist_statement" rows="8" data-count
+                placeholder="What the work is about, in your words.">{{ cfg.artist_statement }}</textarea>
+      <span class="sub">Most calls ask for 100&ndash;250 words.</span>
+    </label>
+    <label class="wide">Biography
+      <textarea name="artist_bio" rows="6" data-count
+                placeholder="Where you studied, where you have shown, where you work. Third person is the convention.">{{ cfg.artist_bio }}</textarea>
+      <span class="sub">Third person is the convention. Usually 75&ndash;150 words.</span>
+    </label>
+    <div class="setsave">{{ savedpill('applications') }}<button class="cta" type="submit">Save these</button></div>
+  </form>
+</section>
 
-  <fieldset class="wide">
-    <legend>Shipping rates, in dollars</legend>
-    <div class="rates">
+{# ----------------------------------------------------------------- rates -#}
+<section class="setcard" id="shipping">
+  <div class="setcard-head"><h2>Shipping</h2></div>
+  <p class="setsay">What a buyer is charged to have a piece sent, by size band.
+    A work set to the &ldquo;quote&rdquo; band shows an enquiry form instead of a checkout.</p>
+  <form class="setform" method="post">
+    <input type="hidden" name="section" value="shipping">
+    <div class="rates wide">
       {% for band, label in [("small","Small"),("medium","Medium"),("large","Large"),("rolled","Rolled")] %}
       <label>{{ label }}
         <span class="money">
@@ -117,20 +267,87 @@
       </label>
       {% endfor %}
     </div>
-    <p class="sub">Leave one blank to keep the rate it already has.</p>
-    <p class="sub">A work set to the "quote" band shows an enquiry form instead of a checkout.</p>
-  </fieldset>
+    <p class="sub wide">Leave one blank to keep the rate it already has.</p>
+    <div class="setsave">{{ savedpill('shipping') }}<button class="cta" type="submit">Save the rates</button></div>
+  </form>
+</section>
 
-  <div class="wide"><button class="cta" type="submit">Save</button></div>
-</form>
+{# --------------------------------------------------------------- backdrop -#}
+<section class="setcard" id="paper">
+  <div class="setcard-head">
+    <h2>The backdrop</h2>
+    <a class="link" href="{{ url_for('site.about') }}" target="_blank" rel="noopener">See it &nearr;</a>
+  </div>
+  <p class="setsay">The faint pattern behind the About, Commissions and Contact
+    pages. It never goes near the work itself.</p>
+  {# Four named choices, each with a sentence -- a dropdown hides three of them
+     behind a click and tells you nothing about any of the four. #}
+  <form class="setform" method="post">
+    <input type="hidden" name="section" value="paper">
+    <div class="setpick wide">
+      {% for v, lbl, note in [
+           ("quiet","Barely there","A dotted wash, like paper held to the light."),
+           ("rosette","Engine-turned rosette","Fine concentric guilloche, the way a banknote is ruled."),
+           ("rose","Rose curve","One drawn curve, looping."),
+           ("none","None","Plain.")] %}
+      <label class="pick{% if cfg.page_bg == v %} on{% endif %}">
+        <input type="radio" name="page_bg" value="{{ v }}"{% if cfg.page_bg == v %} checked{% endif %}>
+        <span><strong>{{ lbl }}</strong><span class="sub">{{ note }}</span></span>
+      </label>
+      {% endfor %}
+    </div>
+    <div class="setsave">{{ savedpill('paper') }}<button class="cta" type="submit">Save the backdrop</button></div>
+  </form>
+</section>
 
-<h2>Your password</h2>
-<p class="sub">This is the password for signing in here. Changing it takes effect
-   immediately and does not affect anything else on the site.</p>
-<form method="post" action="{{ url_for('site.admin_password') }}" class="formgrid">
-  <label>Current password <input type="password" name="current" autocomplete="current-password" required></label>
-  <label>New password <input type="password" name="new" autocomplete="new-password" minlength="10" required></label>
-  <label>New password again <input type="password" name="again" autocomplete="new-password" minlength="10" required></label>
-  <div class="wide"><button class="cta" type="submit">Change password</button></div>
-</form>
+{# --------------------------------------------------------------- password -#}
+<section class="setcard" id="password">
+  <div class="setcard-head"><h2>Your password</h2></div>
+  <p class="setsay">For signing in here. Changing it takes effect immediately and
+    affects nothing else on the site.</p>
+  <form class="setform" method="post" action="{{ url_for('site.admin_password') }}">
+    <label>Current password <input type="password" name="current" autocomplete="current-password" required></label>
+    <label>New password <input type="password" name="new" autocomplete="new-password" minlength="10" required></label>
+    <label>New password again <input type="password" name="again" autocomplete="new-password" minlength="10" required></label>
+    <div class="setsave"><button class="cta" type="submit">Change password</button></div>
+  </form>
+</section>
+
+<script>
+/* Two small manners, both optional -- every form above works with this file
+   missing. (1) A card's Save stays quiet until something in that card has
+   actually changed, so nine buttons do not all read as nine pending jobs.
+   (2) The application boxes count their own words, because the call for entry
+   is what asks for a number and counting them by hand is the whole chore. */
+(function(){
+  document.querySelectorAll('.setform').forEach(function(f){
+    var btn = f.querySelector('button[type=submit]');
+    if (!btn || f.querySelector('input[type=password]')) return;
+    var label = btn.textContent;
+    function rest(){ btn.classList.add('idle'); btn.textContent = label; }
+    function woke(){ btn.classList.remove('idle'); }
+    rest();
+    f.addEventListener('input',  woke);
+    f.addEventListener('change', woke);
+  });
+  document.querySelectorAll('textarea[data-count]').forEach(function(t){
+    var out = document.createElement('span');
+    out.className = 'wordcount';
+    function tick(){
+      var n = (t.value.trim().match(/\S+/g) || []).length;
+      out.textContent = n === 1 ? '1 word' : n + ' words';
+    }
+    t.addEventListener('input', tick); tick();
+    t.parentNode.appendChild(out);
+  });
+  /* The saved mark is a receipt, not a state: it fades once she has seen it,
+     and the query string goes with it so a refresh does not re-announce it. */
+  var pill = document.querySelector('.savedpill');
+  if (pill) {
+    setTimeout(function(){ pill.classList.add('gone'); }, 3200);
+    if (window.history.replaceState)
+      history.replaceState(null, '', location.pathname + location.hash);
+  }
+})();
+</script>
 {% endblock %}

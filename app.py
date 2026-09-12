@@ -1286,7 +1286,13 @@ def admin_settings():
                 "hero_title", "hero_sub", "hero_caption", "about_caption",
                 "box_caption", "box_note", "page_bg",
                 "artist_name", "artist_statement", "artist_bio"]
-        vals = {k: request.form.get(k, "") for k in keys}
+        # PRESENT, not "every key with a default". The page is now a stack of
+        # small forms -- one per place on the site -- so a post carries the
+        # front page's four fields and nothing else. Reading the whole list
+        # with a "" default would write an empty string over every field the
+        # submitted card does not contain, i.e. saving the headline would wipe
+        # the About text. save_settings only writes the keys it is handed.
+        vals = {k: request.form[k] for k in keys if k in request.form}
 
         # The rates are entered in dollars but stored in cents, because that is
         # what payments.py charges from. A blank or unreadable field LEAVES THE
@@ -1337,7 +1343,13 @@ def admin_settings():
             gallery.drop_image_files(old_box)
 
         gallery.save_settings(vals)
-        return redirect(url_for("site.admin_settings"))
+        # Back to the card she was working in, and marked as saved there rather
+        # than in a banner at the top of a long page: on a screen this tall the
+        # confirmation has to appear where her eyes already are, or pressing
+        # Save looks like it did nothing.
+        sec = request.form.get("section", "")
+        return redirect(url_for("site.admin_settings", saved=sec or None)
+                        + ("#" + sec if sec else ""))
     return render_template("admin/settings.html")
 
 
