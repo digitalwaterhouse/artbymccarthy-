@@ -1122,13 +1122,21 @@ def _send_reply(rid):
         flash("Write something first.")
         return redirect(url_for("site.admin_message_draft", rid=rid))
 
-    # Replies leave as the site's verified sending identity, because that is
-    # the only domain this app can prove it is allowed to send for. Reply-To is
-    # her real address, so when the buyer answers it lands in her own inbox and
-    # the conversation carries on where she actually reads mail.
-    reply_to = (cfg().get("artist_email") or "").strip()
+    # Replies leave as the site's verified sending identity, because that is the
+    # only domain this app can prove it is allowed to send for.
+    #
+    # NO Reply-To. It used to be set to artist_email, which was right while
+    # nothing at the domain could receive: without it a buyer's reply went
+    # nowhere. The domain forwards now, so MAIL_FROM reaches her by itself, and
+    # the only thing the header still did was put her personal Gmail address in
+    # front of every customer she answered.
+    #
+    # THIS ASSUMES MAIL_FROM IS AN ADDRESS THAT RECEIVES. If it is ever pointed
+    # back at a noreply@ or the forwarding is switched off, replies to her
+    # replies fall on the floor silently -- so that variable is now load-bearing
+    # in a way it was not before.
     ok = mailer.send(reply["to_email"], reply["subject"] or "(no subject)",
-                     reply["body"], reply_to=reply_to or None)
+                     reply["body"])
     if ok:
         gallery.mark_reply_sent(rid)
         flash("Sent to %s." % reply["to_email"])
