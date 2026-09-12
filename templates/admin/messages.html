@@ -1,5 +1,24 @@
 {% extends "admin/_layout.html" %}
 {% block title %}Messages{% endblock %}
+{# Put the person who wrote in on the Contacts list, without leaving the
+   message. Shown as a state, not a button, once it is done -- and an address
+   that took itself off the list is never offered a one-click way back on. #}
+{% macro contact_act(email) %}
+  {% if email %}
+    {% set on = contacts.get(email|lower) %}
+    {% if on %}
+      <span class="noted">in contacts</span>
+    {% elif email|lower in contacts %}
+      <span class="noted">off the list</span>
+    {% else %}
+      <form method="post" action="{{ url_for('site.admin_contact_add') }}">
+        <input type="hidden" name="email" value="{{ email }}">
+        <input type="hidden" name="back" value="{{ request.full_path }}">
+        <button class="link" type="submit">add to contacts</button>
+      </form>
+    {% endif %}
+  {% endif %}
+{% endmacro %}
 {% block body %}
 <div class="adminhead">
   <h1>Messages</h1>
@@ -35,6 +54,7 @@
       <span class="sub">{{ open_msg.created_at|day }} at {{ open_msg.created_at[11:16] }}</span>
     </header>
     <p>{{ open_msg.body }}</p>
+    <div class="msg-acts">{{ contact_act(open_msg.email) }}</div>
   </article>
   {% endif %}
 
@@ -120,6 +140,7 @@
       <p>{{ i.body }}</p>
       <div class="msg-acts">
         <a class="link" href="{{ url_for('site.admin_message', inq_id=i.id) }}">reply</a>
+        {{ contact_act(i.email) }}
         {% if not i.handled %}
           <form method="post" action="{{ url_for('site.admin_inq_handled', inq_id=i.id) }}">
             <input type="hidden" name="back" value="{{ request.full_path }}">
@@ -158,6 +179,7 @@
       <div class="msg-acts">
         <a class="link" href="{{ url_for('site.admin_message_draft', rid=r.id) }}">
           {{ 'open' if r.status == 'draft' else 'read' }}</a>
+        {{ contact_act(r.to_email) }}
         <form method="post" action="{{ url_for('site.admin_message_draft_delete', rid=r.id) }}"
               onsubmit="return confirm('Delete this {{ r.status }}? It cannot be undone.')">
           <button class="link danger" type="submit">delete</button>

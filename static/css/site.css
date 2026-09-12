@@ -1050,6 +1050,9 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .msg p{margin:0 0 8px; white-space:pre-wrap}
 /* Two controls on a message now, so they sit in a row rather than stacking. */
 .msg-acts{display:flex; flex-wrap:wrap; align-items:center; gap:18px}
+/* "in contacts" sits where the button was. A STATE, not a control: it must not
+   look clickable, and it must not look like an error either. */
+.msg-acts .noted{color:var(--muted); font-size:13.5px}
 /* Addresses that asked to come off. Present, plainly secondary, and never
    mistakable for the live list above them. */
 .offhead{

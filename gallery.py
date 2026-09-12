@@ -1306,6 +1306,38 @@ def subscribe(email, source="site"):
     return True
 
 
+def add_contact(email, source="message"):
+    """Put an address on the Contacts list from the STUDIO rather than from the
+    sign-up form on the site.
+
+    Returns "added", "already", "removed" or "bad", because the studio has to be
+    able to say which of those happened.
+
+    Deliberately not `subscribe()`: that one clears an unsubscribe stamp, on the
+    grounds that a person signing up again is consenting again. Nobody can
+    consent on somebody else's behalf, so an address that asked to come off the
+    list STAYS off and this reports it rather than quietly resurrecting it."""
+    email = (email or "").strip().lower()
+    if "@" not in email or len(email) > 200:
+        return "bad"
+    with connect() as conn:
+        row = conn.execute("SELECT unsubscribed_at FROM subscribers WHERE email=?",
+                           (email,)).fetchone()
+        if row:
+            return "removed" if row["unsubscribed_at"] else "already"
+        conn.execute("INSERT INTO subscribers (email, source, created_at)"
+                     " VALUES (?,?,?)", (email, source, now()))
+    return "added"
+
+
+def contacts_index():
+    """{address: on the list?} -- so a list of messages can say which senders
+    are already contacts without a query per row."""
+    with connect() as conn:
+        return {r["email"]: not r["unsubscribed_at"] for r in
+                conn.execute("SELECT email, unsubscribed_at FROM subscribers")}
+
+
 def list_subscribers(include_removed=True):
     """Everyone, newest first. Removed addresses come back too unless asked
     otherwise, because the studio page shows them rather than pretending they

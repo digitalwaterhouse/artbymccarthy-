@@ -1070,7 +1070,7 @@ def admin_inquiries():
         rows = gallery.list_replies("sent")
     return render_template("admin/messages.html", folder=folder, rows=rows,
                            counts=gallery.message_counts(), open_msg=None,
-                           reply=None)
+                           reply=None, contacts=gallery.contacts_index())
 
 
 @site.route("/admin/messages/<int:inq_id>")
@@ -1093,7 +1093,8 @@ def admin_message(inq_id):
     return render_template("admin/messages.html", folder="inbox",
                            rows=gallery.list_inquiries(),
                            counts=gallery.message_counts(), open_msg=inq,
-                           reply=draft, thread=gallery.replies_for_inquiry(inq_id))
+                           reply=draft, thread=gallery.replies_for_inquiry(inq_id),
+                           contacts=gallery.contacts_index())
 
 
 @site.route("/admin/messages/draft/<int:rid>")
@@ -1108,7 +1109,7 @@ def admin_message_draft(rid):
     return render_template("admin/messages.html", folder=folder,
                            rows=gallery.list_replies(reply["status"]),
                            counts=gallery.message_counts(), open_msg=inq,
-                           reply=reply, thread=[])
+                           reply=reply, thread=[], contacts=gallery.contacts_index())
 
 
 @site.route("/admin/messages/new")
@@ -1118,7 +1119,8 @@ def admin_message_new():
         "admin/messages.html", folder="drafts", rows=gallery.list_replies("draft"),
         counts=gallery.message_counts(), open_msg=None,
         reply={"id": None, "to_email": "", "to_name": "", "subject": "",
-               "body": "", "error": None}, thread=[])
+               "body": "", "error": None}, thread=[],
+        contacts=gallery.contacts_index())
 
 
 @site.route("/admin/messages/save", methods=["POST"])
@@ -1226,6 +1228,27 @@ def admin_subscriber_remove(sub_id):
           else "Taken off the list. The address is remembered so it cannot be "
                "added back by accident.")
     return redirect(url_for("site.admin_subscribers"))
+
+
+@site.route("/admin/contacts/add", methods=["POST"])
+@admin_required
+def admin_contact_add():
+    """Put the person who wrote to her on the Contacts list, from the message.
+
+    Source is recorded as "message" so the Contacts page can say where each
+    address came from -- these are people who wrote in, not people who asked
+    for the mailing list, and she should be able to tell the difference before
+    writing to everybody."""
+    email = (request.form.get("email") or "").strip()
+    result = gallery.add_contact(email, source="message")
+    flash({"added": f"Added {email} to Contacts.",
+           "already": f"{email} is already in Contacts.",
+           # Never resurrected quietly: see gallery.add_contact.
+           "removed": f"{email} asked to be taken off the list, so they have "
+                      "not been added back. Put them back from Contacts if "
+                      "they have asked you to.",
+           "bad": "That does not look like an email address."}[result])
+    return redirect(request.form.get("back") or url_for("site.admin_inquiries"))
 
 
 @site.route("/admin/subscribers.csv")
