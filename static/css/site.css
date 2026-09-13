@@ -1349,14 +1349,6 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
    bordered fieldsets, no uppercase legends. A serif name, a sentence of plain
    English, the thing itself, then the fields. */
 .setlede{margin:-6px 0 18px; color:var(--muted); font-size:14.5px; max-width:64ch}
-/* A long page needs a way in. Quiet links, not a second navigation bar. */
-.setjump{display:flex; flex-wrap:wrap; gap:7px; margin:0 0 22px}
-.setjump a{
-  font-size:12.5px; color:var(--muted); text-decoration:none;
-  border:1px solid var(--line); border-radius:99px; padding:5px 12px;
-  background:var(--paper); transition:color .15s, border-color .15s;
-}
-.setjump a:hover{color:var(--accent); border-color:var(--rule)}
 .setcard{
   background:var(--paper); border:1px solid var(--line); border-radius:4px;
   padding:clamp(16px,2.4vw,24px); margin:0 0 18px;
@@ -1364,6 +1356,40 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
      the redirect back to #front after a save lands with air above it. */
   scroll-margin-top:18px;
 }
+/* A CARD THAT FOLDS. The four that edit a page she looks at stay open, because
+   the miniature inside them is the point of this screen. The five that are set
+   once and forgotten -- her name, the application texts, the shipping rates,
+   the backdrop, the password -- close, so the page is four editors and five
+   lines instead of thirty-nine fields in a column.
+
+   The heading IS the summary rather than sitting above one, so a folded card
+   is exactly one line tall and reads as the same object either way. */
+.setfold{padding-top:0; padding-bottom:0}
+.setfold > summary{
+  cursor:pointer; list-style:none; display:flex; align-items:center; gap:11px;
+  padding:clamp(14px,2vw,18px) 0; margin:0;
+}
+.setfold > summary::-webkit-details-marker{display:none}
+.setfold > summary h2{
+  font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.35rem;
+  margin:0; margin-right:auto; color:var(--ink); letter-spacing:-.005em;
+}
+/* Drawn, so it can turn. Same chevron as the folds on a call and a painting --
+   one disclosure in the studio, not three. */
+.setfold > summary::after{
+  content:""; flex:none; width:8px; height:8px; margin-right:2px;
+  border-right:1.6px solid var(--muted); border-bottom:1.6px solid var(--muted);
+  transform:rotate(45deg) translate(-2px,-2px); transition:transform .18s ease;
+}
+.setfold[open] > summary::after{transform:rotate(-135deg) translate(-3px,-3px)}
+.setfold > summary:hover h2{color:var(--accent)}
+.setfold > summary:hover::after{border-color:var(--accent)}
+.setfold > summary:focus-visible{outline:2px solid var(--focus); outline-offset:3px}
+.setfold > .setsay{margin-top:0}
+.setfold > .setform,.setfold > .setsay + .setform{margin-bottom:clamp(14px,2vw,18px)}
+.setfold > .setform:last-child{margin-bottom:clamp(14px,2vw,18px)}
+@media (prefers-reduced-motion:reduce){ .setfold > summary::after{transition:none} }
+
 .setcard-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
 .setcard-head h2{
   font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.35rem;

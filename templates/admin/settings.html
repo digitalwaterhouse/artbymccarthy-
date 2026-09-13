@@ -25,16 +25,9 @@
   <a class="link" href="{{ url_for('site.index') }}" target="_blank" rel="noopener">Open the site &nearr;</a>
 </div>
 <p class="setlede">Every word a visitor reads. Each part saves on its own, so
-  changing one line is one small change &mdash; nothing else is touched.</p>
+  changing one line is one small change &mdash; nothing else is touched. The four
+  pages are open; the things you set once are folded underneath.</p>
 
-<nav class="setjump" aria-label="Sections">
-  {% for id, label in [("front","Front page"),("boxes","What these are"),("about","About page"),
-                       ("commissions","Commissions"),("name","Name and contact"),
-                       ("applications","For applications"),("shipping","Shipping"),
-                       ("paper","Backdrop"),("password","Password")] %}
-  <a href="#{{ id }}">{{ label }}</a>
-  {% endfor %}
-</nav>
 
 {# ------------------------------------------------------------ front page -#}
 <section class="setcard" id="front">
@@ -207,8 +200,8 @@
 </section>
 
 {# ------------------------------------------------------- name and contact -#}
-<section class="setcard" id="name">
-  <div class="setcard-head"><h2>Your name and how people reach you</h2></div>
+<details class="setcard setfold" id="name"{% if request.args.get('saved') == 'name' %} open{% endif %}>
+  <summary><h2>Your name and how people reach you</h2></summary>
   <p class="setsay">Used at the top of every page, in the browser tab, on labels
     and certificates, and as the address enquiries come to.</p>
   <form class="setform" method="post">
@@ -238,11 +231,11 @@
     </label>
     <div class="setsave">{{ savedpill('name') }}<button class="cta" type="submit">Save</button></div>
   </form>
-</section>
+</details>
 
 {# ------------------------------------------------------- for applications -#}
-<section class="setcard" id="applications">
-  <div class="setcard-head"><h2>For applications</h2></div>
+<details class="setcard setfold" id="applications"{% if request.args.get('saved') == 'applications' %} open{% endif %}>
+  <summary><h2>For applications</h2></summary>
   <p class="setsay">Nearly every call for entry asks for these two. Written here
     once, they go out with every submission packet as plain text files &mdash; so
     they are never retyped into a web form at midnight.</p>
@@ -260,11 +253,11 @@
     </label>
     <div class="setsave">{{ savedpill('applications') }}<button class="cta" type="submit">Save these</button></div>
   </form>
-</section>
+</details>
 
 {# ----------------------------------------------------------------- rates -#}
-<section class="setcard" id="shipping">
-  <div class="setcard-head"><h2>Shipping</h2></div>
+<details class="setcard setfold" id="shipping"{% if request.args.get('saved') == 'shipping' %} open{% endif %}>
+  <summary><h2>Shipping</h2></summary>
   <p class="setsay">What a buyer is charged to have a piece sent, by size band.
     A work set to the &ldquo;quote&rdquo; band shows an enquiry form instead of a checkout.</p>
   <form class="setform" method="post">
@@ -282,14 +275,12 @@
     <p class="sub wide">Leave one blank to keep the rate it already has.</p>
     <div class="setsave">{{ savedpill('shipping') }}<button class="cta" type="submit">Save the rates</button></div>
   </form>
-</section>
+</details>
 
 {# --------------------------------------------------------------- backdrop -#}
-<section class="setcard" id="paper">
-  <div class="setcard-head">
-    <h2>The backdrop</h2>
-    <a class="link" href="{{ url_for('site.about') }}" target="_blank" rel="noopener">See it &nearr;</a>
-  </div>
+<details class="setcard setfold" id="paper"{% if request.args.get('saved') == 'paper' %} open{% endif %}>
+  <summary><h2>The backdrop</h2></summary>
+  <a class="link" href="{{ url_for('site.about') }}" target="_blank" rel="noopener">See it &nearr;</a>
   <p class="setsay">The faint pattern behind the About, Commissions and Contact
     pages. It never goes near the work itself.</p>
   {# Four named choices, each with a sentence -- a dropdown hides three of them
@@ -310,11 +301,11 @@
     </div>
     <div class="setsave">{{ savedpill('paper') }}<button class="cta" type="submit">Save the backdrop</button></div>
   </form>
-</section>
+</details>
 
 {# --------------------------------------------------------------- password -#}
-<section class="setcard" id="password">
-  <div class="setcard-head"><h2>Your password</h2></div>
+<details class="setcard setfold" id="password"{% if request.args.get('saved') == 'password' %} open{% endif %}>
+  <summary><h2>Your password</h2></summary>
   <p class="setsay">For signing in here. Changing it takes effect immediately and
     affects nothing else on the site.</p>
   <form class="setform" method="post" action="{{ url_for('site.admin_password') }}">
@@ -323,7 +314,7 @@
     <label>New password again <input type="password" name="again" autocomplete="new-password" minlength="10" required></label>
     <div class="setsave"><button class="cta" type="submit">Change password</button></div>
   </form>
-</section>
+</details>
 
 <script>
 /* Two small manners, both optional -- every form above works with this file
