@@ -1786,7 +1786,18 @@ def drop_closed_found(today_):
             " AND deadline < ?", (today_,)).rowcount
 
 
-def list_found(status="new"):
+def list_found(status="new", within_days=None):
+    """The pen, optionally narrowed to what closes soon.
+
+    NARROWED IN THE VIEW, NOT AT THE DOOR. Everything the refresh found is
+    kept, because "show me the rest" should be instant and should not mean
+    fetching it all again -- and because a call six months out that she looked
+    at once should still be the same row when it comes into range.
+
+    A call with NO deadline survives the filter, the same way an unplaced call
+    survives the radius filter: it has nothing to fail on, and dropping those
+    would quietly hide the rolling calls.
+    """
     here = studio_point()
     with connect() as conn:
         rows = [dict(r) for r in conn.execute(
@@ -1796,7 +1807,22 @@ def list_found(status="new"):
     for r in rows:
         r["days"] = _days_until(r.get("deadline"))
         _decorate_distance(r, here)
+    if within_days:
+        rows = [r for r in rows if r["days"] is None or r["days"] <= within_days]
     return rows
+
+
+def found_horizon(status="new"):
+    """(showing_within_30, total) -- so the screen can say what it is holding
+    back rather than simply not showing it."""
+    all_ = list_found(status)
+    return len(list_found(status, FOUND_DEFAULT_DAYS)), len(all_)
+
+
+# How far ahead the panel looks by default. A deadline six months out is not a
+# thing to act on today, and 61 calls sorted by date buries the three she could
+# actually enter this month under fifty she cannot yet.
+FOUND_DEFAULT_DAYS = 30
 
 
 def get_found(found_id):

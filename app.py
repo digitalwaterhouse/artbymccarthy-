@@ -1475,14 +1475,24 @@ def admin_opportunities():
     # miles" is a view she comes back to, not a mode she sets each visit.
     within = _int(request.args.get("within"))
     order = "distance" if request.args.get("sort") == "distance" else "deadline"
+    # Default 30 days; days=0 means show everything. `days` absent is the
+    # default rather than "all", which is the whole point of the setting.
+    raw_days = request.args.get("days")
+    days = gallery.FOUND_DEFAULT_DAYS if raw_days is None else (_int(raw_days) or 0)
     live, done = gallery.list_opportunities(within=within, order=order)
     return render_template("admin/opportunities.html", live=live, done=done,
                            within=within, order=order,
                            here=gallery.studio_point(),
                            pending=len(gallery.ungeocoded_opportunities()),
                            # Open calls pulled from EntryThingy's published
-                           # listings, waiting in the pen to be judged.
-                           found=gallery.list_found("new"),
+                           # listings, waiting in the pen to be judged. Narrowed
+                           # to what closes soon unless she asks for more --
+                           # ?days=0 is "everything", and like the radius filter
+                           # it is a plain GET so the view can be bookmarked.
+                           found=gallery.list_found("new", days),
+                           days=days,
+                           horizons=[30, 90, 0],
+                           found_total=len(gallery.list_found("new")),
                            found_counts=gallery.found_counts(),
                            last_found=gallery.last_found_at(),
                            states=listings.states_for(cfg()),

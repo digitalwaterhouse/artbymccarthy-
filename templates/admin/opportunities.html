@@ -76,9 +76,28 @@
     you will be listed here.</p>
   {% endif %}
 
+  {# How far ahead to look. Thirty days by default: a deadline six months out
+     is not a thing to act on today, and sixty calls sorted by date bury the
+     three she could enter this month under fifty she cannot yet. The rest are
+     still there, one click away -- kept, not re-fetched. #}
+  {% if found or days != 30 %}
+  <div class="oppfilter horizon">
+    <span class="oppfilter-t">Closing within</span>
+    {% for d in horizons %}
+    <a class="chip{% if days == d %} on{% endif %}"
+       href="{{ url_for('site.admin_opportunities', within=within or none, sort=(order if order == 'distance' else none), days=(none if d == 30 else d)) }}#found">{{ '30 days' if d == 30 else ('90 days' if d == 90 else 'any time') }}</a>
+    {% endfor %}
+    {% if days and found_total > found|length %}
+    <span class="sub">{{ found_total - found|length }} more close later.</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
   {% if no_distance %}
   <form class="finder-go" method="post" action="{{ url_for('site.admin_found_distance') }}">
-    <button class="link" type="submit">Work out how far away {{ no_distance }} of these are &rarr;</button>
+    {# "these" would be a lie while the list is narrowed to thirty days: the
+       count is every listing without a distance, not the ones on screen. #}
+    <button class="link" type="submit">Work out the distance for {{ no_distance }} listing{{ '' if no_distance == 1 else 's' }} &rarr;</button>
   </form>
   {% endif %}
 
@@ -110,6 +129,9 @@
     </li>
     {% endfor %}
   </ul>
+  {% elif states and days and found_total %}
+  <p class="empty">Nothing closes in the next {{ days }} days.
+    <a href="{{ url_for('site.admin_opportunities', days=0) }}#found">Show all {{ found_total }}</a>.</p>
   {% elif states %}
   <p class="empty">{% if last_found %}Nothing waiting.
     {% if found_counts.get('added') %}{{ found_counts['added'] }} added to your list,

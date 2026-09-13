@@ -1868,6 +1868,9 @@ body.home{
 .finder-go{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:12px 0 0}
 .finder-go .sub{flex:1 1 18rem; min-width:0; line-height:1.5}
 .finder-note{margin:10px 0 0; line-height:1.55; max-width:70ch}
+/* The horizon control. Same chips as the radius filter above -- one device for
+   "narrow this list", used twice, rather than two that have to be learned. */
+.oppfilter.horizon{margin:12px 0 0}
 .finds{list-style:none; margin:16px 0 0; padding:0}
 .finds li{
   display:grid; grid-template-columns:minmax(0,1fr) 9.5rem auto; gap:6px 18px;
