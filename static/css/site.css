@@ -2310,7 +2310,25 @@ select.os-accepted{border-color:var(--accent)}
    field collapses to a sliver. */
 .newrow:has(select){max-width:46rem; flex-wrap:wrap}
 .newrow select{flex:0 1 15rem; min-width:9rem; font-size:16px; box-sizing:border-box}
-.newrow input{min-width:11rem}
+/* SCOPED to the row this was written for. Unscoped it also hit the add rows on
+   Opportunities and Exhibitions, which carry a name field AND a date field and
+   do not wrap -- two 11rem floors plus a button is 460px of minimum in a row
+   that had 390 to live in, and the page scrolled sideways because of it. */
+.newrow:has(select) input{min-width:11rem}
+/* On a phone every add row wraps: the name takes a line of its own, and the
+   date and the button share the one under it. Written for ALL of them rather
+   than for the one that overflowed -- they are the same control in four
+   places, and the next one added would have had the same fault.
+
+   min-width:0 has to beat the :has() rule above, which is why the selector is
+   repeated rather than just `.newrow > input`. */
+@media (max-width:560px){
+  .newrow,.newrow:has(select){flex-wrap:wrap; max-width:none}
+  .newrow > input,.newrow > select,.newrow:has(select) > input{min-width:0}
+  .newrow > input:not([type=date]),.newrow > select{flex:1 1 100%}
+  .newrow > input[type=date]{flex:1 1 8rem}
+  .newrow > .cta{flex:1 1 auto}
+}
 .plainlist{list-style:none; margin:0 0 14px; padding:0; display:flex;
   flex-wrap:wrap; gap:8px 18px}
 .plainlist a{color:var(--accent)}
