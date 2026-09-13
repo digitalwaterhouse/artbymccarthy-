@@ -18,6 +18,11 @@
   /* Surfaces that used to be hardcoded, named so a theme can move them. Each
      is a shade OF the paper, not a colour: a hovered row and a table head are
      the same sheet caught at a different angle. */
+  /* The rail is dark in BOTH themes, so these do not move -- but the arc that
+     folds into the page has to match them exactly, and two hardcoded copies of
+     a colour eventually stop being the same colour. */
+  --rail-bg:#141A18;
+  --rail-edge:rgba(255,255,255,.10);   /* the hairline down the rail's edge */
   --paper-hi:#FBFBF9;    /* a row under the cursor, a message already sent */
   --paper-lo:#FCFCFA;    /* the holding pen, a draft of a surface */
   --head:#F7F7F4;        /* the heading row of a table */
@@ -836,7 +841,7 @@ body.admin{background:var(--admin-bg); font-size:15px}
 .adminshell::before{
   content:""; position:absolute; top:0; left:var(--rail); z-index:1;
   width:var(--arc,34px); height:var(--arc,34px);
-  background:#141A18; pointer-events:none;
+  background:var(--rail-bg); pointer-events:none;
   /* FEATHERED, and this is the whole trick. A hard stop at the circle's edge
      is a sub-pixel transition, so the browser stair-steps it -- and where the
      arc meets the top of the page it runs almost horizontally, which is
@@ -851,14 +856,33 @@ body.admin{background:var(--admin-bg); font-size:15px}
           mask:radial-gradient(circle at 100% 100%,
       #0000 calc(var(--arc,34px) - 0.8px), #000 calc(var(--arc,34px) + 0.8px));
 }
+/* AND THE HAIRLINE ROUND THE CURVE. The rail draws a 1px light line down its
+   own right edge, which in the dark theme is the only thing separating it from
+   the page -- the two grounds are 1.08 contrast apart, so the wedge alone is
+   invisible there. Without this the seam was a line that ran the height of the
+   page and then simply stopped for the top 34px.
+
+   A ring segment rather than a border: a 1px band of the same colour laid on
+   the arc's radius, feathered at both edges so it antialiases like the wedge
+   below it. It sits just INSIDE the curve, where the rail's own line sits just
+   inside its edge. */
+.adminshell::after{
+  content:""; position:absolute; top:0; left:var(--rail); z-index:2;
+  width:var(--arc,34px); height:var(--arc,34px); pointer-events:none;
+  background:radial-gradient(circle at 100% 100%,
+      transparent calc(var(--arc,34px) - 1.5px),
+      var(--rail-edge) calc(var(--arc,34px) - 1.1px),
+      var(--rail-edge) calc(var(--arc,34px) - 0.2px),
+      transparent calc(var(--arc,34px) + 0.3px));
+}
 .adminside{
   /* align-self:start, NOT the grid default of stretch: a stretched item fills
      the row and sticky then has nothing left to travel through. */
   align-self:start; position:sticky; top:0;
   height:100vh; height:100dvh; overflow:auto;
   display:flex; flex-direction:column;
-  background:#141A18; color:#EAEDE9;
-  box-shadow:inset -1px 0 0 rgba(255,255,255,.10);
+  background:var(--rail-bg); color:#EAEDE9;
+  box-shadow:inset -1px 0 0 var(--rail-edge);
 }
 /* The same bug as the public masthead, so the admin is visibly part of the
    site rather than a generic panel. It links home to the artwork list. */
@@ -942,7 +966,7 @@ body.admin{background:var(--admin-bg); font-size:15px}
 @media (max-width:760px){
   .adminshell{grid-template-columns:1fr}
   /* The rail is a horizontal bar down here, so there is no seam to fold. */
-  .adminshell::before{display:none}
+  .adminshell::before,.adminshell::after{display:none}
   .adminside{
     position:static; height:auto; overflow:visible;
     flex-direction:row; flex-wrap:wrap; align-items:center; padding:0 12px;
