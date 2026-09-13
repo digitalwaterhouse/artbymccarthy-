@@ -664,8 +664,19 @@ body.admin{background:#F3F4F2; font-size:15px}
   content:""; position:absolute; top:0; left:var(--rail); z-index:1;
   width:var(--arc,34px); height:var(--arc,34px);
   background:#141A18; pointer-events:none;
-  -webkit-mask:radial-gradient(circle var(--arc,34px) at 100% 100%, #0000 99%, #000 100%);
-          mask:radial-gradient(circle var(--arc,34px) at 100% 100%, #0000 99%, #000 100%);
+  /* FEATHERED, and this is the whole trick. A hard stop at the circle's edge
+     is a sub-pixel transition, so the browser stair-steps it -- and where the
+     arc meets the top of the page it runs almost horizontally, which is
+     precisely where a stair-step reads as a stray line of background cutting
+     across the dark. A 1.6px blend either side of the radius gives the edge
+     something to antialias into and the line goes away.
+
+     Stops in px rather than percentages so the blend stays 1.6px whatever the
+     arc is sized to; at 99%/100% it would shrink with the radius. */
+  -webkit-mask:radial-gradient(circle at 100% 100%,
+      #0000 calc(var(--arc,34px) - 0.8px), #000 calc(var(--arc,34px) + 0.8px));
+          mask:radial-gradient(circle at 100% 100%,
+      #0000 calc(var(--arc,34px) - 0.8px), #000 calc(var(--arc,34px) + 0.8px));
 }
 .adminside{
   /* align-self:start, NOT the grid default of stretch: a stretched item fills
