@@ -66,54 +66,48 @@
 :root[data-theme="dark"] .wordmark .mark,
 :root[data-theme="dark"] .adminbrand img{box-shadow:0 0 0 1px rgba(237,241,240,.16)}
 
-/* ---------- the dark-mode switch ----------
-   A track with a sun at one end, a moon at the other, and a knob that slides
-   between them. The knob's POSITION is the label -- there is no wording to
-   read and none to translate -- so both glyphs are drawn at all times and the
-   knob simply covers the one you are currently in.
+/* ---------- the dark-mode button ----------
+   One button, one glyph, and the glyph is the ACTION: a moon while the page is
+   light, a sun while it is dark. They swap on press, turning a little as they
+   go, which is the only thing on the page that says the press landed.
 
    Quiet on purpose: it inherits the colour of the nav it sits in and is no
-   taller than a line of text beside it. A theme switch is a preference, not a
+   bigger than a line of text beside it. A theme control is a preference, not a
    feature, and it should not compete with the work. */
 .tsw{
-  -webkit-appearance:none; appearance:none; border:0; padding:5px; margin:0;
-  background:none; color:inherit; cursor:pointer; line-height:0;
-  display:inline-flex; align-items:center; border-radius:99px;
+  -webkit-appearance:none; appearance:none; border:0; margin:0; padding:7px;
+  background:none; color:inherit; cursor:pointer; line-height:0; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  position:relative; width:32px; height:32px; box-sizing:border-box;
+  opacity:.6; transition:opacity .15s ease, background .15s ease;
 }
-.tsw-track{
-  position:relative; display:inline-flex; align-items:center; justify-content:space-between;
-  width:44px; height:23px; padding:0 5px; box-sizing:border-box;
-  border:1px solid currentColor; border-radius:99px;
-  opacity:.55; transition:opacity .15s ease;
+/* The hover wash is a TINT of the button's own colour, never the colour: a
+   filled circle behind a glyph drawn in the same ink would swallow it. No
+   fallback declaration on purpose -- where color-mix is not understood the
+   line is dropped and the button simply brightens, which is the right way to
+   fail. A solid disc would not be. */
+.tsw:hover{opacity:1; background:color-mix(in srgb, currentColor 12%, transparent)}
+.tsw svg{
+  width:17px; height:17px; position:absolute;
+  transition:opacity .2s ease, transform .28s cubic-bezier(.34,1.56,.64,1);
 }
-.tsw:hover .tsw-track{opacity:1}
-.tsw-track svg{width:12px; height:12px; flex:none; position:relative; z-index:1}
-/* The knob is the only thing that moves, and it is drawn in the page's own ink
-   so it reads as part of the surface rather than as a coloured pill. */
-.tsw-knob{
-  position:absolute; top:50%; left:2.5px; width:16px; height:16px;
-  margin-top:-8px; border-radius:50%; background:currentColor;
-  transition:transform .22s cubic-bezier(.34,1.56,.64,1);
-}
-/* 21px, not 19: `left` is measured from the padding box (44px track less two
-   1px borders = 42), so the symmetric resting place is 42 - 16 - 2.5. At 19 it
-   sat 2px shy and the gap on the right was visibly wider than the one left. */
-.tsw[aria-checked=true] .tsw-knob{transform:translateX(21px)}
-/* The glyph the knob is sitting on would be invisible under it anyway; fading
-   it stops a half-covered sun showing round the edge of the circle. */
-.tsw[aria-checked=false] .tsw-sun,
-.tsw[aria-checked=true]  .tsw-moon{opacity:0}
-.tsw-sun,.tsw-moon{transition:opacity .16s ease}
-.tsw:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
-.tsw:focus-visible .tsw-track{opacity:1}
+/* Only the one it is about to do is drawn. Both are in the markup so the swap
+   is a fade between two things already there, not a repaint. */
+.tsw[data-goes=dark]  .tsw-sun {opacity:0; transform:rotate(-60deg) scale(.6)}
+.tsw[data-goes=dark]  .tsw-moon{opacity:1; transform:none}
+.tsw[data-goes=light] .tsw-moon{opacity:0; transform:rotate(60deg) scale(.6)}
+.tsw[data-goes=light] .tsw-sun {opacity:1; transform:none}
+/* Before the script runs there is no data-goes. The moon is the honest guess:
+   most readers are on a light page, and a glyph is better than a blank. */
+.tsw:not([data-goes]) .tsw-sun{opacity:0}
+.tsw:focus-visible{outline:2px solid var(--focus); outline-offset:2px; opacity:1}
 @media (prefers-reduced-motion:reduce){
-  .tsw-knob{transition:none}
-  .tsw-sun,.tsw-moon{transition:none}
+  .tsw svg{transition:opacity .2s ease}
+  .tsw[data-goes=dark] .tsw-sun,.tsw[data-goes=light] .tsw-moon{transform:none}
 }
-/* In the studio rail it sits first among the utilities; on the dark entry it
+/* In the studio rail it shares the top row with the logo; on the dark entry it
    takes the same soft white as the nav links beside it. */
-.adminside .util .tsw{padding:4px; margin-right:auto}
-.home .masthead .tsw{color:rgba(244,246,245,.62)}
+.home .masthead .tsw{color:rgba(244,246,245,.7)}
 .home .masthead .tsw:hover{color:var(--turq-lo)}
 
 /* ---------- dark ----------

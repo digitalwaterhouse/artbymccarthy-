@@ -1,24 +1,19 @@
-{#- THE SWITCH. A real two-state toggle: sun at one end, moon at the other, and
-   a knob that slides between them. role="switch" with aria-checked, which is
-   the one ARIA pattern that means exactly this and nothing else.
+{#- ONE BUTTON. It shows the mode it will PUT YOU IN, not the one you are in --
+   a button's icon is conventionally its action, and "press the moon to go
+   dark" is the reading almost everyone arrives with. The label says it in
+   words for anyone it isn't obvious to, and the label is what a screen reader
+   announces, so nothing rests on the glyph alone.
 
-   It STARTS wherever the device is -- somebody whose laptop turns dark at
-   sunset finds it already dark -- and the first press pins a choice that then
-   outlives the device's opinion. The knob's position is the whole label, so
-   there is no wording to read; the screen-reader name says "Dark mode" and
-   aria-checked says whether it is on. -#}
-<button class="tsw" type="button" role="switch" aria-checked="false" onclick="abmTheme()">
-  <span class="sr">Dark mode</span>
-  <span class="tsw-track" aria-hidden="true">
-    <svg class="tsw-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2" stroke-linecap="round" focusable="false">
-      <circle cx="12" cy="12" r="4.6"/>
-      <path d="M12 1.6v2.6M12 19.8v2.6M1.6 12h2.6M19.8 12h2.6M4.6 4.6l1.9 1.9M17.5 17.5l1.9 1.9M19.4 4.6l-1.9 1.9M6.5 17.5l-1.9 1.9"/>
-    </svg>
-    <svg class="tsw-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-      <path d="M20.5 14.8A8.6 8.6 0 1 1 9.2 3.5a6.9 6.9 0 0 0 11.3 11.3z"/>
-    </svg>
-    <span class="tsw-knob"></span>
-  </span>
+   It starts wherever the device is, and the first press pins a choice that
+   then outlives the device's opinion. -#}
+<button class="tsw" type="button" onclick="abmTheme()" aria-label="Switch to dark mode">
+  <svg class="tsw-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    <path d="M20.5 14.8A8.6 8.6 0 1 1 9.2 3.5a6.9 6.9 0 0 0 11.3 11.3z"/>
+  </svg>
+  <svg class="tsw-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false">
+    <circle cx="12" cy="12" r="4.4"/>
+    <path d="M12 2.2v2.4M12 19.4v2.4M2.2 12h2.4M19.4 12h2.4M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M18.9 5.1l-1.7 1.7M6.8 17.2l-1.7 1.7"/>
+  </svg>
 </button>
