@@ -1211,6 +1211,17 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 }
 .mover:hover:not([disabled]){color:var(--accent); background:var(--paper-hi)}
 .mover[disabled]{opacity:.22; cursor:default}
+/* A SAMPLE ORDER, marked so it can never be read as a sale. The same red the
+   sold dot uses, because this is the one other place on the site where getting
+   it wrong costs real money -- and unlike the dot it is a warning, not a fact
+   about a painting. */
+.grid-t tr.is-sample{background:var(--err-bg)}
+.grid-t tr.is-sample:hover{background:var(--err-bg)}
+.samptag{
+  display:inline-block; margin-left:8px; font-size:10px; font-weight:700;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--dot);
+  border:1px solid var(--dot); border-radius:2px; padding:1px 6px; vertical-align:middle;
+}
 /* A draft is not on the wall, and the row says so at a glance rather than
    making you read the status menu. */
 .grid-t tr.is-draft{background:repeating-linear-gradient(135deg,var(--paper),var(--paper) 9px,var(--draft-stripe) 9px,var(--draft-stripe) 18px)}

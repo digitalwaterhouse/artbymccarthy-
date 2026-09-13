@@ -1184,6 +1184,65 @@ def list_orders():
             " ORDER BY o.created_at DESC").fetchall()]
 
 
+# A sample order is marked in the one column Stripe also writes, and marked so
+# plainly it can never be read as a real sale: a real session id begins "cs_",
+# and nothing but this function writes one beginning "sample_". The Orders
+# table, the invoice and the printed sheet all say SAMPLE on the strength of it.
+SAMPLE_PREFIX = "sample_"
+
+
+def is_sample(order):
+    return (order.get("stripe_session_id") or "").startswith(SAMPLE_PREFIX)
+
+
+def get_order(order_id):
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT o.*, w.title, w.slug, w.year, w.medium, w.price_cents,"
+            " w.h_in, w.w_in, w.d_in FROM orders o"
+            " LEFT JOIN works w ON w.id=o.work_id WHERE o.id=?", (order_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def make_sample_order():
+    """One obviously-pretend order, so the Orders page and the invoice can be
+    looked at before a real sale exists.
+
+    IT CHANGES NOTHING ELSE. No painting is marked sold, no email is sent, no
+    money is involved. It borrows a real piece only so the invoice shows a real
+    title, and the buyer is plainly nobody.
+    """
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT id, price_cents FROM works WHERE price_cents IS NOT NULL"
+            " ORDER BY (status='available') DESC, id LIMIT 1").fetchone()
+    work_id = row["id"] if row else None
+    price = (row["price_cents"] if row else None) or 38500
+    ship = int(settings().get("ship_small_cents") or 2500)
+    sid = SAMPLE_PREFIX + secrets.token_hex(5)
+    with connect() as conn:
+        conn.execute(
+            "INSERT INTO orders (work_id, stripe_session_id, amount_cents, buyer_name,"
+            " buyer_email, ship_line1, ship_line2, ship_city, ship_state, ship_zip,"
+            " ship_country, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (work_id, sid, price + ship, "Sample Buyer (not a real order)",
+             "sample@example.com", "1 Example Street", None, "Bedford", "NY",
+             "10506", "US", "paid", now()))
+        return conn.execute("SELECT last_insert_rowid() AS i").fetchone()["i"]
+
+
+def drop_sample_orders():
+    with connect() as conn:
+        return conn.execute("DELETE FROM orders WHERE stripe_session_id LIKE ?",
+                            (SAMPLE_PREFIX + "%",)).rowcount
+
+
+def count_sample_orders():
+    with connect() as conn:
+        return conn.execute("SELECT COUNT(*) n FROM orders WHERE stripe_session_id LIKE ?",
+                            (SAMPLE_PREFIX + "%",)).fetchone()["n"]
+
+
 def mark_shipped(order_id, tracking=None):
     with connect() as conn:
         conn.execute("UPDATE orders SET status='shipped', tracking=? WHERE id=?",

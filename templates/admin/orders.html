@@ -1,14 +1,33 @@
 {% extends "admin/_layout.html" %}
 {% block title %}Orders{% endblock %}
 {% block body %}
-<h1>Orders</h1>
+<div class="adminhead">
+  <h1>Orders</h1>
+</div>
+
+{# A sample so this page and the invoice can be LOOKED AT before a real sale
+   exists. It is marked as one in the database, in the row below, and across
+   the printed sheet, and it changes nothing else: no painting is marked sold
+   and no money is involved. #}
+<form class="oppfilter" method="post" action="{{ url_for('site.admin_sample_order') }}">
+  {% if samples %}
+  <input type="hidden" name="remove" value="1">
+  <button class="link" type="submit">Remove the sample order{{ '' if samples == 1 else 's' }} &rarr;</button>
+  <span class="sub">{{ samples }} sample{{ '' if samples == 1 else 's' }} in the list below, marked in red.</span>
+  {% else %}
+  <button class="link" type="submit">Add a sample order &rarr;</button>
+  <span class="sub">To see how an order and its invoice look. Nothing is sold and nobody is charged.</span>
+  {% endif %}
+</form>
+
 <table class="grid-t">
-  <thead><tr><th>When</th><th>Painting</th><th>Buyer</th><th>Ship to</th><th class="num">Total</th><th>Status</th></tr></thead>
+  <thead><tr><th>When</th><th>Painting</th><th>Buyer</th><th>Ship to</th><th class="num">Total</th><th>Status</th><th class="right">Invoice</th></tr></thead>
   <tbody>
   {% for o in orders %}
-    <tr>
+    <tr{% if is_sample(o) %} class="is-sample"{% endif %}>
       <td data-label="When"><span class="sub">{{ o.created_at|day }}</span></td>
-      <td data-label="Painting">{{ o.title or '&mdash;'|safe }}</td>
+      <td data-label="Painting">{{ o.title or '&mdash;'|safe }}
+        {%- if is_sample(o) %} <span class="samptag">sample</span>{% endif %}</td>
       <td data-label="Buyer">{{ o.buyer_name or '' }}<span class="sub">{{ o.buyer_email or '' }}</span></td>
       <td class="addr" data-label="Ship to">{{ o.ship_line1 or '' }}{% if o.ship_line2 %}, {{ o.ship_line2 }}{% endif %}
           <span class="sub">{{ o.ship_city or '' }} {{ o.ship_state or '' }} {{ o.ship_zip or '' }}</span></td>
@@ -23,9 +42,12 @@
           </form>
         {% endif %}
       </td>
+      <td class="right" data-label="Invoice">
+        <a class="link" href="{{ url_for('site.admin_invoice', order_id=o.id) }}">invoice &nearr;</a>
+      </td>
     </tr>
   {% else %}
-    <tr><td colspan="6" class="empty">No orders yet.</td></tr>
+    <tr><td colspan="7" class="empty">No orders yet.</td></tr>
   {% endfor %}
   </tbody>
 </table>

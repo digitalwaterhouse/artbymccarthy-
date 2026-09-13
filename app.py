@@ -1037,13 +1037,63 @@ def admin_image_delete(image_id):
 @site.route("/admin/orders")
 @admin_required
 def admin_orders():
-    return render_template("admin/orders.html", orders=gallery.list_orders())
+    return render_template("admin/orders.html", orders=gallery.list_orders(),
+                           samples=gallery.count_sample_orders(),
+                           is_sample=gallery.is_sample)
 
 
 @site.route("/admin/order/<int:order_id>/shipped", methods=["POST"])
 @admin_required
 def admin_shipped(order_id):
     gallery.mark_shipped(order_id, request.form.get("tracking"))
+    return redirect(url_for("site.admin_orders"))
+
+
+# ---------------------------------------------------------------- the invoice
+# One order, on a sheet she can print or save as a PDF for a buyer's records.
+# Built from the order row rather than from Stripe: the receipt Stripe emails
+# is theirs and says what was CHARGED; this says what was SOLD, in her name,
+# with the piece described the way a gallery describes it.
+@site.route("/admin/order/<int:order_id>/invoice")
+@admin_required
+def admin_invoice(order_id):
+    o = gallery.get_order(order_id)
+    if not o:
+        abort(404)
+    c = cfg()
+    price = o.get("price_cents")
+    total = o.get("amount_cents")
+    # The order stores one total. The piece's own price splits it, and whatever
+    # is left over is the shipping -- shown as a derived line, never invented:
+    # if the arithmetic does not work the sheet shows the total alone.
+    ship = (total - price) if (price is not None and total is not None
+                               and total >= price) else None
+    return render_template(
+        "admin/print_invoice.html", o=o, sample=gallery.is_sample(o),
+        artist=_print_ctx(), site_title=c.get("site_title") or "",
+        artist_email=c.get("artist_email") or "",
+        studio=c.get("studio_location") or "",
+        number=("SAMPLE" if gallery.is_sample(o) else "ABM-%04d" % o["id"]),
+        price=gallery.money(price), ship=gallery.money(ship),
+        total=gallery.money(total), dims=gallery.dims(o),
+        printed_on=day(gallery.today()))
+
+
+# --------------------------------------------------------------- sample order
+# So the Orders page and the invoice can be SEEN before a real sale exists.
+# It is marked as a sample in the database, in the table, and across the
+# printed sheet, and it changes nothing else -- no painting is marked sold and
+# no money is involved. One press removes every one of them again.
+@site.route("/admin/orders/sample", methods=["POST"])
+@admin_required
+def admin_sample_order():
+    if request.form.get("remove"):
+        n = gallery.drop_sample_orders()
+        flash("Removed %d sample order%s." % (n, "" if n == 1 else "s"))
+    else:
+        gallery.make_sample_order()
+        flash("Added a sample order. It is marked as one everywhere it appears, "
+              "and nothing about your paintings has changed.")
     return redirect(url_for("site.admin_orders"))
 
 
