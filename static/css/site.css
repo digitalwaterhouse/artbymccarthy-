@@ -1835,68 +1835,24 @@ body.home{
 }
 .outlink:hover{color:var(--accent); border-bottom-color:var(--accent)}
 
-/* ---------- finding calls ----------
-   A holding pen sitting above her real list, and it must never be mistaken for
-   it. So: no paper, no rule down the left edge, a dotted border instead -- the
-   visual language of a draft. These are suggestions a search made, each one
-   still carrying the page it came from, and the two buttons say the only two
-   things she can do about one. */
-.finder{
-  border:1px dashed var(--rule); border-radius:4px;
-  padding:clamp(13px,2vw,18px); margin:0 0 22px; background:#FCFCFA;
+/* ---------- where to look ----------
+   A short list of places, not a feature. Reads as a set of doors rather than a
+   toolbar: the name is the link, the sentence under it says what is behind it,
+   because "CaFE" tells a person nothing. */
+.lookhere{margin:0 0 22px}
+.looks{list-style:none; margin:12px 0 0; padding:0; display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px}
+.looks li{
+  background:var(--paper); border:1px solid var(--line); border-radius:3px;
+  padding:11px 13px; min-width:0;
 }
-.finder-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
-.finder-head .offhead{margin:0; margin-right:auto}
-.finder-go{display:flex; flex-wrap:wrap; gap:10px; align-items:stretch; margin:12px 0 0}
-.finder-go select{width:auto; flex:0 0 auto}
-.finder-go input{flex:1 1 16rem; min-width:0; font-size:16px}
-.finder-go .cta{white-space:nowrap}
-.finder-note{margin:10px 0 0; line-height:1.55; max-width:70ch}
-/* The meter. Money spent, in the place where the spending happens -- before
-   the next press, not on a bill next month. Quiet: it is a fact about the
-   button above it, not a warning, until the bar actually fills. */
-.meter{margin:12px 0 0; padding:11px 13px; background:var(--paper);
-  border:1px solid var(--line); border-radius:3px}
-.meter-said{font-size:13px; color:var(--muted); line-height:1.5}
-.meter-said strong{color:var(--ink); font-variant-numeric:tabular-nums}
-.meter-bar{height:4px; background:var(--line); border-radius:99px; margin:9px 0 0; overflow:hidden}
-.meter-bar span{display:block; height:100%; background:var(--turq); border-radius:99px}
-.meter-bar span.full{background:var(--dot)}
-.meter-set{display:flex; align-items:center; gap:7px; margin:9px 0 0; flex-wrap:wrap}
-.meter-set label{font-size:12.5px; color:var(--muted); flex-direction:row}
-.meter-set input{width:5.5rem; flex:0 0 auto; padding:6px 8px; font-size:15px;
-  font-variant-numeric:tabular-nums}
-.meter-set .link{padding:4px 2px; min-height:0}
-.finds{list-style:none; margin:16px 0 0; padding:0}
-.finds li{
-  display:grid; grid-template-columns:minmax(0,1fr) 9rem auto; gap:6px 18px;
-  align-items:center; background:var(--paper); border:1px solid var(--line);
-  border-radius:3px; padding:12px 14px; margin-bottom:9px;
+.look{
+  display:block; font-weight:600; color:var(--accent); text-decoration:none;
+  line-height:1.3;
 }
-/* Reported with a deadline that has already gone. Kept and shown rather than
-   hidden: she should see that the search returned one, because that is the
-   tell that its dates are not to be trusted without checking. */
-.finds li.is-closed{background:#FBFBF9}
-.finds li.is-closed .find-t{color:var(--muted)}
-.find-what{min-width:0}
-.find-t{display:block; font-weight:600; color:var(--ink); line-height:1.3}
-.find-why{display:block; margin-top:3px; font-size:13px; color:var(--muted); font-style:italic}
-.find-what .outlink{display:inline-block; margin:5px 0 0 0}
-.find-when{text-align:right; white-space:nowrap}
-.find-when .dates{
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px;
-  color:var(--ink); font-variant-numeric:tabular-nums; display:block;
-}
-.find-when .countdown{margin:4px 0 0}
-.find-do{display:flex; align-items:center; gap:10px; white-space:nowrap}
-.find-do form{margin:0}
-.find-do .cta{padding:9px 18px; font-size:14px}
-@media (max-width:760px){
-  .finds li{grid-template-columns:minmax(0,1fr); gap:8px}
-  .find-when{text-align:left}
-  .find-when .countdown{display:inline-block; margin:0 0 0 8px}
-  .finder-go .cta{width:100%}
-}
+.look:hover{color:var(--ink); text-decoration:underline; text-underline-offset:3px}
+.looks .sub{margin-top:3px; line-height:1.45}
+@media (max-width:760px){ .looks{grid-template-columns:1fr} }
 
 /* ---------- somebody else's show ----------
    Shares the opportunities row shape, and deliberately does NOT share its

@@ -114,11 +114,6 @@ DEFAULT_SETTINGS = {
     "studio_lat": "41.2041304",
     "studio_lon": "-73.6425090",
     "studio_place": "Town of Bedford, Westchester County, New York, United States",
-    # The only thing on this site that spends money per use. A CEILING, in
-    # dollars, per calendar month: the search refuses to run once the month's
-    # receipts reach it, so a stuck finger or a curious afternoon cannot turn
-    # into a bill worth noticing. She can raise it; it cannot raise itself.
-    "search_budget_usd": "5.00",
 }
 
 
@@ -1689,137 +1684,50 @@ def ungeocoded_opportunities():
             " ORDER BY id").fetchall()]
 
 
-# ------------------------------------------------------------ search receipts
-def record_search(miles, extra, found, usage, ok=True):
-    with connect() as conn:
-        conn.execute(
-            "INSERT INTO searches (ran_at, miles, extra, found, model, in_tokens,"
-            " out_tokens, cache_read, cache_write, web_searches, cost_micros, ok)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-            (now(), miles, (extra or "")[:300], found, usage.get("model"),
-             usage.get("in_tokens", 0), usage.get("out_tokens", 0),
-             usage.get("cache_read", 0), usage.get("cache_write", 0),
-             usage.get("web_searches", 0), usage.get("cost_micros", 0),
-             1 if ok else 0))
-
-
-def _month_prefix():
-    return datetime.now(timezone.utc).strftime("%Y-%m")
-
-
-def month_spend():
-    """(spent_micros, budget_micros, searches_this_month) for the month in UTC.
-
-    UTC and not her clock, deliberately: the receipts are stamped in UTC, and a
-    ceiling that resets at a different hour than the rows it counts would be
-    wrong twice a day rather than merely approximate."""
-    pref = _month_prefix()
-    with connect() as conn:
-        row = conn.execute(
-            "SELECT COALESCE(SUM(cost_micros),0) c, COUNT(*) n FROM searches"
-            " WHERE ran_at LIKE ?", (pref + "%",)).fetchone()
-    try:
-        budget = int(round(float(settings().get("search_budget_usd") or 0) * 1_000_000))
-    except (TypeError, ValueError):
-        budget = 0
-    return row["c"], budget, row["n"]
-
-
-def last_search():
-    with connect() as conn:
-        row = conn.execute("SELECT * FROM searches ORDER BY id DESC LIMIT 1").fetchone()
-    return dict(row) if row else None
-
-
-def money_micros(micros):
-    """A few cents reads as cents; a real sum reads as dollars."""
-    if micros is None:
-        return None
-    if micros < 1_000_000:
-        c = micros / 10_000.0
-        return ("%.1f" % c).rstrip("0").rstrip(".") + "\u00a2"
-    return "$%.2f" % (micros / 1_000_000.0)
-
-
-# --------------------------------------------------------------- found calls
-# The holding pen for what the web search turned up. See the schema note: none
-# of this is an opportunity until she says so.
-def _found_key(title, url):
-    """Same call, seen twice. The URL is the strong signal; the title is the
-    fallback for a call listed at a different address each year."""
-    return ((url or "").strip().rstrip("/").lower(),
-            re.sub(r"[^a-z0-9]+", " ", (title or "").lower()).strip())
-
-
-def record_found(calls):
-    """Store what the search found, skipping anything already on the list --
-    including something she DISMISSED, which must not come back next week."""
-    seen, added = {}, 0
-    with connect() as conn:
-        for r in conn.execute("SELECT title, url FROM found_calls").fetchall():
-            seen[_found_key(r["title"], r["url"])] = True
-        # An opportunity she has already entered by hand is not a find either.
-        for r in conn.execute("SELECT title, url FROM opportunities").fetchall():
-            seen[_found_key(r["title"], r["url"])] = True
-        for c in calls:
-            key = _found_key(c.get("title"), c.get("url"))
-            if key in seen:
-                continue
-            seen[key] = True
-            conn.execute(
-                "INSERT INTO found_calls (title, org, location, deadline, fee,"
-                " kind, url, why, found_at) VALUES (?,?,?,?,?,?,?,?,?)",
-                ((c.get("title") or "").strip()[:300], _clean(c.get("org")),
-                 _clean(c.get("location")), _clean(c.get("deadline")),
-                 _clean(c.get("fee")), _clean(c.get("kind")),
-                 _clean(c.get("url")), _clean(c.get("why")), now()))
-            added += 1
-    return added
-
-
-def _clean(v):
-    if v is None:
-        return None
-    v = str(v).strip()
-    return v[:500] if v and v.lower() not in ("null", "none", "n/a") else None
-
-
-def list_found(status="new"):
-    here = studio_point()
-    with connect() as conn:
-        rows = [dict(r) for r in conn.execute(
-            "SELECT * FROM found_calls WHERE status=? ORDER BY"
-            " CASE WHEN deadline IS NULL THEN 1 ELSE 0 END, deadline, id",
-            (status,)).fetchall()]
-    for r in rows:
-        r["days"] = _days_until(r.get("deadline"))
-        r["closed"] = r["days"] is not None and r["days"] < 0
-    return rows
-
-
-def get_found(found_id):
-    with connect() as conn:
-        row = conn.execute("SELECT * FROM found_calls WHERE id=?",
-                           (found_id,)).fetchone()
-    return dict(row) if row else None
-
-
-def set_found_status(found_id, status, opportunity_id=None):
-    with connect() as conn:
-        conn.execute("UPDATE found_calls SET status=?, opportunity_id=? WHERE id=?",
-                     (status, opportunity_id, found_id))
-
-
-def found_counts():
-    with connect() as conn:
-        return {r["status"]: r["c"] for r in conn.execute(
-            "SELECT status, COUNT(*) c FROM found_calls GROUP BY status").fetchall()}
-
-
-def last_search_at():
-    with connect() as conn:
-        row = conn.execute("SELECT MAX(found_at) m FROM found_calls").fetchone()
-    return row["m"] if row else None
+# ------------------------------------------------------------ where to look
+# The calls-for-entry world publishes no feed, and paying a model to read the
+# web for her turned out to cost more than the answers were worth -- $1.14 for
+# four calls, every one of them already closed. So this is the honest version
+# of "find me calls": the free listing sites, with her own state and town
+# already in the query, opened in a tab. She reads them and adds what suits.
+#
+# She has to open the call's own page to check the deadline before applying
+# whatever finds it, so the only thing the model was really saving was the
+# reading -- and that is not worth a dollar a press.
+def where_to_look(cfg):
+    import urllib.parse
+    town = (cfg.get("studio_location") or "").strip()
+    bits = [b.strip() for b in town.split(",") if b.strip()]
+    state = (bits[1] if len(bits) > 1 else "").upper()[:2]
+    year = datetime.now(timezone.utc).year
+    out = []
+    # EntryThingy aggregates CaFE, ZAPPlication, ArtCall, ShowSubmit and the
+    # independents, free to browse, and its list takes a state in the URL --
+    # which is the closest thing to "near me" any of these offer.
+    if state:
+        out.append(("Open calls in " + state,
+                    "app.entrythingy.com/calls_list/?state=" + state,
+                    "Every call they list in your state, updated daily."))
+    # Bedford is nine miles from Connecticut, so the neighbouring state is not
+    # a nicety. Skipped when she is already in it.
+    for nb in ("CT", "NJ", "MA"):
+        if state and nb != state and state in ("NY", "CT", "NJ", "MA"):
+            out.append(("Open calls in " + nb,
+                        "app.entrythingy.com/calls_list/?state=" + nb,
+                        "The next state over."))
+            break
+    out.append(("CaF\u00c9",
+                "www.callforentry.org/",
+                "The big one. Browsing is free; applying through it is not."))
+    out.append(("NYFA Opportunities",
+                "www.nyfa.org/opportunities/",
+                "Open calls, residencies and grants, heavy on New York."))
+    if town:
+        q = '"call for entry" OR "call for artists" juried exhibition %s %s' % (town, year)
+        out.append(("Search the web for " + town,
+                    "www.google.com/search?q=" + urllib.parse.quote(q),
+                    "A plain web search, already written."))
+    return out
 
 
 def _decorate_opp(o, counts=None):

@@ -11,10 +11,3 @@ qrcode==8.2
 # back to the enquiry form -- with the keys set or not. Only the signature
 # check on the webhook actually needs this library.
 stripe==15.6.1
-
-# Claude, for the "find calls near you" search on the Opportunities page. The
-# calls-for-entry world publishes no feed, so the only way to discover a call
-# is to read the open web -- this is the server-side web search tool. With no
-# ANTHROPIC_API_KEY set, finder.enabled() is False and that panel says so;
-# nothing else on the site depends on it.
-anthropic==1.5.0

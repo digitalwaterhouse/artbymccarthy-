@@ -22,7 +22,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import gallery
 import mailer
 import payments
-import finder
 
 PREFIX = os.environ.get("APP_PREFIX", "/artbymccarthy").rstrip("/")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "")
@@ -511,12 +510,7 @@ def health():
     return jsonify(ok=True, works=len(works),
                    for_sale=len([w for w in works if w["status"] == "available"]),
                    sold=len([w for w in works if w["status"] == "sold"]),
-                   stripe=payments.enabled(), live=payments.live_mode(),
-                   # Whether the optional keys have landed, so both can be
-                   # checked from outside without signing in. Booleans only --
-                   # this route is public and says nothing about the keys
-                   # themselves, only that something is configured.
-                   search=finder.enabled(), prefix=PREFIX)
+                   stripe=payments.enabled(), live=payments.live_mode(), prefix=PREFIX)
 
 
 @site.route("/robots.txt")
@@ -1485,104 +1479,9 @@ def admin_opportunities():
                            within=within, order=order,
                            here=gallery.studio_point(),
                            pending=len(gallery.ungeocoded_opportunities()),
-                           found=gallery.list_found("new"),
-                           found_counts=gallery.found_counts(),
-                           last_search=gallery.last_search_at(),
-                           finder_on=finder.enabled(),
-                           radii=[25, 75, 150],
-                           spend=gallery.month_spend(),
-                           receipt=gallery.last_search(),
-                           money_micros=gallery.money_micros)
-
-
-# ---------------------------------------------------------- finding the calls
-# The discovery half of this page. There is no feed to subscribe to anywhere in
-# the calls-for-entry world, so this searches the open web from her own town
-# and puts what it reads in a holding pen. It costs money and it can be wrong,
-# which is why it is a button she presses and why nothing it finds enters the
-# list without her.
-@site.route("/admin/opportunities/find", methods=["POST"])
-@admin_required
-def admin_opportunities_find():
-    if not finder.enabled():
-        flash("Searching needs an Anthropic API key set on the server.")
-        return redirect(url_for("site.admin_opportunities") + "#found")
-    # THE CEILING IS CHECKED BEFORE THE MONEY IS SPENT, not after. A budget
-    # that only reports overspending is a receipt, not a budget.
-    spent, budget, _ = gallery.month_spend()
-    if budget > 0 and spent >= budget:
-        flash("This month's search limit (%s) is used up. Raise it below, or "
-              "wait for the 1st." % gallery.money_micros(budget))
-        return redirect(url_for("site.admin_opportunities") + "#found")
-
-    miles = _int(request.form.get("miles")) or 75
-    extra = request.form.get("extra") or ""
-    calls, note, usage = finder.search(cfg(), miles=miles, extra=extra)
-    # Recorded whether or not it found anything: a search that came back empty
-    # still cost what it cost, and the month's total has to know.
-    gallery.record_search(miles, extra, len(calls), usage, ok=bool(calls))
-    cost = gallery.money_micros(usage.get("cost_micros", 0))
-    if calls:
-        fresh = gallery.record_found(calls)
-        skipped = len(calls) - fresh
-        flash("%s%s Cost %s." % (note, (" %d already on your list." % skipped)
-                                 if skipped else "", cost))
-    else:
-        flash("%s%s" % (note, (" Cost %s." % cost) if usage.get("cost_micros") else ""))
-    return redirect(url_for("site.admin_opportunities") + "#found")
-
-
-@site.route("/admin/opportunities/budget", methods=["POST"])
-@admin_required
-def admin_search_budget():
-    """The ceiling is hers to set. Stored in dollars because that is what she
-    types; zero means no ceiling, and the screen says so plainly rather than
-    quietly behaving as if none were set."""
-    raw = (request.form.get("budget") or "").replace("$", "").strip()
-    try:
-        v = max(0.0, round(float(raw), 2))
-    except ValueError:
-        flash("That is not an amount.")
-        return redirect(url_for("site.admin_opportunities") + "#found")
-    gallery.save_settings({"search_budget_usd": "%.2f" % v})
-    flash("Monthly search limit set to $%.2f." % v if v else
-          "Monthly search limit removed -- searching is now uncapped.")
-    return redirect(url_for("site.admin_opportunities") + "#found")
-
-
-@site.route("/admin/found/<int:found_id>/<action>", methods=["POST"])
-@admin_required
-def admin_found(found_id, action):
-    f = gallery.get_found(found_id)
-    if not f:
-        abort(404)
-    if action == "dismiss":
-        # Remembered, not deleted: a call she has already turned down must not
-        # be offered again by the next search.
-        gallery.set_found_status(found_id, "dismissed")
-        flash("Put aside.")
-        return redirect(url_for("site.admin_opportunities") + "#found")
-    if action != "add":
-        abort(404)
-    oid = gallery.save_opportunity({
-        "title": f["title"], "org": f["org"], "location": f["location"],
-        "deadline": f["deadline"], "url": f["url"], "kind": f["kind"],
-        # The fee arrives as it was written on the page ("$35", "no fee"), and
-        # the column is cents. Parse what parses and leave the rest for her --
-        # a wrong number in a money field is worse than an empty one.
-        "fee_cents": _price_cents((f["fee"] or "").replace("$", "").strip()),
-        # Where it came from, kept where she will read it. The search can be
-        # wrong about a deadline, and the note says to check before applying.
-        "notes": "Found by searching the web on %s. Check the deadline on the "
-                 "call's own page before applying.%s"
-                 % ((f["found_at"] or "")[:10], ("\n\n" + f["why"]) if f["why"] else ""),
-        "status": "watching",
-    })
-    gallery.set_found_status(found_id, "added", oid)
-    if not app.config.get("TESTING"):
-        gallery.locate_opportunity(oid, (f["location"] or "").strip())
-    flash("Added. Check the deadline against the call's own page.")
-    return redirect(url_for("site.admin_opportunity", opportunity_id=oid))
+                           # Where to go looking, built from her own town. See
+                           # the template: free listing sites, opened in a tab.
+                           lookups=gallery.where_to_look(cfg()))
 
 
 @site.route("/admin/opportunities/locate", methods=["POST"])

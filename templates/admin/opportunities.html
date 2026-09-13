@@ -48,106 +48,29 @@
 </form>
 {% endif %}
 
-{# ---- finding them --------------------------------------------------------
-   The discovery half. Nothing in the calls-for-entry world publishes a feed,
-   so this searches the open web from her own town and puts what it reads HERE,
-   in a holding pen, with the page it read attached. It is a button and not a
-   background job for two reasons: each press costs money, and a model can be
-   wrong about a deadline. Nothing reaches her real list until she says so. #}
-<section class="finder" id="found">
-  <div class="finder-head">
-    <h2 class="offhead up">Find calls near you</h2>
-    {% if last_search %}<span class="sub">Last searched {{ last_search[:10] }}</span>{% endif %}
-  </div>
-  {% if finder_on %}
-  <form class="finder-go" method="post" action="{{ url_for('site.admin_opportunities_find') }}">
-    <label class="sr" for="findmiles">How far</label>
-    <select id="findmiles" name="miles">
-      {% for m in radii %}<option value="{{ m }}"{% if m == 75 %} selected{% endif %}>within {{ m }} miles</option>{% endfor %}
-    </select>
-    <label class="sr" for="findextra">Anything particular</label>
-    <input id="findextra" name="extra" placeholder="Anything particular? (optional)">
-    <button class="cta" type="submit">Search the web</button>
-  </form>
-  <p class="sub finder-note">Searches gallery, arts-council and library sites around
-    {{ cfg.studio_location or 'your town' }}. Every result keeps the page it was read
-    from &mdash; <strong>check the deadline there before you apply</strong>, because a
-    search can misread one. Nothing is added to your list until you press Add.</p>
+{# ---- where to look ------------------------------------------------------
+   The honest version of "find me calls". Nothing in this world publishes a
+   feed, and paying a model to read the web cost more than the answers were
+   worth -- $1.14 for four calls, every one already closed. So: the free
+   listing sites, with her own state already in the URL, opened in a tab.
 
-  {% else %}
-  <p class="sub finder-note">Searching the web for calls needs an Anthropic API key
-    set on the server. Everything else on this page works without it.</p>
-  {% endif %}
-
-  {# THE METER. This is the only thing on the site that costs money per use, so
-     it says what it costs, in the place where the spending happens, before the
-     next press rather than on a bill next month. The ceiling is checked before
-     the request goes out -- a budget that only reports overspending is a
-     receipt, not a budget. #}
-  {% set used, budget, runs = spend %}
-  {% if finder_on or used %}
-  <div class="meter">
-    <div class="meter-said">
-      {% if receipt %}Last search cost <strong>{{ money_micros(receipt.cost_micros) }}</strong>
-        ({{ receipt.web_searches }} search{{ '' if receipt.web_searches == 1 else 'es' }}) &middot;
-      {% endif %}
-      {% if budget %}
-        <strong>{{ money_micros(used) }}</strong> of {{ money_micros(budget) }} used this month
-        {%- if runs %}, {{ runs }} search{{ '' if runs == 1 else 'es' }}{% endif %}
-      {% else %}
-        <strong>{{ money_micros(used) }}</strong> this month &mdash; no limit set
-      {% endif %}
-    </div>
-    {% if budget %}
-    <div class="meter-bar" role="img"
-         aria-label="{{ money_micros(used) }} of {{ money_micros(budget) }} used">
-      <span style="width:{{ [100, (used * 100 // budget) if budget else 0]|min }}%"
-            class="{{ 'full' if used >= budget else '' }}"></span>
-    </div>
-    {% endif %}
-    <form class="meter-set" method="post" action="{{ url_for('site.admin_search_budget') }}">
-      <label for="budget">Monthly limit $</label>
-      <input id="budget" name="budget" value="{{ '%.2f'|format(budget / 1000000) }}"
-             inputmode="decimal" size="5">
-      <button class="link" type="submit">set</button>
-      <span class="sub">0 for no limit</span>
-    </form>
-  </div>
-  {% endif %}
-
-  {% if found %}
-  <ul class="finds">
-    {% for f in found %}
-    <li class="{{ 'is-closed' if f.closed }}">
-      <div class="find-what">
-        <span class="find-t">{{ f.title }}</span>
-        <span class="sub">{{ f.org or '' }}{% if f.org and f.location %} &middot; {% endif %}{{ f.location or '' }}
-          {%- if f.fee %} &middot; {{ f.fee }}{% endif %}</span>
-        {% if f.why %}<span class="find-why">{{ f.why }}</span>{% endif %}
-        {# The source, always. She checks the deadline against it, and the
-           terms for showing search results require citing where they came from. #}
-        {% if f.url %}<a class="outlink" href="{{ f.url }}" target="_blank" rel="noopener noreferrer">{{ f.url|hostof }} &nearr;</a>{% endif %}
-      </div>
-      <div class="find-when">
-        {% if f.deadline %}<span class="dates">{{ f.deadline|day }}</span>
-          {% if f.days is not none %}<span class="countdown">{% if f.days < 0 %}closed{% elif f.days == 0 %}today{% else %}{{ f.days }} days{% endif %}</span>{% endif %}
-        {% else %}<span class="sub">no deadline given</span>{% endif %}
-      </div>
-      <div class="find-do">
-        <form method="post" action="{{ url_for('site.admin_found', found_id=f.id, action='add') }}">
-          <button class="cta" type="submit">Add</button>
-        </form>
-        <form method="post" action="{{ url_for('site.admin_found', found_id=f.id, action='dismiss') }}">
-          <button class="link" type="submit">not for me</button>
-        </form>
-      </div>
+   She has to open a call's own page to check the deadline before applying
+   however she found it, so the only thing that was really being bought was
+   the reading. #}
+<section class="lookhere">
+  <h2 class="offhead up">Where to look</h2>
+  <p class="sub">Free listings. Open one, and add what suits you with the box below.</p>
+  <ul class="looks">
+    {% for name, href, note in lookups %}
+    <li>
+      <a class="look" href="https://{{ href }}" target="_blank" rel="noopener noreferrer">{{ name }} &nearr;</a>
+      <span class="sub">{{ note }}</span>
     </li>
     {% endfor %}
   </ul>
-  {% elif finder_on and last_search %}
-  <p class="empty">Nothing new waiting.
-    {% if found_counts.get('dismissed') %}{{ found_counts['dismissed'] }} put aside,
-    {% endif %}{% if found_counts.get('added') %}{{ found_counts['added'] }} added to your list.{% endif %}</p>
+  {% if not cfg.studio_location %}
+  <p class="sub">Put your town in <a href="{{ url_for('site.admin_settings') }}#name">Your site</a>
+     and these will be narrowed to your state.</p>
   {% endif %}
 </section>
 
