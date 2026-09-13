@@ -1,40 +1,42 @@
-/* Light, dark, or follow the device -- shared by the shop and the studio.
-   See templates/_theme.html. Nothing here runs before paint; the anti-flash
-   half is a three-line script inlined in each <head>, because a stylesheet
-   cannot wait for a file to download and neither can the reader. */
+/* The dark-mode switch. See templates/_theme.html.
+   The anti-flash half is inlined in each <head> -- it has to run before first
+   paint and an external file cannot. This file only keeps the switch in step. */
 (function () {
   var KEY = "abm-theme";
-  var ORDER = ["auto", "dark", "light"];
-  var SAID = {auto: "Theme follows this device", dark: "Dark", light: "Light"};
+  var media = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 
-  function current() {
-    var t = document.documentElement.getAttribute("data-theme");
-    return t === "dark" || t === "light" ? t : "auto";
+  function stored() {
+    try { var v = localStorage.getItem(KEY); return v === "dark" || v === "light" ? v : null; }
+    catch (e) { return null; }
+  }
+
+  /* What the reader is ACTUALLY looking at: their own choice if they have made
+     one, otherwise whatever the machine says. The switch shows this, not the
+     stored value -- on a first visit there is no stored value and the knob
+     still has to be in the right place. */
+  function effective() {
+    return stored() || (media && media.matches ? "dark" : "light");
   }
 
   function paint() {
-    var now = current();
-    document.querySelectorAll(".lamp").forEach(function (b) {
-      b.setAttribute("data-mode", now);
-      /* The button announces the STATE it is in, not the one it would move to:
-         a screen reader user pressing it hears what happened. */
-      b.setAttribute("aria-label", SAID[now] + " -- press to change");
-      var said = b.querySelector(".lamp-said");
-      if (said) said.textContent = SAID[now];
+    var dark = effective() === "dark";
+    document.querySelectorAll(".tsw").forEach(function (b) {
+      b.setAttribute("aria-checked", dark ? "true" : "false");
     });
   }
 
   window.abmTheme = function () {
-    var next = ORDER[(ORDER.indexOf(current()) + 1) % ORDER.length];
-    if (next === "auto") {
-      document.documentElement.removeAttribute("data-theme");
-      try { localStorage.removeItem(KEY); } catch (e) {}
-    } else {
-      document.documentElement.setAttribute("data-theme", next);
-      try { localStorage.setItem(KEY, next); } catch (e) {}
-    }
+    var next = effective() === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem(KEY, next); } catch (e) {}
     paint();
   };
+
+  /* If they have not chosen, the machine is still in charge -- so a laptop
+     going dark at sunset moves the knob on a page that is already open. */
+  if (media && media.addEventListener) {
+    media.addEventListener("change", function () { if (!stored()) paint(); });
+  }
 
   paint();
 })();

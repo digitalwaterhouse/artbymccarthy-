@@ -66,37 +66,55 @@
 :root[data-theme="dark"] .wordmark .mark,
 :root[data-theme="dark"] .adminbrand img{box-shadow:0 0 0 1px rgba(237,241,240,.16)}
 
-/* ---------- the lamp ----------
-   One button, three states, in the shop's nav and the studio's rail. Only the
-   glyph for the current state is drawn; the other two are display:none rather
-   than hidden with opacity, so nothing invisible can still be clicked.
+/* ---------- the dark-mode switch ----------
+   A track with a sun at one end, a moon at the other, and a knob that slides
+   between them. The knob's POSITION is the label -- there is no wording to
+   read and none to translate -- so both glyphs are drawn at all times and the
+   knob simply covers the one you are currently in.
 
-   It is deliberately quiet -- it inherits the colour of the nav it sits in and
-   is the same size as a link beside it. A theme switch is a preference, not a
+   Quiet on purpose: it inherits the colour of the nav it sits in and is no
+   taller than a line of text beside it. A theme switch is a preference, not a
    feature, and it should not compete with the work. */
-.lamp{
-  -webkit-appearance:none; appearance:none; background:none; border:0; padding:6px;
-  margin:0; cursor:pointer; color:inherit; line-height:0; border-radius:50%;
-  display:inline-flex; align-items:center; justify-content:center;
-  opacity:.62; transition:opacity .15s ease, transform .2s cubic-bezier(.34,1.56,.64,1);
+.tsw{
+  -webkit-appearance:none; appearance:none; border:0; padding:5px; margin:0;
+  background:none; color:inherit; cursor:pointer; line-height:0;
+  display:inline-flex; align-items:center; border-radius:99px;
 }
-.lamp:hover{opacity:1}
-.lamp:active{transform:scale(.9)}
-.lamp svg{width:17px; height:17px; display:none}
-.lamp[data-mode=light] .lamp-sun,
-.lamp[data-mode=dark]  .lamp-moon,
-.lamp[data-mode=auto]  .lamp-auto{display:block}
-/* Before the script runs there is no data-mode, and a button with no glyph is
-   a mystery. The half-filled circle is the honest default: it IS following the
-   device until told otherwise. */
-.lamp:not([data-mode]) .lamp-auto{display:block}
-.lamp:focus-visible{outline:2px solid var(--focus); outline-offset:2px; opacity:1}
-/* In the studio rail it sits with the other utilities, which are small and
-   muted; on the dark entry it takes the same soft white as the nav links. */
-.adminside .util .lamp{padding:4px; margin-right:auto}
-.home .masthead .lamp{color:rgba(244,246,245,.62)}
-.home .masthead .lamp:hover{color:var(--turq-lo)}
-@media (prefers-reduced-motion:reduce){ .lamp{transition:opacity .15s ease} }
+.tsw-track{
+  position:relative; display:inline-flex; align-items:center; justify-content:space-between;
+  width:44px; height:23px; padding:0 5px; box-sizing:border-box;
+  border:1px solid currentColor; border-radius:99px;
+  opacity:.55; transition:opacity .15s ease;
+}
+.tsw:hover .tsw-track{opacity:1}
+.tsw-track svg{width:12px; height:12px; flex:none; position:relative; z-index:1}
+/* The knob is the only thing that moves, and it is drawn in the page's own ink
+   so it reads as part of the surface rather than as a coloured pill. */
+.tsw-knob{
+  position:absolute; top:50%; left:2.5px; width:16px; height:16px;
+  margin-top:-8px; border-radius:50%; background:currentColor;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1);
+}
+/* 21px, not 19: `left` is measured from the padding box (44px track less two
+   1px borders = 42), so the symmetric resting place is 42 - 16 - 2.5. At 19 it
+   sat 2px shy and the gap on the right was visibly wider than the one left. */
+.tsw[aria-checked=true] .tsw-knob{transform:translateX(21px)}
+/* The glyph the knob is sitting on would be invisible under it anyway; fading
+   it stops a half-covered sun showing round the edge of the circle. */
+.tsw[aria-checked=false] .tsw-sun,
+.tsw[aria-checked=true]  .tsw-moon{opacity:0}
+.tsw-sun,.tsw-moon{transition:opacity .16s ease}
+.tsw:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
+.tsw:focus-visible .tsw-track{opacity:1}
+@media (prefers-reduced-motion:reduce){
+  .tsw-knob{transition:none}
+  .tsw-sun,.tsw-moon{transition:none}
+}
+/* In the studio rail it sits first among the utilities; on the dark entry it
+   takes the same soft white as the nav links beside it. */
+.adminside .util .tsw{padding:4px; margin-right:auto}
+.home .masthead .tsw{color:rgba(244,246,245,.62)}
+.home .masthead .tsw:hover{color:var(--turq-lo)}
 
 /* ---------- dark ----------
    THE TWO BLOCKS BELOW MUST STAY IDENTICAL. The first follows the machine's

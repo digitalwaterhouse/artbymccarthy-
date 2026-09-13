@@ -1,28 +1,24 @@
-{#- THE LAMP. One button, shared by the shop and the studio.
+{#- THE SWITCH. A real two-state toggle: sun at one end, moon at the other, and
+   a knob that slides between them. role="switch" with aria-checked, which is
+   the one ARIA pattern that means exactly this and nothing else.
 
-   Three states, not two: follow this machine, always dark, always light. The
-   middle state is the point -- somebody whose laptop turns dark at sunset
-   should not have to turn this site with it -- and it is the DEFAULT, so a
-   first visit looks like the rest of their evening.
-
-   It writes data-theme on <html> and remembers the choice in localStorage
-   under one key. The matching script in <head> reads that key BEFORE first
-   paint, which is the only way to stop a dark reader being flashed a white
-   page on every navigation. -#}
-<button class="lamp" type="button" onclick="abmTheme()" aria-live="polite"
-        title="Light, dark, or follow this device">
-  <svg class="lamp-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false">
-    <circle cx="12" cy="12" r="4.2"/>
-    <path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/>
-  </svg>
-  <svg class="lamp-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-    <path d="M20.5 14.8A8.6 8.6 0 1 1 9.2 3.5a6.9 6.9 0 0 0 11.3 11.3z"/>
-  </svg>
-  <svg class="lamp-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-    <circle cx="12" cy="12" r="8.4"/><path d="M12 3.6v16.8"/><path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none"/>
-  </svg>
-  <span class="sr lamp-said"></span>
+   It STARTS wherever the device is -- somebody whose laptop turns dark at
+   sunset finds it already dark -- and the first press pins a choice that then
+   outlives the device's opinion. The knob's position is the whole label, so
+   there is no wording to read; the screen-reader name says "Dark mode" and
+   aria-checked says whether it is on. -#}
+<button class="tsw" type="button" role="switch" aria-checked="false" onclick="abmTheme()">
+  <span class="sr">Dark mode</span>
+  <span class="tsw-track" aria-hidden="true">
+    <svg class="tsw-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" focusable="false">
+      <circle cx="12" cy="12" r="4.6"/>
+      <path d="M12 1.6v2.6M12 19.8v2.6M1.6 12h2.6M19.8 12h2.6M4.6 4.6l1.9 1.9M17.5 17.5l1.9 1.9M19.4 4.6l-1.9 1.9M6.5 17.5l-1.9 1.9"/>
+    </svg>
+    <svg class="tsw-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+      <path d="M20.5 14.8A8.6 8.6 0 1 1 9.2 3.5a6.9 6.9 0 0 0 11.3 11.3z"/>
+    </svg>
+    <span class="tsw-knob"></span>
+  </span>
 </button>
