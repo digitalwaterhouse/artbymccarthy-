@@ -11,6 +11,7 @@ import json
 import io
 import time
 import functools
+import threading
 from datetime import datetime
 
 from flask import (Flask, Blueprint, render_template, request, redirect,
@@ -1582,6 +1583,9 @@ def admin_opportunities():
     order = "distance" if request.args.get("sort") == "distance" else "deadline"
     # Default 30 days; days=0 means show everything. `days` absent is the
     # default rather than "all", which is the whole point of the setting.
+    # Kick the drain on the way past. Cheap when there is nothing to do: one
+    # indexed query that returns no rows.
+    start_distance_worker()
     raw_days = request.args.get("days")
     days = gallery.FOUND_DEFAULT_DAYS if raw_days is None else (_int(raw_days) or 0)
     live, done = gallery.list_opportunities(within=within, order=order)
@@ -1589,6 +1593,7 @@ def admin_opportunities():
                            within=within, order=order,
                            here=gallery.studio_point(),
                            pending=len(gallery.ungeocoded_opportunities()),
+                           placing=len(gallery.found_without_distance()),
                            # Open calls pulled from EntryThingy's published
                            # listings, waiting in the pen to be judged. Narrowed
                            # to what closes soon unless she asks for more --
@@ -1623,26 +1628,58 @@ def admin_opportunities_refresh():
     if gone:
         bits.append("%d closed one%s cleared." % (gone, "" if gone == 1 else "s"))
     flash(" ".join(bits))
+    start_distance_worker()
     return redirect(url_for("site.admin_opportunities") + "#found")
 
 
-@site.route("/admin/opportunities/found-distance", methods=["POST"])
-@admin_required
-def admin_found_distance():
-    """Distances for the listings, through the cached place lookup. A town seen
-    before is free and instant; a new one is a request a second to somebody
-    else's server, so this is a button and capped per press."""
-    done, placed = 0, 0
-    # Twelve a press: uncached towns are a second each, and a request that
-    # takes half a minute looks broken however honest it is.
-    for row in gallery.found_without_distance()[:12]:
-        placed += 1 if gallery.locate_found(row["id"], row["location"]) else 0
-        done += 1
-    left = len(gallery.found_without_distance())
-    flash("Looked up %d town%s, %d placed on the map.%s"
-          % (done, "" if done == 1 else "s", placed,
-             (" %d to go -- press again." % left) if left else ""))
-    return redirect(url_for("site.admin_opportunities") + "#found")
+# Distances fill in ON THEIR OWN, in a thread, one town a second.
+#
+# It cannot happen in the request that asks for them: Nominatim wants a second
+# between lookups, fifty listings is fifty seconds, and gunicorn would have cut
+# the response long before that. It used to be a button for exactly that
+# reason. A button she has to press repeatedly to finish a job the machine
+# could finish alone is a chore, so the machine finishes it.
+#
+# This is not a scheduler and does not pretend to be one -- see the note in the
+# reminder code. It is a worker that drains a queue and stops, started by the
+# page that wants the answers. If the instance restarts mid-drain the queue is
+# still in the database and the next page view starts it again.
+_distance_worker = threading.Lock()
+
+
+def _drain_distances(app_obj):
+    """One town a second until the queue is empty. Never raises into a request;
+    it is not running in one."""
+    try:
+        while True:
+            claim = gallery.claim_next_unplaced()
+            if not claim:
+                return
+            try:
+                gallery.place_found(*claim)      # sleeps 1.05s on a real lookup
+            except Exception:
+                continue                          # a bad row must not stop the rest
+    finally:
+        try:
+            _distance_worker.release()
+        except RuntimeError:
+            pass
+
+
+def start_distance_worker():
+    """Start the drain if there is anything to drain and nobody is draining.
+
+    The lock is per PROCESS; the claim in claim_next_unplaced is what keeps two
+    gunicorn workers from asking the same question twice.
+    """
+    if app.config.get("TESTING") or not gallery.found_without_distance():
+        return False
+    if not _distance_worker.acquire(blocking=False):
+        return False        # already draining in this process
+    t = threading.Thread(target=_drain_distances, args=(app,), daemon=True,
+                         name="distances")
+    t.start()
+    return True
 
 
 @site.route("/admin/found/<int:found_id>/<action>", methods=["POST"])

@@ -1989,6 +1989,39 @@ def found_without_distance():
             " ORDER BY deadline, id").fetchall()]
 
 
+def claim_next_unplaced():
+    """Take ONE row off the queue and stamp it as claimed, atomically.
+
+    The stamp is geo_query, which is also what found_without_distance() filters
+    on -- so writing it before the lookup means a second worker skips this row
+    rather than asking Nominatim the same question at the same moment. One
+    UPDATE with a subquery, because two statements is a race however fast they
+    run, and gunicorn may be running more than one worker.
+    """
+    rows = found_without_distance()
+    for r in rows:
+        with connect() as conn:
+            # The WHERE clause is the claim: whoever's UPDATE lands first
+            # changes a row, and everybody else's changes nothing and moves on.
+            # No RETURNING, so this does not care how old the host's SQLite is.
+            won = conn.execute(
+                "UPDATE found_calls SET geo_query=TRIM(location) WHERE id=?"
+                " AND (geo_query IS NULL OR TRIM(geo_query) <> TRIM(location))",
+                (r["id"],)).rowcount
+        if won:
+            return r["id"], r["location"]
+    return None
+
+
+def place_found(found_id, place):
+    """Write the coordinates for a row already claimed above."""
+    pt = place_point(place)
+    with connect() as conn:
+        conn.execute("UPDATE found_calls SET lat=?, lon=? WHERE id=?",
+                     (pt[0] if pt else None, pt[1] if pt else None, found_id))
+    return pt
+
+
 def locate_found(found_id, place):
     """Distance for one listing, through the place cache -- so a town already
     known costs nothing and is instant."""

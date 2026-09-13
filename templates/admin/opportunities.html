@@ -153,12 +153,15 @@
   </div>
   {% endif %}
 
-  {% if no_distance %}
-  <form class="finder-go" method="post" action="{{ url_for('site.admin_found_distance') }}">
-    {# "these" would be a lie while the list is narrowed to thirty days: the
-       count is every listing without a distance, not the ones on screen. #}
-    <button class="link" type="submit">Work out the distance for {{ no_distance }} listing{{ '' if no_distance == 1 else 's' }} &rarr;</button>
-  </form>
+  {% if placing %}
+  {# No button. It is already happening -- one town a second in the background,
+     started by this page load. Saying so is the whole job here: a row with no
+     distance yet should read as "not counted yet" and not as "no idea". #}
+  <p class="sub placing">
+    <span class="placing-dot" aria-hidden="true"></span>
+    Working out how far away {{ placing }} of these are, about a second each.
+    Reload in a minute and they will be here.
+  </p>
   {% endif %}
 
   {% if found %}
