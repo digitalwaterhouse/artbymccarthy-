@@ -648,7 +648,25 @@ body.admin{background:#F3F4F2; font-size:15px}
 /* 206 -> 228px. The labels were already at their natural width; the icons
    added 27px in front of them, and without the extra the longest word in
    the rail (Opportunities) sat hard against the edge. */
-.adminshell{display:grid; grid-template-columns:228px minmax(0,1fr)}
+/* The rail's width lives here rather than in two places: the arc below has to
+   land exactly on the seam, and a column that drifted from it would leave the
+   curve floating in the middle of the page. */
+.adminshell{--rail:228px; display:grid; grid-template-columns:var(--rail) minmax(0,1fr); position:relative}
+/* WHERE THE RAIL MEETS THE PAGE. Purely decorative: the dark runs a little way
+   along the top of the main area and curves back down to the seam, so the two
+   halves read as one surface folding rather than two panels butted together.
+   The shape is a square with a disc bitten out of its far corner -- the bite is
+   the arc -- and it tapers to nothing within the main column's own top padding,
+   so it never touches anything anyone has to read.
+   Hidden from assistive tech by being a pseudo-element with no content, and
+   pointer-events:none so it cannot swallow a click meant for the page. */
+.adminshell::before{
+  content:""; position:absolute; top:0; left:var(--rail); z-index:1;
+  width:var(--arc,34px); height:var(--arc,34px);
+  background:#141A18; pointer-events:none;
+  -webkit-mask:radial-gradient(circle var(--arc,34px) at 100% 100%, #0000 99%, #000 100%);
+          mask:radial-gradient(circle var(--arc,34px) at 100% 100%, #0000 99%, #000 100%);
+}
 .adminside{
   /* align-self:start, NOT the grid default of stretch: a stretched item fills
      the row and sticky then has nothing left to travel through. */
@@ -733,6 +751,8 @@ body.admin{background:#F3F4F2; font-size:15px}
    lies back down as a bar and the current-section edge moves to the bottom. */
 @media (max-width:760px){
   .adminshell{grid-template-columns:1fr}
+  /* The rail is a horizontal bar down here, so there is no seam to fold. */
+  .adminshell::before{display:none}
   .adminside{
     position:static; height:auto; overflow:visible;
     flex-direction:row; flex-wrap:wrap; align-items:center; padding:0 12px;
