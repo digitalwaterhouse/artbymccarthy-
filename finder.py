@@ -36,7 +36,10 @@ MODEL = "claude-opus-5"
 # context window, which is the difference between a handful of tokens and a
 # page of boilerplate per hit.
 TOOL = "web_search_20260318"
-MAX_SEARCHES = 8
+# Eight searches on the first live run cost $1.14 and returned four calls, all
+# of them already closed. Five is enough to find open calls when the prompt is
+# told what "open" means, and it is the largest single lever on the bill.
+MAX_SEARCHES = 5
 
 
 # What a press costs, so the screen can say so instead of guessing. Rates as
@@ -83,7 +86,11 @@ def blank_usage():
             "cache_write": 0, "web_searches": 0, "cost_micros": 0}
 
 
-SYSTEM = """You find open calls for entry for a working artist and report them as data.
+SYSTEM = """You find OPEN calls for entry for a working artist and report them as data.
+
+TODAY IS {today}. A model has no clock, and without that date "still open" means
+nothing -- the first live run of this search returned four calls whose deadlines
+had all passed, because nothing in the prompt said what day it was.
 
 The artist makes mixed-media shadow boxes, 10.5 x 10.5 x 2.5 inches, black and
 white, and shows them as original one-off pieces. Small juried shows, local and
@@ -92,13 +99,21 @@ public-art commissions, mural programmes, film, performance and craft-fair booth
 rentals do not.
 
 RULES YOU MUST FOLLOW:
+- ONLY report a call whose deadline is AFTER {today}. A call that has already
+  closed is not a result; do not report it, not even as background, and do not
+  report one because it "recurs annually" -- she cannot apply to it.
+- If a page gives no deadline, report it only if the page itself says the call
+  is open now. Otherwise leave it out.
 - Report only calls you actually found on a page you searched. Never invent a
   call, a deadline, a fee or a URL. A call you half-remember is not a result.
-- The deadline must be one you READ on the page. If the page does not state one,
-  set deadline to null rather than guessing.
-- Prefer calls that are still open. Say so in `closed` if a deadline has passed.
-- `url` must be the page you actually read, so she can check it herself.
-- Fewer real results beat a long list. Six good ones is a good answer; so is one.
+- The deadline must be one you READ on the page, and you must check it against
+  {today} before you report it.
+- `url` must be the page you actually read. Prefer the gallery's or the
+  organiser's OWN page for the call over an aggregator's listing of it; a link
+  to a directory of many calls is not a result.
+- RETURNING NOTHING IS A GOOD ANSWER when nothing is open. Say so in the JSON
+  with an empty list rather than padding it with closed calls. Two open calls
+  beat six that she cannot enter.
 
 Answer with a single JSON object and nothing else, in a ```json fenced block:
 
@@ -114,16 +129,22 @@ Answer with a single JSON object and nothing else, in a ```json fenced block:
 }]}"""
 
 
+def today():
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
 def _prompt(place, miles, extra):
-    ask = ("Find open calls for entry for an artist based in %s, within about "
-           "%d miles. Search the open web: gallery and arts-council sites, "
-           "library and museum open calls, regional juried shows, and the "
-           "public listing pages of the call-for-entry platforms."
-           % (place, miles))
+    ask = ("Today is %s. Find calls for entry that are OPEN NOW -- deadline "
+           "after today -- for an artist based in %s, within about %d miles. "
+           "Search the open web: gallery and arts-council sites, library and "
+           "museum open calls, and regional juried shows."
+           % (today(), place, miles))
     if extra:
         ask += " She also asks: " + extra.strip()
-    ask += ("\n\nCheck each call's own page for the deadline before you report "
-            "it. Then give me the JSON object.")
+    ask += ("\n\nCheck each call's own page for the deadline, compare it to %s, "
+            "and drop anything already closed. Then give me the JSON object -- "
+            "an empty list if nothing is open." % today())
     return ask
 
 
@@ -199,7 +220,10 @@ def search(cfg, miles=75, extra=""):
         # be continued with the assistant message handed straight back.
         for _ in range(4):
             msg = client.messages.create(
-                model=MODEL, max_tokens=16000, system=SYSTEM,
+                model=MODEL, max_tokens=16000,
+                # replace, not .format -- the prompt contains a literal JSON
+                # example and every brace in it would have to be doubled.
+                system=SYSTEM.replace("{today}", today()),
                 messages=messages, tools=[tool])
             bank(msg)
             used += _searches_used(msg)
@@ -227,10 +251,28 @@ def search(cfg, miles=75, extra=""):
                 code = c.get("error_code") if isinstance(c, dict) else c.error_code
                 return [], "The web search stopped: %s." % str(code).replace("_", " "), spent
     calls = parse_calls(_text_of(msg))
-    if not calls:
-        return [], "Nothing came back that looked like a call for entry.", spent
-    return calls, "%d found, %d search%s used." % (
-        len(calls), used, "" if used == 1 else "es"), spent
+    # THE PROMPT ASKS, THIS ENFORCES. A closed call is worthless to her, and a
+    # rule that lives only in the prompt is a rule the model can forget: the
+    # first live run returned four, every one of them shut.
+    now_ = today()
+    open_calls = [c for c in calls if not _is_closed(c, now_)]
+    shut = len(calls) - len(open_calls)
+    if not open_calls:
+        return [], ("Nothing open came back%s."
+                    % (" -- %d closed call%s were dropped" % (shut, "s" if shut != 1 else "")
+                       if shut else "")), spent
+    return open_calls, "%d open, %d search%s used.%s" % (
+        len(open_calls), used, "" if used == 1 else "es",
+        (" %d closed dropped." % shut) if shut else ""), spent
+
+
+def _is_closed(call, now_):
+    """A deadline that has been and gone. An unreadable or absent date is NOT
+    treated as closed -- the model was told to include an undated call only
+    when the page says it is open, and second-guessing that here would throw
+    away the rolling calls that have no date by design."""
+    d = (call.get("deadline") or "").strip()
+    return bool(re.match(r"^\d{4}-\d{2}-\d{2}$", d)) and d < now_
 
 
 def _short(e):
