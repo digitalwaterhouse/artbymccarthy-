@@ -55,7 +55,11 @@
       {% endif %}
       <div>
         <p class="pv-eyebrow">&ldquo;The Box Series&rdquo; &middot; Multimedia</p>
-        <p class="pv-head">{{ cfg.hero_title or cfg.tagline or "Black and white treasure boxes" }}</p>
+        {# The SAME fallback the front page uses, from the same constant. It read
+           `hero_title or tagline or "..."` here, which has not been the site's
+           behaviour since the landing page stopped falling through to the
+           tagline -- so this preview was showing a headline the page was not. #}
+        <p class="pv-head">{{ cfg.hero_title or hero_head }}</p>
         {% if cfg.hero_sub %}<p class="pv-sub">{{ cfg.hero_sub }}</p>
         {% elif cfg.about %}<p class="pv-sub">{{ cfg.about.split("\n")[0] }}</p>{% endif %}
         {% if cfg.hero_caption %}<p class="pv-cap">{{ cfg.hero_caption }}</p>{% endif %}
@@ -67,8 +71,9 @@
   <form class="setform" method="post" enctype="multipart/form-data">
     <input type="hidden" name="section" value="front">
     <label class="wide">Headline
-      <input name="hero_title" value="{{ cfg.hero_title }}" placeholder="Black and white treasure boxes">
-      <span class="sub">Leave it empty and your tagline is used.</span>
+      <input name="hero_title" value="{{ cfg.hero_title }}" placeholder="{{ hero_head }}">
+      <span class="sub">Leave it empty and the front page reads
+        &ldquo;{{ hero_head }}&rdquo; &mdash; your own phrase, from your bio.</span>
     </label>
     <label class="wide">The line under it
       <input name="hero_sub" value="{{ cfg.hero_sub }}">
@@ -214,7 +219,8 @@
     </label>
     <label class="wide">Tagline
       <input name="tagline" value="{{ cfg.tagline }}">
-      <span class="sub">Also the front-page headline whenever that is left empty.</span>
+      <span class="sub">Shown under your name at the top of every page. It is
+        <em>not</em> the front-page headline &mdash; that has its own field.</span>
     </label>
     <label>Contact email
       <input name="artist_email" value="{{ cfg.artist_email }}" inputmode="email">

@@ -188,6 +188,12 @@ def hostof(url):
     return m.group(1) if m else (url or "")
 
 
+# The landing headline's default, handed to the templates rather than retyped
+# in them. Settings had its own copy of the fallback chain and it had already
+# drifted: it still put `tagline` in front of this, which is the behaviour
+# app.py moved away from in September, so the preview showed a headline the
+# front page had not used for days.
+app.jinja_env.globals["hero_head"] = HERO_HEAD
 app.jinja_env.globals["exhibition_dates"] = gallery.exhibition_dates
 app.jinja_env.globals["opp_kind_label"] = gallery.opp_kind_label
 app.jinja_env.globals["opp_status_label"] = gallery.opp_status_label
