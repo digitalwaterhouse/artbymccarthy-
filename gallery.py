@@ -8,6 +8,7 @@ import os
 import re
 import io
 import json
+import time
 import sqlite3
 import secrets
 import zipfile
@@ -884,6 +885,130 @@ def list_exhibitions():
     past = sorted([e for e in rows if e["past"]],
                   key=lambda e: (e["ends_on"] or e["starts_on"] or ""), reverse=True)
     return upcoming, past
+
+
+# ------------------------------------------------------------------- outings
+# Somebody else's show, worth going to look at. Deliberately NOT exhibitions
+# (that is the record of where her work hung) and not opportunities (nothing
+# here is applied to). See the schema note.
+def _decorate_outing(o, here, cutoff, now_):
+    end = o["ends_on"] or o["starts_on"] or ""
+    o["past"] = bool(end) and end <= cutoff
+    o["running"] = (not o["past"] and bool(o["starts_on"]) and o["starts_on"] <= now_)
+    # How many days until it CLOSES, which is the number that decides whether
+    # this weekend is the last chance. Opening day is the wrong deadline: a
+    # show that opened a month ago is still there to be seen.
+    o["closing_in"] = _days_until(o["ends_on"]) if o["ends_on"] else None
+    o["last_chance"] = (o["closing_in"] is not None and 0 <= o["closing_in"] <= 14
+                        and not o["past"])
+    return _decorate_distance(o, here)
+
+
+def list_outings():
+    """Still on (or still to open) first, closing soonest at the top; then the
+    ones that have been and gone.
+
+    Sorted by WHEN IT CLOSES rather than when it opens, because the question a
+    list of shows to see actually answers is "what am I about to miss".
+    """
+    here, cutoff, now_ = studio_point(), _past_cutoff(), today()
+    with connect() as conn:
+        rows = [dict(r) for r in conn.execute("SELECT * FROM outings").fetchall()]
+    for o in rows:
+        _decorate_outing(o, here, cutoff, now_)
+    on = sorted([o for o in rows if not o["past"]],
+                key=lambda o: (o["ends_on"] or "9999-99-99", o["starts_on"] or "", o["title"]))
+    been = sorted([o for o in rows if o["past"]],
+                  key=lambda o: (o["ends_on"] or o["starts_on"] or ""), reverse=True)
+    return on, been
+
+
+def get_outing(outing_id):
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM outings WHERE id=?", (outing_id,)).fetchone()
+    if row is None:
+        return None
+    return _decorate_outing(dict(row), studio_point(), _past_cutoff(), today())
+
+
+def save_outing(data, outing_id=None):
+    fields = ["title", "venue", "city", "starts_on", "ends_on", "url", "notes", "went"]
+    vals = {k: (data.get(k) if data.get(k) not in ("", None) else None) for k in fields}
+    vals["title"] = (data.get("title") or "Untitled show").strip()
+    vals["went"] = 1 if data.get("went") else 0
+    with connect() as conn:
+        if outing_id:
+            sets = ", ".join(f"{k}=:{k}" for k in vals)
+            conn.execute(f"UPDATE outings SET {sets} WHERE id=:id", {**vals, "id": outing_id})
+            return outing_id
+        vals["created_at"] = now()
+        cols = ", ".join(vals)
+        conn.execute(f"INSERT INTO outings ({cols}) "
+                     f"VALUES ({', '.join(':'+k for k in vals)})", vals)
+        return conn.execute("SELECT last_insert_rowid() AS i").fetchone()["i"]
+
+
+def set_outing_went(outing_id, went):
+    with connect() as conn:
+        conn.execute("UPDATE outings SET went=? WHERE id=?", (1 if went else 0, outing_id))
+
+
+def delete_outing(outing_id):
+    with connect() as conn:
+        conn.execute("DELETE FROM outings WHERE id=?", (outing_id,))
+
+
+def outing_place(o):
+    """What to hand the geocoder: the venue is only useful WITH a town, and a
+    town on its own is a perfectly good answer."""
+    bits = [x for x in ((o.get("venue") or "").strip(), (o.get("city") or "").strip()) if x]
+    return ", ".join(bits) if len(bits) > 1 else (bits[0] if bits else "")
+
+
+def locate_outing(outing_id, place=None, force=False):
+    """Same contract as locate_opportunity: never raises, remembers a miss.
+
+    THE VENUE IS TRIED FIRST AND THEN DROPPED. "Katonah Museum of Art, Katonah
+    NY" puts the pin on the building, which is the better answer -- but half of
+    the small galleries worth driving to are not in OpenStreetMap at all, and
+    on those the whole lookup was failing and throwing away a perfectly good
+    town. A gallery she cannot find on a map is still in a town she can, and
+    twenty-eight miles to the town is the right answer to "is this near me".
+    """
+    with connect() as conn:
+        row = conn.execute("SELECT venue, city, geo_query, lat FROM outings WHERE id=?",
+                           (outing_id,)).fetchone()
+    if row is None:
+        return None
+    place = place if place is not None else outing_place(dict(row))
+    if not force and row["lat"] is not None and (row["geo_query"] or "") == place.strip():
+        return None
+    if not place.strip():
+        with connect() as conn:
+            conn.execute("UPDATE outings SET lat=NULL, lon=NULL, geo_query=NULL,"
+                         " geo_place=NULL, geocoded_at=NULL WHERE id=?", (outing_id,))
+        return None
+    # The town on its own is the fallback, and only when it is actually a
+    # different question from the one already asked.
+    town = (row["city"] or "").strip()
+    tries = [place] + ([town] if town and town != place.strip() else [])
+    hit = None
+    for i, q in enumerate(tries):
+        hit = geocode(q)
+        if hit:
+            break
+        if i + 1 < len(tries):
+            time.sleep(1.05)      # still one request a second, even retrying
+    with connect() as conn:
+        if hit:
+            conn.execute("UPDATE outings SET lat=?, lon=?, geo_query=?, geo_place=?,"
+                         " geocoded_at=? WHERE id=?",
+                         (hit[0], hit[1], place.strip(), hit[2], now(), outing_id))
+        else:
+            conn.execute("UPDATE outings SET lat=NULL, lon=NULL, geo_query=?,"
+                         " geo_place=NULL, geocoded_at=? WHERE id=?",
+                         (place.strip(), now(), outing_id))
+    return hit
 
 
 def get_exhibition(exhibition_id):

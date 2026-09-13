@@ -243,3 +243,35 @@ CREATE TABLE IF NOT EXISTS opportunity_works (
     PRIMARY KEY (opportunity_id, work_id)
 );
 CREATE INDEX IF NOT EXISTS idx_oppwork_work ON opportunity_works(work_id);
+
+-- OUTINGS: somebody else's show, worth the drive to go and look at.
+--
+-- A SEPARATE TABLE ON PURPOSE, for the same reason opportunities are not
+-- exhibitions. `exhibitions` is the permanent record of where HER work hung,
+-- joined many-to-many to the paintings; putting the Whitney's spring show in
+-- there would corrupt that record with places her work has never been. And an
+-- outing is not an opportunity either: nothing is applied to, nothing is
+-- submitted, and there is no deadline -- only the dates it is open and how far
+-- it is. What it shares with both is a place, which is why lat/lon are here
+-- and measured from the same studio address.
+--
+-- `went` is the whole point of keeping a finished one: a show she meant to see
+-- and missed is a different fact from one she saw, and only she can say which.
+CREATE TABLE IF NOT EXISTS outings (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    title       TEXT NOT NULL,
+    venue       TEXT,
+    city        TEXT,
+    starts_on   TEXT,          -- YYYY-MM-DD
+    ends_on     TEXT,
+    url         TEXT,
+    notes       TEXT,
+    went        INTEGER NOT NULL DEFAULT 0,
+    lat         REAL,
+    lon         REAL,
+    geo_query   TEXT,
+    geo_place   TEXT,
+    geocoded_at TEXT,
+    created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_outings_dates ON outings(ends_on, starts_on, id);

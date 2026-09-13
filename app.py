@@ -586,7 +586,69 @@ def admin_exhibitions():
                                        "starts_on": request.form.get("starts_on")})
         return redirect(url_for("site.admin_exhibition", exhibition_id=eid))
     upcoming, past = gallery.list_exhibitions()
-    return render_template("admin/exhibitions.html", upcoming=upcoming, past=past)
+    on, been = gallery.list_outings()
+    return render_template("admin/exhibitions.html", upcoming=upcoming, past=past,
+                           on=on, been=been)
+
+
+# --------------------------------------------------------- shows to go and see
+# Somebody else's show. A separate table from exhibitions on purpose -- see the
+# schema note -- and a separate set of routes, sharing only the page they are
+# read on and the distance machinery.
+@site.route("/admin/outings", methods=["POST"])
+@admin_required
+def admin_outing_new():
+    title = (request.form.get("title") or "").strip()
+    if not title:
+        flash("A show needs a name.")
+        return redirect(url_for("site.admin_exhibitions"))
+    oid = gallery.save_outing({"title": title, "city": (request.form.get("city") or "").strip(),
+                               "ends_on": request.form.get("ends_on")})
+    if not app.config.get("TESTING"):
+        gallery.locate_outing(oid)
+    return redirect(url_for("site.admin_outing", outing_id=oid))
+
+
+@site.route("/admin/outing/<int:outing_id>", methods=["GET", "POST"])
+@admin_required
+def admin_outing(outing_id):
+    o = gallery.get_outing(outing_id)
+    if not o:
+        abort(404)
+    if request.method == "POST":
+        f = request.form
+        gallery.save_outing({
+            "title": f.get("title") or o["title"],
+            "venue": (f.get("venue") or "").strip(),
+            "city": (f.get("city") or "").strip(),
+            "starts_on": f.get("starts_on"),
+            "ends_on": f.get("ends_on"),
+            "url": (f.get("url") or "").strip(),
+            "notes": (f.get("notes") or "").strip(),
+            "went": f.get("went"),
+        }, outing_id)
+        if not app.config.get("TESTING"):
+            gallery.locate_outing(outing_id)
+        flash("Saved.")
+        return redirect(url_for("site.admin_outing", outing_id=outing_id))
+    return render_template("admin/outing_form.html", o=o)
+
+
+@site.route("/admin/outing/<int:outing_id>/went", methods=["POST"])
+@admin_required
+def admin_outing_went(outing_id):
+    """One click from the list, because "I went" is the only thing she will
+    ever want to change without opening the row."""
+    gallery.set_outing_went(outing_id, request.form.get("went") == "1")
+    return redirect(url_for("site.admin_exhibitions") + "#tosee")
+
+
+@site.route("/admin/outing/<int:outing_id>/delete", methods=["POST"])
+@admin_required
+def admin_outing_delete(outing_id):
+    gallery.delete_outing(outing_id)
+    flash("Removed.")
+    return redirect(url_for("site.admin_exhibitions") + "#tosee")
 
 
 @site.route("/admin/exhibition/<int:exhibition_id>", methods=["GET", "POST"])

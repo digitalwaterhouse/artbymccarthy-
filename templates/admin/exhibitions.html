@@ -53,4 +53,79 @@
   {% endfor %}
 </ul>
 {% endif %}
+
+{# ---- somebody else's show ------------------------------------------------
+   A SEPARATE LIST, and a separate table behind it. Above this heading is the
+   record of where her own work hung, joined to the paintings; below it are
+   places to go and look, which have nothing to do with that record and are
+   never attached to a piece. Sorted by WHEN EACH ONE CLOSES, because the
+   question this list answers is "what am I about to miss" -- a show that
+   opened a month ago is still there to be seen, and one closing on Sunday is
+   the one worth knowing about today. #}
+<h2 class="offhead up" id="tosee">Worth going to see</h2>
+<p class="sub">Shows near you, from anyone. Nothing here is applied to and nothing
+   is attached to your paintings &mdash; it is a list of places to go, with how far
+   away each one is.</p>
+
+<form class="newrow" method="post" action="{{ url_for('site.admin_outing_new') }}">
+  <label class="sr" for="newouting">Name a show to see</label>
+  <input id="newouting" name="title" placeholder="Name a show to see" required>
+  <label class="sr" for="newoutingcity">Town</label>
+  <input id="newoutingcity" name="city" placeholder="Town">
+  <label class="sr" for="newoutingend">Closes</label>
+  <input id="newoutingend" name="ends_on" type="date">
+  <button class="cta" type="submit">Add</button>
+</form>
+
+{% if on %}
+<ul class="sched opps tosee">
+  {% for o in on %}
+  <li class="{{ 'on-now' if o.running else '' }}{{ ' u-soon' if o.last_chance else '' }}">
+    <div class="when">
+      <span class="dates">{{ exhibition_dates(o) }}</span>
+      {% if o.running %}<span class="nowtag">on now</span>{% endif %}
+      {% if o.last_chance %}<span class="countdown">{% if o.closing_in == 0 %}last day{% elif o.closing_in == 1 %}closes tomorrow{% else %}{{ o.closing_in }} days left{% endif %}</span>{% endif %}
+    </div>
+    <div class="what">
+      <a href="{{ url_for('site.admin_outing', outing_id=o.id) }}">{{ o.title }}</a>
+      {% if o.url %}<a class="outlink" href="{{ o.url }}" target="_blank" rel="noopener noreferrer">the show &nearr;</a>{% endif %}
+      {# "venue not set, New Canaan CT" is how her own shows read, and there it
+         is right: a show of hers with no venue is unfinished. Here it is not
+         -- half of these she will hear about as "something at the Aldrich" or
+         "something in Beacon", and only one of the two is missing. #}
+      <span class="sub">{{ o.venue or '' }}{% if o.venue and o.city %}, {% endif %}{{ o.city or '' }}
+        {%- if not o.venue and not o.city %}place not set{% endif %}
+        {%- if o.notes %} &middot; {{ o.notes }}{% endif %}</span>
+    </div>
+    {% if o.miles is not none %}<span class="miles n-{{ o.near }}">{{ o.miles }} mi</span>{% endif %}
+    <form method="post" action="{{ url_for('site.admin_outing_went', outing_id=o.id) }}">
+      <input type="hidden" name="went" value="{{ 0 if o.went else 1 }}">
+      <button class="link went{{ ' on' if o.went }}" type="submit">{{ 'been' if o.went else 'mark as been' }}</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">Nothing on the list. Add one above when you hear of a show.</p>
+{% endif %}
+
+{% if been %}
+<h2 class="offhead">Closed</h2>
+<ul class="sched opps tosee past">
+  {% for o in been %}
+  <li>
+    <div class="when"><span class="dates">{{ exhibition_dates(o) }}</span></div>
+    <div class="what">
+      <a href="{{ url_for('site.admin_outing', outing_id=o.id) }}">{{ o.title }}</a>
+      <span class="sub">{{ o.venue or '' }}{% if o.city %}{% if o.venue %}, {% endif %}{{ o.city }}{% endif %}
+        {%- if not o.venue and not o.city %}place not set{% endif %}</span>
+    </div>
+    {% if o.miles is not none %}<span class="miles n-{{ o.near }}">{{ o.miles }} mi</span>{% endif %}
+    {# A show she meant to see and missed is a different fact from one she saw,
+       and it is worth keeping the difference. #}
+    <span class="ostat {{ 's-accepted' if o.went else '' }}">{{ 'went' if o.went else 'missed it' }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
 {% endblock %}
