@@ -30,7 +30,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}Studio{% endblock %} &mdash; {{ cfg.site_title }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=100">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=101">
 <script>
 /* BEFORE FIRST PAINT, and inlined for that reason: a dark reader must never be
    flashed a white page on the way to a page they already chose to be dark.
@@ -41,13 +41,20 @@ try{var t=localStorage.getItem("abm-theme");if(t==="dark"||t==="light")document.
 <body class="admin">
 <div class="adminshell">
 <header class="adminside">
-  <a class="adminbrand" href="{{ url_for('site.admin_works') }}">
-    <picture>
-      <source type="image/webp" srcset="{{ url_for('static', filename='img/mark-128.webp') }}">
-      <img src="{{ url_for('static', filename='img/mark-128.jpg') }}" alt="" width="32" height="32">
-    </picture>
-    <span>Studio</span>
-  </a>
+  {# Brand and switch on ONE row, at every width. In the rail that puts the
+     switch at the top right where it is easy to find; laid down as a bar on a
+     phone it means the switch cannot be pushed onto a second line, because it
+     is inside the same element as the logo rather than down in the utilities. #}
+  <div class="railtop">
+    <a class="adminbrand" href="{{ url_for('site.admin_works') }}">
+      <picture>
+        <source type="image/webp" srcset="{{ url_for('static', filename='img/mark-128.webp') }}">
+        <img src="{{ url_for('static', filename='img/mark-128.jpg') }}" alt="" width="32" height="32">
+      </picture>
+      <span>Studio</span>
+    </a>
+    {% include "_theme.html" %}
+  </div>
   {# The section you are on is marked, so the bar says where you are instead of
      just where you could go. #}
   <nav>
@@ -74,7 +81,6 @@ try{var t=localStorage.getItem("abm-theme");if(t==="dark"||t==="light")document.
     {% endfor %}
   </nav>
   <div class="util">
-    {% include "_theme.html" %}
     <a href="{{ url_for('site.index') }}">View site &nearr;</a>
     <a class="out" href="{{ url_for('site.admin_logout') }}">Sign out</a>
   </div>
@@ -84,6 +90,6 @@ try{var t=localStorage.getItem("abm-theme");if(t==="dark"||t==="light")document.
 {% block body %}{% endblock %}
 </main>
 </div>
-<script src="{{ url_for('static', filename='js/theme.js') }}?v=100" defer></script>
+<script src="{{ url_for('static', filename='js/theme.js') }}?v=101" defer></script>
 </body>
 </html>

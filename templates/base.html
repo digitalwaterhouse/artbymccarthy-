@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Karla:wght@400;500;700&family=Mrs+Saint+Delafield&display=swap">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=100">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=101">
 <script>
 /* BEFORE FIRST PAINT, and inlined for that reason: a dark reader must never be
    flashed a white page on the way to a page they already chose to be dark.
@@ -64,8 +64,11 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
     {% if slides %}<a href="{{ url_for('site.index') }}#available"
        onclick="if(window.openGallery){openGallery(0);return false}"
        aria-haspopup="dialog">Gallery</a>{% endif %}
-    {% include "_theme.html" %}
   </nav>
+  {# A SIBLING of the nav, not one of its links -- it is a preference, not a
+     page. Which also means it can ride up beside the wordmark when the nav
+     wraps to its own row on a phone; see the 560px block in the stylesheet. #}
+  {% include "_theme.html" %}
 </header>
 
 <main id="main">
@@ -120,6 +123,6 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
   });
 })();
 </script>
-<script src="{{ url_for('static', filename='js/theme.js') }}?v=100" defer></script>
+<script src="{{ url_for('static', filename='js/theme.js') }}?v=101" defer></script>
 </body>
 </html>

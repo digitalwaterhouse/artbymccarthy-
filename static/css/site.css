@@ -377,6 +377,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 @media (max-width:560px){
   .masthead nav{gap:8px}
   .masthead nav a{padding:8px 11px; font-size:11.5px; letter-spacing:.07em}
+  /* The switch rides the top row with the wordmark and the nav drops beneath.
+     `order` rather than moving it in the markup, so the reading order on a
+     wide screen is untouched; width:100% on the nav makes the break certain
+     instead of leaving it to whether four links happen to fit. */
+  .masthead .tsw{order:1}
+  .masthead nav{order:2; width:100%}
 }
 
 main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
@@ -862,6 +868,12 @@ body.admin{background:var(--admin-bg); font-size:15px}
 }
 /* The same bug as the public masthead, so the admin is visibly part of the
    site rather than a generic panel. It links home to the artwork list. */
+/* The rail's top row. The logo and the switch share it at every width, which
+   is the point: laid down as a bar on a phone the switch cannot be pushed onto
+   a second line, because it is inside the same element as the logo rather than
+   down among the utilities. Logo left, switch hard right. */
+.railtop{display:flex; align-items:center; justify-content:space-between; gap:8px; padding-right:12px}
+.railtop .adminbrand{padding-right:0; margin-right:auto}
 .adminbrand{
   display:flex; align-items:center; gap:11px; padding:18px 18px 16px;
   text-decoration:none; color:#fff;
@@ -942,7 +954,8 @@ body.admin{background:var(--admin-bg); font-size:15px}
     flex-direction:row; flex-wrap:wrap; align-items:center; padding:0 12px;
     box-shadow:inset 0 -1px 0 rgba(255,255,255,.10);
   }
-  .adminbrand{padding:10px 16px 6px 0; width:100%}
+  .railtop{width:100%; padding-right:0}
+  .adminbrand{padding:10px 16px 6px 0}
   .adminside nav{flex-direction:row; flex-wrap:wrap; padding-top:0; margin-right:auto}
   .adminside nav a{
     padding:12px 11px 9px; font-size:11.5px; letter-spacing:.06em;
