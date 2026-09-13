@@ -1581,28 +1581,26 @@ def admin_opportunities():
     # miles" is a view she comes back to, not a mode she sets each visit.
     within = _int(request.args.get("within"))
     order = "distance" if request.args.get("sort") == "distance" else "deadline"
-    # Default 30 days; days=0 means show everything. `days` absent is the
-    # default rather than "all", which is the whole point of the setting.
     # Kick the drain on the way past. Cheap when there is nothing to do: one
     # indexed query that returns no rows.
     start_distance_worker()
-    raw_days = request.args.get("days")
-    days = gallery.FOUND_DEFAULT_DAYS if raw_days is None else (_int(raw_days) or 0)
     live, done = gallery.list_opportunities(within=within, order=order)
     return render_template("admin/opportunities.html", live=live, done=done,
                            within=within, order=order,
                            here=gallery.studio_point(),
                            pending=len(gallery.ungeocoded_opportunities()),
                            placing=len(gallery.found_without_distance()),
-                           # Open calls pulled from EntryThingy's published
-                           # listings, waiting in the pen to be judged. Narrowed
-                           # to what closes soon unless she asks for more --
-                           # ?days=0 is "everything", and like the radius filter
-                           # it is a plain GET so the view can be bookmarked.
-                           found=gallery.list_found("new", days),
-                           days=days,
-                           horizons=[30, 90, 0],
-                           found_total=len(gallery.list_found("new")),
+                           # Open calls from EntryThingy's published listings,
+                           # waiting in the pen to be judged.
+                           #
+                           # ONE WINDOW, chosen here rather than offered as a
+                           # control. Three chips and a "29 more close later"
+                           # line were three decisions a week about a list whose
+                           # whole job is to say what she can act on now. A call
+                           # further out is not lost -- it appears by itself on
+                           # the day it comes inside the window.
+                           found=gallery.list_found("new", gallery.FOUND_DEFAULT_DAYS),
+                           horizon=gallery.FOUND_DEFAULT_DAYS,
                            found_counts=gallery.found_counts(),
                            last_found=gallery.last_found_at(),
                            states=listings.states_for(cfg()),

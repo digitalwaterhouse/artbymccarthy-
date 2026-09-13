@@ -127,30 +127,14 @@
   {% if states %}
   <form class="finder-go" method="post" action="{{ url_for('site.admin_opportunities_refresh') }}">
     <button class="cta" type="submit">Get the latest</button>
-    <span class="sub">Open calls listed in {{ states|join(' and ') }}, free to read.
-      Nothing joins your list until you press Add.</span>
+    <span class="sub">Open calls in {{ states|join(' and ') }} closing within
+      {{ horizon }} days &mdash; free to read, and nothing joins your list until you
+      press Add. One further out appears here by itself once it comes inside.</span>
   </form>
   {% else %}
   <p class="sub finder-note">Put your town in
     <a href="{{ url_for('site.admin_settings') }}#name">Your site</a> and calls near
     you will be listed here.</p>
-  {% endif %}
-
-  {# How far ahead to look. Thirty days by default: a deadline six months out
-     is not a thing to act on today, and sixty calls sorted by date bury the
-     three she could enter this month under fifty she cannot yet. The rest are
-     still there, one click away -- kept, not re-fetched. #}
-  {% if found or days != 30 %}
-  <div class="oppfilter horizon">
-    <span class="oppfilter-t">Closing within</span>
-    {% for d in horizons %}
-    <a class="chip{% if days == d %} on{% endif %}"
-       href="{{ url_for('site.admin_opportunities', within=within or none, sort=(order if order == 'distance' else none), days=(none if d == 30 else d)) }}#found">{{ '30 days' if d == 30 else ('90 days' if d == 90 else 'any time') }}</a>
-    {% endfor %}
-    {% if days and found_total > found|length %}
-    <span class="sub">{{ found_total - found|length }} more close later.</span>
-    {% endif %}
-  </div>
   {% endif %}
 
   {% if placing %}
@@ -196,11 +180,8 @@
     </li>
     {% endfor %}
   </ul>
-  {% elif states and days and found_total %}
-  <p class="empty">Nothing closes in the next {{ days }} days.
-    <a href="{{ url_for('site.admin_opportunities', days=0) }}#found">Show all {{ found_total }}</a>.</p>
   {% elif states %}
-  <p class="empty">{% if last_found %}Nothing waiting.
+  <p class="empty">{% if last_found %}Nothing closing in the next {{ horizon }} days.
     {% if found_counts.get('added') %}{{ found_counts['added'] }} added to your list,
     {% endif %}{% if found_counts.get('dismissed') %}{{ found_counts['dismissed'] }} put aside.
     {% endif %}Press Get the latest for new ones.

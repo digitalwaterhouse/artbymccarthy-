@@ -2236,9 +2236,6 @@ body.home{
   0%,100%{opacity:.35; transform:scale(.8)}
   50%    {opacity:1;   transform:scale(1.15)}
 }
-/* The horizon control. Same chips as the radius filter above -- one device for
-   "narrow this list", used twice, rather than two that have to be learned. */
-.oppfilter.horizon{margin:12px 0 0}
 /* TWO LINES A ROW, and rows that touch. Thirty suggestions sitting under her
    own list is a lot of page, and the description was most of the height -- it
    lives on the call's own page, which the title opens, and stays on the row as
