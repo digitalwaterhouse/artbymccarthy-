@@ -1852,6 +1852,21 @@ body.home{
 .finder-go input{flex:1 1 16rem; min-width:0; font-size:16px}
 .finder-go .cta{white-space:nowrap}
 .finder-note{margin:10px 0 0; line-height:1.55; max-width:70ch}
+/* The meter. Money spent, in the place where the spending happens -- before
+   the next press, not on a bill next month. Quiet: it is a fact about the
+   button above it, not a warning, until the bar actually fills. */
+.meter{margin:12px 0 0; padding:11px 13px; background:var(--paper);
+  border:1px solid var(--line); border-radius:3px}
+.meter-said{font-size:13px; color:var(--muted); line-height:1.5}
+.meter-said strong{color:var(--ink); font-variant-numeric:tabular-nums}
+.meter-bar{height:4px; background:var(--line); border-radius:99px; margin:9px 0 0; overflow:hidden}
+.meter-bar span{display:block; height:100%; background:var(--turq); border-radius:99px}
+.meter-bar span.full{background:var(--dot)}
+.meter-set{display:flex; align-items:center; gap:7px; margin:9px 0 0; flex-wrap:wrap}
+.meter-set label{font-size:12.5px; color:var(--muted); flex-direction:row}
+.meter-set input{width:5.5rem; flex:0 0 auto; padding:6px 8px; font-size:15px;
+  font-variant-numeric:tabular-nums}
+.meter-set .link{padding:4px 2px; min-height:0}
 .finds{list-style:none; margin:16px 0 0; padding:0}
 .finds li{
   display:grid; grid-template-columns:minmax(0,1fr) 9rem auto; gap:6px 18px;

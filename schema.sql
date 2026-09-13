@@ -300,3 +300,28 @@ CREATE TABLE IF NOT EXISTS found_calls (
     found_at       TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_found_status ON found_calls(status, found_at);
+
+-- SEARCHES: what each press of "Search the web" actually cost.
+--
+-- This is the only thing on the site that spends money per use, so it keeps
+-- its own receipts. The raw counters are stored ALONGSIDE the dollar figure
+-- computed at the time: prices change, and a historical row should say what it
+-- cost then, not what the same tokens would cost today.
+CREATE TABLE IF NOT EXISTS searches (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    ran_at        TEXT NOT NULL,      -- UTC ISO, and the month it counts against
+    miles         INTEGER,
+    extra         TEXT,
+    found         INTEGER NOT NULL DEFAULT 0,
+    model         TEXT,
+    in_tokens     INTEGER NOT NULL DEFAULT 0,
+    out_tokens    INTEGER NOT NULL DEFAULT 0,
+    cache_read    INTEGER NOT NULL DEFAULT 0,
+    cache_write   INTEGER NOT NULL DEFAULT 0,
+    web_searches  INTEGER NOT NULL DEFAULT 0,
+    -- Cost in MICRO-dollars: a search can cost a fraction of a cent and two
+    -- decimal places would round the month's total away to nothing.
+    cost_micros   INTEGER NOT NULL DEFAULT 0,
+    ok            INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_searches_ran ON searches(ran_at);

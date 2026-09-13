@@ -73,9 +73,46 @@
     {{ cfg.studio_location or 'your town' }}. Every result keeps the page it was read
     from &mdash; <strong>check the deadline there before you apply</strong>, because a
     search can misread one. Nothing is added to your list until you press Add.</p>
+
   {% else %}
   <p class="sub finder-note">Searching the web for calls needs an Anthropic API key
     set on the server. Everything else on this page works without it.</p>
+  {% endif %}
+
+  {# THE METER. This is the only thing on the site that costs money per use, so
+     it says what it costs, in the place where the spending happens, before the
+     next press rather than on a bill next month. The ceiling is checked before
+     the request goes out -- a budget that only reports overspending is a
+     receipt, not a budget. #}
+  {% set used, budget, runs = spend %}
+  {% if finder_on or used %}
+  <div class="meter">
+    <div class="meter-said">
+      {% if receipt %}Last search cost <strong>{{ money_micros(receipt.cost_micros) }}</strong>
+        ({{ receipt.web_searches }} search{{ '' if receipt.web_searches == 1 else 'es' }}) &middot;
+      {% endif %}
+      {% if budget %}
+        <strong>{{ money_micros(used) }}</strong> of {{ money_micros(budget) }} used this month
+        {%- if runs %}, {{ runs }} search{{ '' if runs == 1 else 'es' }}{% endif %}
+      {% else %}
+        <strong>{{ money_micros(used) }}</strong> this month &mdash; no limit set
+      {% endif %}
+    </div>
+    {% if budget %}
+    <div class="meter-bar" role="img"
+         aria-label="{{ money_micros(used) }} of {{ money_micros(budget) }} used">
+      <span style="width:{{ [100, (used * 100 // budget) if budget else 0]|min }}%"
+            class="{{ 'full' if used >= budget else '' }}"></span>
+    </div>
+    {% endif %}
+    <form class="meter-set" method="post" action="{{ url_for('site.admin_search_budget') }}">
+      <label for="budget">Monthly limit $</label>
+      <input id="budget" name="budget" value="{{ '%.2f'|format(budget / 1000000) }}"
+             inputmode="decimal" size="5">
+      <button class="link" type="submit">set</button>
+      <span class="sub">0 for no limit</span>
+    </form>
+  </div>
   {% endif %}
 
   {% if found %}

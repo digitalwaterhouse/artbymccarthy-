@@ -114,6 +114,11 @@ DEFAULT_SETTINGS = {
     "studio_lat": "41.2041304",
     "studio_lon": "-73.6425090",
     "studio_place": "Town of Bedford, Westchester County, New York, United States",
+    # The only thing on this site that spends money per use. A CEILING, in
+    # dollars, per calendar month: the search refuses to run once the month's
+    # receipts reach it, so a stuck finger or a curious afternoon cannot turn
+    # into a bill worth noticing. She can raise it; it cannot raise itself.
+    "search_budget_usd": "5.00",
 }
 
 
@@ -1682,6 +1687,58 @@ def ungeocoded_opportunities():
             "   AND lat IS NULL"
             "   AND (geo_query IS NULL OR TRIM(geo_query) <> TRIM(location))"
             " ORDER BY id").fetchall()]
+
+
+# ------------------------------------------------------------ search receipts
+def record_search(miles, extra, found, usage, ok=True):
+    with connect() as conn:
+        conn.execute(
+            "INSERT INTO searches (ran_at, miles, extra, found, model, in_tokens,"
+            " out_tokens, cache_read, cache_write, web_searches, cost_micros, ok)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (now(), miles, (extra or "")[:300], found, usage.get("model"),
+             usage.get("in_tokens", 0), usage.get("out_tokens", 0),
+             usage.get("cache_read", 0), usage.get("cache_write", 0),
+             usage.get("web_searches", 0), usage.get("cost_micros", 0),
+             1 if ok else 0))
+
+
+def _month_prefix():
+    return datetime.now(timezone.utc).strftime("%Y-%m")
+
+
+def month_spend():
+    """(spent_micros, budget_micros, searches_this_month) for the month in UTC.
+
+    UTC and not her clock, deliberately: the receipts are stamped in UTC, and a
+    ceiling that resets at a different hour than the rows it counts would be
+    wrong twice a day rather than merely approximate."""
+    pref = _month_prefix()
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT COALESCE(SUM(cost_micros),0) c, COUNT(*) n FROM searches"
+            " WHERE ran_at LIKE ?", (pref + "%",)).fetchone()
+    try:
+        budget = int(round(float(settings().get("search_budget_usd") or 0) * 1_000_000))
+    except (TypeError, ValueError):
+        budget = 0
+    return row["c"], budget, row["n"]
+
+
+def last_search():
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM searches ORDER BY id DESC LIMIT 1").fetchone()
+    return dict(row) if row else None
+
+
+def money_micros(micros):
+    """A few cents reads as cents; a real sum reads as dollars."""
+    if micros is None:
+        return None
+    if micros < 1_000_000:
+        c = micros / 10_000.0
+        return ("%.1f" % c).rstrip("0").rstrip(".") + "\u00a2"
+    return "$%.2f" % (micros / 1_000_000.0)
 
 
 # --------------------------------------------------------------- found calls

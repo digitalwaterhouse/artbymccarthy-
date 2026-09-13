@@ -39,8 +39,48 @@ TOOL = "web_search_20260318"
 MAX_SEARCHES = 8
 
 
+# What a press costs, so the screen can say so instead of guessing. Rates as
+# published for claude-opus-5 and the web search tool; kept here as one table
+# because a price that changes should be a one-line edit. Every receipt also
+# stores the dollar figure computed at the time, so history stays honest.
+PRICE = {
+    "in":          5.00 / 1_000_000,     # $5.00 per 1M input tokens
+    "out":        25.00 / 1_000_000,     # $25.00 per 1M output tokens
+    "cache_read":  0.50 / 1_000_000,     # cache reads are a tenth of input
+    "cache_write": 6.25 / 1_000_000,     # writes are a quarter more than input
+    "search":     10.00 / 1_000,         # $10 per 1,000 web searches
+}
+
+
 def enabled():
     return bool(anthropic and KEY)
+
+
+def _usage_of(msg, used_searches):
+    """Pull the counters off the reply and price them. Every field is read
+    defensively: a usage block that gains or loses a key must not take the
+    search down with it."""
+    u = getattr(msg, "usage", None)
+
+    def n(name):
+        return int(getattr(u, name, 0) or 0) if u else 0
+
+    d = {"model": MODEL,
+         "in_tokens": n("input_tokens"), "out_tokens": n("output_tokens"),
+         "cache_read": n("cache_read_input_tokens"),
+         "cache_write": n("cache_creation_input_tokens"),
+         "web_searches": used_searches}
+    dollars = (d["in_tokens"] * PRICE["in"] + d["out_tokens"] * PRICE["out"]
+               + d["cache_read"] * PRICE["cache_read"]
+               + d["cache_write"] * PRICE["cache_write"]
+               + d["web_searches"] * PRICE["search"])
+    d["cost_micros"] = int(round(dollars * 1_000_000))
+    return d
+
+
+def blank_usage():
+    return {"model": MODEL, "in_tokens": 0, "out_tokens": 0, "cache_read": 0,
+            "cache_write": 0, "web_searches": 0, "cost_micros": 0}
 
 
 SYSTEM = """You find open calls for entry for a working artist and report them as data.
@@ -138,13 +178,22 @@ def search(cfg, miles=75, extra=""):
     """Returns (calls, note). Never raises: a search that fails is a message
     on the screen, not a 500 in the studio."""
     if not enabled():
-        return [], "Web search is not switched on for this site."
+        return [], "Web search is not switched on for this site.", blank_usage()
     place = (cfg.get("studio_location") or "").strip() or "the north-east United States"
     client = anthropic.Anthropic(api_key=KEY)
     messages = [{"role": "user", "content": _prompt(place, miles, extra)}]
     tool = {"type": TOOL, "name": "web_search", "max_uses": MAX_SEARCHES,
             "user_location": _location_block(cfg)}
-    used = 0
+    used, spent = 0, blank_usage()
+
+    def bank(m):
+        """Money is spent per REQUEST, so every turn is banked as it returns --
+        including the turns of a paused search that never reaches an answer.
+        A cost that is only counted on success is not a cost meter."""
+        u = _usage_of(m, 0)
+        for k in ("in_tokens", "out_tokens", "cache_read", "cache_write", "cost_micros"):
+            spent[k] += u[k]
+
     try:
         # pause_turn: the API can stop a long search turn part-way and ask to
         # be continued with the assistant message handed straight back.
@@ -152,17 +201,23 @@ def search(cfg, miles=75, extra=""):
             msg = client.messages.create(
                 model=MODEL, max_tokens=16000, system=SYSTEM,
                 messages=messages, tools=[tool])
+            bank(msg)
             used += _searches_used(msg)
             if msg.stop_reason != "pause_turn":
                 break
             messages = messages + [{"role": "assistant", "content": msg.content}]
         else:
-            return [], "The search kept going and was stopped. Try again."
+            spent["web_searches"] = used
+            spent["cost_micros"] += int(round(used * PRICE["search"] * 1_000_000))
+            return [], "The search kept going and was stopped. Try again.", spent
     except Exception as e:                       # network, auth, rate limit
-        return [], "The search could not run: %s" % _short(e)
+        return [], "The search could not run: %s" % _short(e), spent
+
+    spent["web_searches"] = used
+    spent["cost_micros"] += int(round(used * PRICE["search"] * 1_000_000))
 
     if getattr(msg, "stop_reason", "") == "refusal":
-        return [], "The search was declined."
+        return [], "The search was declined.", spent
     # A server tool error arrives as a 200 with an error object where the list
     # of results should be -- it is not raised, so it has to be looked for.
     for b in msg.content:
@@ -170,12 +225,12 @@ def search(cfg, miles=75, extra=""):
             c = getattr(b, "content", None)
             if isinstance(c, dict) or getattr(c, "error_code", None):
                 code = c.get("error_code") if isinstance(c, dict) else c.error_code
-                return [], "The web search stopped: %s." % str(code).replace("_", " ")
+                return [], "The web search stopped: %s." % str(code).replace("_", " "), spent
     calls = parse_calls(_text_of(msg))
     if not calls:
-        return [], "Nothing came back that looked like a call for entry."
+        return [], "Nothing came back that looked like a call for entry.", spent
     return calls, "%d found, %d search%s used." % (
-        len(calls), used, "" if used == 1 else "es")
+        len(calls), used, "" if used == 1 else "es"), spent
 
 
 def _short(e):
