@@ -1927,25 +1927,6 @@ body.home{
 .looks .sub{margin-top:3px; line-height:1.45}
 @media (max-width:760px){ .looks{grid-template-columns:1fr} }
 
-/* ---------- somebody else's show ----------
-   Shares the opportunities row shape, and deliberately does NOT share its
-   colour. A deadline on Opportunities is work she has to do; a show closing on
-   Sunday is only an invitation, so "last chance" borrows the gold chip but the
-   row keeps the quiet rule -- nothing on this list is an obligation. */
-.sched.opps.tosee li{grid-template-columns:13rem minmax(0,1fr) auto auto}
-.sched.opps.tosee li.on-now{border-left-color:var(--turq)}
-.sched.opps.tosee li.u-soon{border-left-color:var(--gold)}
-/* The one control on the row. A form, so it is a real POST and works with no
-   JavaScript at all; styled as a link so it does not compete with the title. */
-.sched.tosee form{margin:0; align-self:center; justify-self:end}
-.link.went{font-weight:500; color:var(--muted); white-space:nowrap}
-.link.went:hover{color:var(--accent)}
-.link.went.on{color:var(--accent); font-weight:700}
-.link.went.on::before{content:"\2713\00a0"}
-@media (max-width:640px){
-  .sched.opps.tosee li{grid-template-columns:minmax(0,1fr)}
-  .sched.tosee form{justify-self:start; margin-top:2px}
-}
 
 /* The one line at the top of a call's own page. Same urgency vocabulary as
    the list, so moving between the two teaches nothing new. */
