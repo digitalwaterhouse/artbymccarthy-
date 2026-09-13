@@ -855,6 +855,25 @@ body.admin{background:#F3F4F2; font-size:15px}
    than a failure, and a draft is dashed because it is not published at all.
    The class is rendered by the server from the stored status, so the border
    is correct on load and correct again after the form posts. */
+/* EVERY dropdown gets the status column's left edge, in ONE colour.
+   A select and a text box are the same grey rectangle until you click one, and
+   the status column had already solved that -- a thick left edge says "this
+   opens" before you touch it. So the device is now on all of them.
+
+   In slate, and only on the LEFT EDGE, while the status selects keep their
+   fully tinted border. That difference is the point: on the status column the
+   colour MEANS something -- turquoise available, gold reserved, red sold -- and
+   if every dropdown on the page were tinted too, the ones that carry meaning
+   would stop standing out. This is chrome; those are signal.
+
+   Specificity note for anyone editing below: `.admin select` and
+   `select.st-available` weigh exactly the same, so this rule has to come FIRST
+   or it would win and flatten every status colour to slate. */
+.admin select{border-left-width:4px; border-left-color:var(--accent)}
+/* Disabled ones are not openable, so they do not get the edge that promises
+   they are. */
+.admin select:disabled{border-left-color:var(--line)}
+
 select.st{border-left-width:4px}
 select.st-available{border-color:var(--turq)}
 select.st-reserved{border-color:var(--gold)}
