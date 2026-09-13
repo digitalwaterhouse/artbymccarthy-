@@ -991,27 +991,48 @@ body.admin{background:var(--admin-bg); font-size:15px}
   }
   .railtop{width:100%; padding-right:0}
   .adminbrand{padding:10px 16px 6px 0}
-  .adminside nav{flex-direction:row; flex-wrap:wrap; padding-top:0; margin-right:auto}
+  /* ICONS, NOT WORDS, AND ONE ROW OF THEM.
+     Seven labels wrapped to two rows and the header ate 200px -- a quarter of
+     the screen -- before a single painting. Seven glyphs at a full 44px touch
+     target is 308px, which fits one row on a 360px phone.
+
+     NOT a burger. This is a tool one person opens twenty times a day; hiding
+     the sections behind a press costs a tap on every move and takes away the
+     mark that says which section she is in. The glyphs were already drawn for
+     the rail -- they were only switched off down here. */
+  /* width:100%, not margin-right:auto -- the rail's margin makes the nav
+     shrink-wrap its contents, and seven icons at flex-basis 0 would then
+     huddle in the left third of the bar instead of spreading across it. */
+  .adminside nav{flex-direction:row; flex-wrap:nowrap; padding-top:0;
+    margin-right:0; width:100%}
   .adminside nav a{
-    padding:12px 11px 9px; font-size:11.5px; letter-spacing:.06em;
-    border-left:0; border-bottom:3px solid transparent;
+    padding:11px 0 8px; border-left:0; border-bottom:3px solid transparent;
+    justify-content:center; flex:1 1 0; min-width:38px;
   }
-  /* Laid down as a bar there is no width to spend on a glyph in front of every
-     word -- seven of them would push Settings off the end. The labels carry it
-     alone here, exactly as they did before the icons existed. */
-  .adminside nav a svg{display:none}
+  .adminside nav a svg{display:block; width:21px; height:21px; opacity:.72}
+  /* The WORD STAYS, clipped rather than removed: it is the link's accessible
+     name, and a row of seven unlabelled paths is nothing to a screen reader. */
+  .adminside nav a > span{
+    position:absolute; width:1px; height:1px; overflow:hidden;
+    clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap;
+  }
   .adminside nav a.on{border-bottom-color:var(--turq)}
+  .adminside nav a.on svg,.adminside nav a.grp.open svg{opacity:1}
+  /* The three ways into the catalogue are only worth a row when she is IN the
+     catalogue. Six sections out of seven now get no second row at all. */
+  .adminside nav a.grp:not(.open) + .subnav{display:none}
   /* Laid down as a bar there is no room to indent, so the group heading and
      its three children read as one wrapping row of items. */
-  .adminside .subnav{flex-direction:row; flex-wrap:wrap; padding-bottom:0}
+  .adminside .subnav{flex-direction:row; flex-wrap:wrap; padding-bottom:0; width:100%;
+    justify-content:center; gap:0 4px}
   .adminside .subnav a{
     padding:12px 11px 9px; font-size:11.5px; letter-spacing:.06em;
     text-transform:uppercase; border-left:0; border-bottom:3px solid transparent;
   }
   .adminside .subnav a.on{border-bottom-color:var(--turq)}
   .adminside .util{
-    margin-top:0; flex-direction:row; gap:18px; padding:8px 0 10px; width:100%;
-    box-shadow:none;
+    margin-top:0; flex-direction:row; gap:18px; padding:6px 0 8px; width:100%;
+    box-shadow:none; justify-content:flex-end; font-size:12.5px;
   }
 }
 /* Centred in the column beside the rail rather than pushed up against it:
