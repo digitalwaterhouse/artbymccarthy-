@@ -71,6 +71,29 @@
 :root[data-theme="dark"] .wordmark .mark,
 :root[data-theme="dark"] .adminbrand img{box-shadow:0 0 0 1px rgba(237,241,240,.16)}
 
+/* ---------- the "this is a copy" band ----------
+   Hazard stripes, because this is the one thing on the site that must not be
+   mistaken for anything else and the palette has no colour to spare -- red is
+   sold, turquoise is available, gold is a deadline. Diagonal stripes belong to
+   no painting and mean "works in progress" to everyone.
+
+   It sits at the very top of the page, above the wordmark and above the rail,
+   on the shop and in the studio alike. It is not dismissible on purpose. */
+.envband{
+  display:flex; align-items:center; gap:8px 14px; flex-wrap:wrap;
+  padding:7px clamp(12px,4vw,20px);
+  font:600 11.5px/1.5 "Karla",sans-serif; letter-spacing:.06em;
+  color:#2A1F12; border-bottom:1px solid #8A6A2E;
+  background:repeating-linear-gradient(135deg,#F6D98A,#F6D98A 11px,#EFC95F 11px,#EFC95F 22px);
+}
+.envband strong{text-transform:uppercase; letter-spacing:.16em;
+  background:#2A1F12; color:#F6D98A; padding:3px 9px; border-radius:2px}
+.envband span{margin-right:auto; font-weight:500; letter-spacing:.02em; text-transform:none}
+.envband a{color:#2A1F12; font-weight:700; white-space:nowrap}
+/* The stripes stay the same in the dark theme: a hazard band that changed with
+   the lights would be a hazard band you stop noticing. */
+@media print{ .envband{display:none} }
+
 /* ---------- the dark-mode button ----------
    One button, one glyph, and the glyph is the ACTION: a moon while the page is
    light, a sun while it is dark. They swap on press, turning a little as they

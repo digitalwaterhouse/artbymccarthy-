@@ -31,6 +31,11 @@ PORT = int(os.environ.get("PORT", "5070"))
 # somebody else's domain -- the site's own robots.txt sits at the domain
 # root, out of this app's reach, so the meta tag is the only lever here.
 NOINDEX = os.environ.get("NOINDEX", "1") == "1"
+# Set on a staging copy and nowhere else. Everything it switches on is a
+# WARNING, never a behaviour change: the code that runs on the copy has to be
+# the code that runs on the real thing or the copy proves nothing. The one
+# exception is mail, which is refused outright -- see mailer.py.
+ENV_NAME = os.environ.get("ENV_NAME", "").strip()
 
 # The landing headline when she has not set one in the admin. It used to fall
 # through to `tagline`, which is "Original Works" -- a category label, and the
@@ -193,6 +198,7 @@ def hostof(url):
 # drifted: it still put `tagline` in front of this, which is the behaviour
 # app.py moved away from in September, so the preview showed a headline the
 # front page had not used for days.
+app.jinja_env.globals["env_name"] = ENV_NAME
 app.jinja_env.globals["hero_head"] = HERO_HEAD
 app.jinja_env.globals["exhibition_dates"] = gallery.exhibition_dates
 app.jinja_env.globals["opp_kind_label"] = gallery.opp_kind_label
@@ -517,7 +523,8 @@ def health():
     return jsonify(ok=True, works=len(works),
                    for_sale=len([w for w in works if w["status"] == "available"]),
                    sold=len([w for w in works if w["status"] == "sold"]),
-                   stripe=payments.enabled(), live=payments.live_mode(), prefix=PREFIX)
+                   stripe=payments.enabled(), live=payments.live_mode(),
+                   env=ENV_NAME or "production", prefix=PREFIX)
 
 
 @site.route("/robots.txt")

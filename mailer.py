@@ -37,7 +37,24 @@ KIND = {"purchase": "Purchase enquiry", "commission": "Commission enquiry",
         "contact": "Message"}
 
 
+# A staging copy of the site holds a copy of her contacts and a copy of her
+# enquiries. If it can also send, a test press reaches real people from an
+# address that looks like hers -- which is the classic way a staging
+# environment does actual damage. So it cannot send, and not by having been
+# left unconfigured: a hard refusal that survives somebody helpfully pasting
+# the SMTP settings across one afternoon.
+ENV_NAME = os.environ.get("ENV_NAME", "").strip()
+
+
 def send(to, subject, body, reply_to=None):
+    if ENV_NAME:
+        print("[%s] refusing to send mail to %r -- subject %r"
+              % (ENV_NAME, to, subject), file=sys.stderr)
+        return False
+    return _send(to, subject, body, reply_to)
+
+
+def _send(to, subject, body, reply_to=None):
     """Returns True if the server accepted it. Never raises."""
     if not to:
         return False

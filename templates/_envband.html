@@ -1,0 +1,12 @@
+{%- if env_name -%}
+{#- Renders ONLY when ENV_NAME is set, which is only ever on a copy. The whole
+    job of this band is to stop the two mistakes a staging site invites: adding
+    a real painting to the copy, and testing something destructive on the real
+    one. So it is the first thing on the page, it says which copy this is, and
+    it links to the real site by name. -#}
+<div class="envband" role="note">
+  <strong>{{ env_name }}</strong>
+  <span>a copy for trying things &mdash; nothing here is the real shop</span>
+  <a href="https://artbymccarthy.com/">go to the real site &nearr;</a>
+</div>
+{%- endif -%}
