@@ -290,3 +290,50 @@ CREATE TABLE IF NOT EXISTS places (
     name       TEXT,
     looked_at  TEXT NOT NULL
 );
+
+-- CONSIGNMENT: her work sitting in somebody else's shop.
+--
+-- NOT an exhibition and not an order, though it touches both. An exhibition is
+-- an event with dates and a private view; a consignment is a standing
+-- arrangement -- these pieces live at that gallery until they sell or come
+-- home, and when one sells the venue keeps a share and owes her the rest.
+-- An order is a sale this site made; a consignment sale is a sale somebody
+-- else made and reported, and no card ever touched this server.
+--
+-- The reason to keep it at all is the two questions an artist otherwise
+-- answers from memory: WHERE IS THAT PAINTING, and WHO OWES ME.
+CREATE TABLE IF NOT EXISTS consignments (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    venue       TEXT NOT NULL,
+    contact     TEXT,           -- the person there, and how to reach them
+    city        TEXT,
+    -- The venue's cut, as whole percent. 40 means they keep 40 and she gets 60.
+    -- Stored as the share THEY take because that is how every gallery states
+    -- it, and a number transcribed from a contract should not be arithmetic.
+    commission  INTEGER NOT NULL DEFAULT 40,
+    starts_on   TEXT,
+    ends_on     TEXT,           -- when the arrangement is reviewed or the work is due back
+    url         TEXT,
+    notes       TEXT,
+    status      TEXT NOT NULL DEFAULT 'active',   -- active | ended
+    created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_consign_status ON consignments(status, ends_on);
+
+-- One painting's stay at one venue. A join row rather than a column on works,
+-- for the same reason exhibition_works is: a piece goes out, comes back, and
+-- goes out again somewhere else over its life, and each of those is worth
+-- keeping. Its own money lives here too -- what it sold for and what has been
+-- paid -- because the venue's cut is agreed per arrangement, not per painting,
+-- and the sale price is whatever the shop actually got.
+CREATE TABLE IF NOT EXISTS consignment_works (
+    consignment_id INTEGER NOT NULL REFERENCES consignments(id) ON DELETE CASCADE,
+    work_id        INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    out_at         TEXT,        -- the day it left the studio
+    back_at        TEXT,        -- the day it came home, if it did
+    sold_on        TEXT,        -- the day the venue reported a sale
+    sold_cents     INTEGER,     -- what the buyer paid THEM
+    paid_on        TEXT,        -- the day her share arrived
+    notes          TEXT,
+    PRIMARY KEY (consignment_id, work_id)
+);

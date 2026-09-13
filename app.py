@@ -198,6 +198,8 @@ def hostof(url):
 # drifted: it still put `tagline` in front of this, which is the behaviour
 # app.py moved away from in September, so the preview showed a headline the
 # front page had not used for days.
+app.jinja_env.globals["her_share"] = gallery.her_share
+app.jinja_env.globals["money"] = gallery.money
 app.jinja_env.globals["env_name"] = ENV_NAME
 app.jinja_env.globals["hero_head"] = HERO_HEAD
 app.jinja_env.globals["exhibition_dates"] = gallery.exhibition_dates
@@ -591,7 +593,10 @@ def admin_works():
                            filtered=filtered, total=gallery.count_works(),
                            collections=gallery.list_collections(),
                            media=gallery.media_list(), places=gallery.current_places(),
-                           due=gallery.due_soon(REMIND_WITHIN_DAYS))
+                           due=gallery.due_soon(REMIND_WITHIN_DAYS),
+                           # Money somebody else is holding is the thing most
+                           # easily forgotten, because nothing prompts for it.
+                           consign=gallery.consignment_totals())
 
 
 @site.route("/admin/exhibitions", methods=["GET", "POST"])
@@ -1455,6 +1460,105 @@ def admin_settings():
         return redirect(url_for("site.admin_settings", saved=sec or None)
                         + ("#" + sec if sec else ""))
     return render_template("admin/settings.html")
+
+
+# -------------------------------------------------------------- consignment
+# Her work in somebody else's shop. Two questions and no more: where is that
+# painting, and who owes me.
+@site.route("/admin/consignments", methods=["GET", "POST"])
+@admin_required
+def admin_consignments():
+    if request.method == "POST":
+        venue = (request.form.get("venue") or "").strip()
+        if not venue:
+            flash("A consignment needs a venue.")
+            return redirect(url_for("site.admin_consignments"))
+        cid = gallery.save_consignment({
+            "venue": venue, "city": (request.form.get("city") or "").strip(),
+            "commission": request.form.get("commission")})
+        return redirect(url_for("site.admin_consignment", consignment_id=cid))
+    active, ended = gallery.list_consignments()
+    return render_template("admin/consignments.html", active=active, ended=ended,
+                           totals=gallery.consignment_totals())
+
+
+@site.route("/admin/consignment/<int:consignment_id>", methods=["GET", "POST"])
+@admin_required
+def admin_consignment(consignment_id):
+    c = gallery.get_consignment(consignment_id)
+    if not c:
+        abort(404)
+    if request.method == "POST":
+        f = request.form
+        gallery.save_consignment({
+            "venue": f.get("venue") or c["venue"],
+            "contact": (f.get("contact") or "").strip(),
+            "city": (f.get("city") or "").strip(),
+            "commission": f.get("commission"),
+            "starts_on": f.get("starts_on"), "ends_on": f.get("ends_on"),
+            "url": (f.get("url") or "").strip(),
+            "notes": (f.get("notes") or "").strip(),
+            "status": f.get("status"),
+        }, consignment_id)
+        flash("Saved.")
+        return redirect(url_for("site.admin_consignment", consignment_id=consignment_id))
+    out_ids = {r["work_id"] for r in c["works"]}
+    # Only pieces that are here and sellable can be sent out. A sold one is
+    # gone and a draft is not finished.
+    pickable = [w for w in gallery.list_works(include_draft=False)
+                if w["id"] not in out_ids and w["status"] in ("available", "nfs")]
+    return render_template("admin/consignment_form.html", c=c, pickable=pickable)
+
+
+@site.route("/admin/consignment/<int:consignment_id>/send", methods=["POST"])
+@admin_required
+def admin_consignment_send(consignment_id):
+    c = gallery.get_consignment(consignment_id)
+    if not c:
+        abort(404)
+    ids = [_int(x) for x in request.form.getlist("work_ids") if _int(x)]
+    if ids:
+        gallery.send_out(consignment_id, ids, venue_label=c["venue"])
+        flash("%d piece%s out to %s." % (len(ids), "" if len(ids) == 1 else "s", c["venue"]))
+    return redirect(url_for("site.admin_consignment", consignment_id=consignment_id))
+
+
+@site.route("/admin/consignment/<int:consignment_id>/work/<int:work_id>/<action>",
+            methods=["POST"])
+@admin_required
+def admin_consignment_work(consignment_id, work_id, action):
+    c = gallery.get_consignment(consignment_id)
+    if not c:
+        abort(404)
+    if action == "home":
+        gallery.bring_home(consignment_id, work_id)
+        flash("Back in the studio.")
+    elif action == "sold":
+        cents = _price_cents(request.form.get("sold"))
+        if cents is None:
+            flash("How much did it sell for?")
+        else:
+            gallery.record_consignment_sale(consignment_id, work_id, cents)
+            flash("Sold. %s owed to you once %s pays."
+                  % (gallery.money(gallery.her_share(cents, c["commission"])), c["venue"]))
+    elif action == "paid":
+        gallery.record_consignment_payment(consignment_id, work_id,
+                                           paid=not request.form.get("undo"))
+        flash("Payment recorded." if not request.form.get("undo") else "Marked unpaid.")
+    elif action == "remove":
+        gallery.remove_from_consignment(consignment_id, work_id)
+        flash("Taken off this consignment.")
+    else:
+        abort(404)
+    return redirect(url_for("site.admin_consignment", consignment_id=consignment_id))
+
+
+@site.route("/admin/consignment/<int:consignment_id>/delete", methods=["POST"])
+@admin_required
+def admin_consignment_delete(consignment_id):
+    gallery.delete_consignment(consignment_id)
+    flash("Consignment removed. The paintings themselves are untouched.")
+    return redirect(url_for("site.admin_consignments"))
 
 
 # ------------------------------------------------------------- opportunities

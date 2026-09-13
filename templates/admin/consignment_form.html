@@ -1,0 +1,129 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ c.venue }}{% endblock %}
+{% block body %}
+<div class="adminhead">
+  <h1>{{ c.venue }}</h1>
+  {% if c.url %}<a class="link" href="{{ c.url }}" target="_blank" rel="noopener noreferrer">Their site &nearr;</a>{% endif %}
+  <a href="{{ url_for('site.admin_consignments') }}">all consignments</a>
+</div>
+
+{% if c.overdue %}
+<p class="deadlinebar u-soon">Due back {{ c.ends_on|day }} &mdash;
+  {{ c.out|length }} piece{{ '' if c.out|length == 1 else 's' }} still there.</p>
+{% elif c.owed %}
+<p class="deadlinebar u-month">{{ c.venue }} owes you <strong>{{ c.owed }}</strong>.</p>
+{% endif %}
+
+{# ---- what is there ------------------------------------------------------
+   The list she actually opens this page for. Sold pieces stay on it rather
+   than disappearing: the sale is the thing that creates a debt, and a debt
+   that vanishes from the screen is a debt nobody chases. #}
+<h2 class="offhead up">The work</h2>
+{% if c.works %}
+<table class="grid-t tight">
+  <thead><tr><th>Piece</th><th>Out since</th><th class="num">Asking</th><th class="num">Sold for</th><th class="num">Your share</th><th class="right">&nbsp;</th></tr></thead>
+  <tbody>
+  {% for r in c.works %}
+    <tr class="{{ 'is-sub' if r.back_at else '' }}">
+      <td data-label="Piece">
+        <a href="{{ url_for('site.admin_work', work_id=r.work_id) }}">{{ r.title }}</a>
+        {% if r.back_at %}<span class="sub">home {{ r.back_at|day }}</span>
+        {% elif r.sold_on %}<span class="sub">sold {{ r.sold_on|day }}{% if r.paid_on %}, paid {{ r.paid_on|day }}{% endif %}</span>{% endif %}
+      </td>
+      <td data-label="Out since"><span class="sub">{{ r.out_at|day if r.out_at else '&mdash;'|safe }}</span></td>
+      <td class="num" data-label="Asking">{{ r.price or '' }}</td>
+      <td class="num" data-label="Sold for">{{ r.sold or '' }}</td>
+      <td class="num" data-label="Your share">
+        {% if r.owed %}{{ r.owed }}{% if r.paid_on %} <span class="tag">paid</span>{% endif %}{% endif %}
+      </td>
+      <td class="right" data-label="">
+        {% if r.sold_on %}
+          {% if not r.paid_on %}
+          <form method="post" class="inline" action="{{ url_for('site.admin_consignment_work', consignment_id=c.id, work_id=r.work_id, action='paid') }}">
+            <button class="link" type="submit">mark paid</button>
+          </form>
+          {% else %}
+          <form method="post" class="inline" action="{{ url_for('site.admin_consignment_work', consignment_id=c.id, work_id=r.work_id, action='paid') }}">
+            <input type="hidden" name="undo" value="1">
+            <button class="link" type="submit">undo</button>
+          </form>
+          {% endif %}
+        {% elif r.back_at %}
+          <form method="post" class="inline" action="{{ url_for('site.admin_consignment_work', consignment_id=c.id, work_id=r.work_id, action='remove') }}">
+            <button class="link" type="submit">remove</button>
+          </form>
+        {% else %}
+          {# Sold and Home are the only two ways a piece leaves a shop. #}
+          <form method="post" class="inline" action="{{ url_for('site.admin_consignment_work', consignment_id=c.id, work_id=r.work_id, action='sold') }}">
+            <span class="money"><input name="sold" value="{{ dollars(r.price_cents) }}" inputmode="decimal" size="6" title="What the buyer paid the venue"></span>
+            <button class="link" type="submit">sold</button>
+          </form>
+          <form method="post" class="inline" action="{{ url_for('site.admin_consignment_work', consignment_id=c.id, work_id=r.work_id, action='home') }}">
+            <button class="link" type="submit">came home</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">Nothing placed here yet. Choose pieces below.</p>
+{% endif %}
+
+{# ---- sending more out ---------------------------------------------------
+   Thumbnails, because she knows the work by sight long before she knows what
+   it is called -- the same reason the show picker uses them. #}
+{% if pickable %}
+<h2 class="offhead up">Send more</h2>
+<form method="post" action="{{ url_for('site.admin_consignment_send', consignment_id=c.id) }}">
+  <div class="shots pickers">
+    {% for w in pickable %}
+    <label class="pick{% if not w.images %} nopic{% endif %}">
+      <input type="checkbox" name="work_ids" value="{{ w.id }}">
+      {% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}
+      <span>{{ w.title }}</span>
+      <span class="sub">{{ w.price or status_label(w.status) }}</span>
+    </label>
+    {% endfor %}
+  </div>
+  <p class="sub">Sending a piece out records today&rsquo;s date and writes
+     &ldquo;{{ c.venue }}&rdquo; into its <em>where it is</em> field, so Pieces can
+     tell you where anything is without opening this page.</p>
+  <div><button class="cta" type="submit">Send to {{ c.venue }}</button></div>
+</form>
+{% endif %}
+
+{# ---- the arrangement ---------------------------------------------------- #}
+<h2 class="offhead up">The arrangement</h2>
+<form class="formgrid" method="post">
+  <label class="wide">Venue <input name="venue" value="{{ c.venue }}" required></label>
+  <label>Town <input name="city" value="{{ c.city or '' }}"></label>
+  <label>Who you deal with <input name="contact" value="{{ c.contact or '' }}" placeholder="Name, email or phone"></label>
+  <label>Their cut
+    <input name="commission" type="number" min="0" max="100" value="{{ c.commission }}">
+    <span class="sub">Percent the venue keeps. At {{ c.commission }}%, a {{ money(20000) }} sale leaves you {{ money(her_share(20000, c.commission)) }}.</span>
+  </label>
+  <label>Status
+    <select name="status">
+      <option value="active"{% if c.status == 'active' %} selected{% endif %}>Active</option>
+      <option value="ended"{% if c.status == 'ended' %} selected{% endif %}>Finished</option>
+    </select>
+  </label>
+  <label>Placed on <input name="starts_on" type="date" value="{{ c.starts_on or '' }}"></label>
+  <label>Review or return by
+    <input name="ends_on" type="date" value="{{ c.ends_on or '' }}">
+    <span class="sub">The only date this page nags about, and only while work is still there.</span>
+  </label>
+  <label class="wide">Their site <input name="url" value="{{ c.url or '' }}" placeholder="https://" inputmode="url"></label>
+  <label class="wide">Notes
+    <textarea name="notes" rows="4" placeholder="What was agreed, who hung it, when they pay out&hellip;">{{ c.notes or '' }}</textarea>
+  </label>
+  <div class="wide"><button class="cta" type="submit">Save</button></div>
+</form>
+
+<form method="post" action="{{ url_for('site.admin_consignment_delete', consignment_id=c.id) }}"
+      onsubmit="return confirm('Remove this consignment? The paintings themselves are untouched.')">
+  <button class="link danger" type="submit">Remove this consignment</button>
+</form>
+{% endblock %}

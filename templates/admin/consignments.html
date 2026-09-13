@@ -1,0 +1,72 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Consignment{% endblock %}
+{% block body %}
+<div class="adminhead"><h1>Consignment</h1></div>
+
+<p class="sub">Your work in somebody else&rsquo;s shop. Two questions and no more:
+   where is that painting, and who owes you.</p>
+
+{% if totals.out or totals.owed %}
+<p class="statline">
+  {% if totals.out %}<strong>{{ totals.out }}</strong> piece{{ '' if totals.out == 1 else 's' }} out{% endif %}
+  {%- if totals.out and totals.owed %}<span class="sep">&middot;</span>{% endif %}
+  {%- if totals.owed %}<strong>{{ totals.owed }}</strong> owed to you{% endif %}
+</p>
+{% endif %}
+
+{% for c in totals.overdue %}
+<div class="alerts due">
+  <a href="{{ url_for('site.admin_consignment', consignment_id=c.id) }}">
+    <b>{{ c.venue }}</b> was due back {{ c.ends_on|day }} &mdash;
+    {{ c.out|length }} piece{{ '' if c.out|length == 1 else 's' }} still there</a>
+</div>
+{% endfor %}
+
+<form class="newrow" method="post">
+  <label class="sr" for="newvenue">Venue</label>
+  <input id="newvenue" name="venue" placeholder="Gallery, shop or caf&eacute;" required>
+  <label class="sr" for="newcity">Town</label>
+  <input id="newcity" name="city" placeholder="Town">
+  <label class="sr" for="newpct">Their cut</label>
+  <input id="newpct" name="commission" type="number" min="0" max="100" value="40" title="Their cut, as a percentage">
+  <button class="cta" type="submit">Add</button>
+</form>
+
+{% if active %}
+<h2 class="offhead up">Out now</h2>
+<ul class="sched opps">
+  {% for c in active %}
+  <li class="{{ 'u-soon' if c.overdue else '' }}">
+    <div class="when">
+      <span class="dates">{{ c.out|length }} out</span>
+      {% if c.owed %}<span class="countdown">{{ c.owed }} owed</span>{% endif %}
+    </div>
+    <div class="what">
+      <a href="{{ url_for('site.admin_consignment', consignment_id=c.id) }}">{{ c.venue }}</a>
+      <span class="sub">{{ c.city or '' }}{% if c.city %} &middot; {% endif %}they keep {{ c.commission }}%
+        {%- if c.sold %} &middot; {{ c.sold|length }} sold{% endif %}
+        {%- if c.ends_on %} &middot; {% if c.overdue %}due back {{ c.ends_on|day }}{% else %}until {{ c.ends_on|day }}{% endif %}{% endif %}</span>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">Nothing out on consignment. Add a venue above when you place work.</p>
+{% endif %}
+
+{% if ended %}
+<h2 class="offhead">Finished</h2>
+<ul class="sched opps past">
+  {% for c in ended %}
+  <li>
+    <div class="when"><span class="dates">{{ c.sold|length }} sold</span></div>
+    <div class="what">
+      <a href="{{ url_for('site.admin_consignment', consignment_id=c.id) }}">{{ c.venue }}</a>
+      <span class="sub">{{ c.city or '' }}{% if c.paid %} &middot; {{ c.paid }} paid{% endif %}
+        {%- if c.owed %} &middot; <strong>{{ c.owed }} still owed</strong>{% endif %}</span>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

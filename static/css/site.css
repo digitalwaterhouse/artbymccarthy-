@@ -1001,6 +1001,10 @@ body.admin{background:var(--admin-bg); font-size:15px}
   padding:20px 18px; box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
 }
 .adminside .util a{color:#93A29A; text-decoration:none; font-size:13px; white-space:nowrap; transition:color .15s}
+/* Settings sits in the rail on a wide screen and among the utilities on a
+   narrow one. Two anchors rather than one moved by CSS, because it changes
+   parent and no property can do that. */
+.adminside .util a.only-narrow{display:none}
 .adminside .util a:hover{color:#fff}
 .adminside .util a.out{color:#D79B93}
 .adminside :focus-visible{outline:2px solid var(--turq); outline-offset:-3px}
@@ -1055,7 +1059,9 @@ body.admin{background:var(--admin-bg); font-size:15px}
 
      Nine across a 390px phone is 40px each. Under the 44px ideal, and the
      honest alternative was a second row of words on three pages out of nine. */
-  .adminside nav a.grp{display:none}
+  .adminside nav a.grp,.adminside nav a.only-wide{display:none}
+  .adminside .util a.only-narrow{display:inline}
+  .adminside .util a.only-narrow.on{color:#fff; font-weight:700}
   .adminside .subnav{display:contents}
   .adminside .subnav a{
     display:flex; justify-content:center; align-items:center;

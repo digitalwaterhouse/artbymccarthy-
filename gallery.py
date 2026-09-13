@@ -1630,6 +1630,174 @@ def ungeocoded_opportunities():
             " ORDER BY id").fetchall()]
 
 
+# ------------------------------------------------------------- consignment
+# Her work in somebody else's shop. See the schema note: the two questions this
+# exists to answer are WHERE IS THAT PAINTING and WHO OWES ME.
+def her_share(sold_cents, commission):
+    """What she is owed on a sale, in cents.
+
+    The venue's cut is rounded, not hers: a half-cent is a rounding artefact
+    and it should land on the party that wrote the contract, not on the artist.
+    """
+    if not sold_cents:
+        return None
+    pct = max(0, min(100, int(commission or 0)))
+    theirs = int(round(sold_cents * pct / 100.0))
+    return sold_cents - theirs
+
+
+def _decorate_consignment(c, rows=None, today_=None):
+    today_ = today_ or today()
+    c["out"] = [r for r in (rows or []) if r["out_at"] and not r["back_at"] and not r["sold_on"]]
+    c["sold"] = [r for r in (rows or []) if r["sold_on"]]
+    c["home"] = [r for r in (rows or []) if r["back_at"]]
+    c["owed_cents"] = sum(r["owed_cents"] or 0 for r in c["sold"] if not r["paid_on"])
+    c["paid_cents"] = sum(r["owed_cents"] or 0 for r in c["sold"] if r["paid_on"])
+    c["owed"] = money(c["owed_cents"]) if c["owed_cents"] else None
+    c["paid"] = money(c["paid_cents"]) if c["paid_cents"] else None
+    # A review date that has passed while pieces are still out is the one thing
+    # here worth nagging about -- that is how work quietly stays in a shop that
+    # closed two years ago.
+    c["days_left"] = _days_until(c.get("ends_on")) if c.get("ends_on") else None
+    c["overdue"] = bool(c["out"]) and c["days_left"] is not None and c["days_left"] < 0
+    return c
+
+
+def _consignment_rows(conn, consignment_id, commission):
+    rows = [dict(r) for r in conn.execute(
+        "SELECT cw.*, w.title, w.slug, w.price_cents, w.status AS work_status"
+        " FROM consignment_works cw JOIN works w ON w.id=cw.work_id"
+        " WHERE cw.consignment_id=? ORDER BY w.title", (consignment_id,)).fetchall()]
+    for r in rows:
+        r["owed_cents"] = her_share(r["sold_cents"], commission)
+        r["owed"] = money(r["owed_cents"])
+        r["sold"] = money(r["sold_cents"])
+        r["price"] = money(r["price_cents"])
+    return rows
+
+
+def list_consignments(include_ended=True):
+    today_ = today()
+    with connect() as conn:
+        cons = [dict(r) for r in conn.execute(
+            "SELECT * FROM consignments ORDER BY status, COALESCE(ends_on,'9999'), venue"
+        ).fetchall()]
+        for c in cons:
+            _decorate_consignment(c, _consignment_rows(conn, c["id"], c["commission"]), today_)
+    active = [c for c in cons if c["status"] == "active"]
+    ended = [c for c in cons if c["status"] != "active"]
+    return active, (ended if include_ended else [])
+
+
+def get_consignment(consignment_id):
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM consignments WHERE id=?",
+                           (consignment_id,)).fetchone()
+        if row is None:
+            return None
+        c = dict(row)
+        c["works"] = _consignment_rows(conn, consignment_id, c["commission"])
+    return _decorate_consignment(c, c["works"])
+
+
+def save_consignment(data, consignment_id=None):
+    fields = ["venue", "contact", "city", "commission", "starts_on", "ends_on",
+              "url", "notes", "status"]
+    vals = {k: (data.get(k) if data.get(k) not in ("", None) else None) for k in fields}
+    vals["venue"] = (data.get("venue") or "Untitled venue").strip()
+    try:
+        vals["commission"] = max(0, min(100, int(float(data.get("commission") or 40))))
+    except (TypeError, ValueError):
+        vals["commission"] = 40
+    if vals["status"] not in ("active", "ended"):
+        vals["status"] = "active"
+    with connect() as conn:
+        if consignment_id:
+            sets = ", ".join(f"{k}=:{k}" for k in vals)
+            conn.execute(f"UPDATE consignments SET {sets} WHERE id=:id",
+                         {**vals, "id": consignment_id})
+            return consignment_id
+        vals["created_at"] = now()
+        cols = ", ".join(vals)
+        conn.execute(f"INSERT INTO consignments ({cols}) "
+                     f"VALUES ({', '.join(':'+k for k in vals)})", vals)
+        return conn.execute("SELECT last_insert_rowid() AS i").fetchone()["i"]
+
+
+def delete_consignment(consignment_id):
+    with connect() as conn:
+        conn.execute("DELETE FROM consignments WHERE id=?", (consignment_id,))
+
+
+def send_out(consignment_id, work_ids, venue_label=None):
+    """Put pieces out. Stamps the day they left AND writes the venue into the
+    work's own `location`, which is the field Pieces already filters on -- so
+    "where is that painting" is answered on the screen she is most often
+    looking at, not only in here."""
+    day_ = today()
+    with connect() as conn:
+        for wid in work_ids:
+            conn.execute("INSERT OR IGNORE INTO consignment_works"
+                         " (consignment_id, work_id, out_at) VALUES (?,?,?)",
+                         (consignment_id, wid, day_))
+            conn.execute("UPDATE consignment_works SET out_at=COALESCE(out_at,?),"
+                         " back_at=NULL WHERE consignment_id=? AND work_id=?",
+                         (day_, consignment_id, wid))
+            if venue_label:
+                conn.execute("UPDATE works SET location=?, updated_at=? WHERE id=?",
+                             (venue_label, now(), wid))
+
+
+def bring_home(consignment_id, work_id):
+    """Back in the studio. Clears the location it was given when it went out --
+    but only if that is still what the work says, so a location she has since
+    corrected by hand is not overwritten."""
+    with connect() as conn:
+        row = conn.execute("SELECT venue FROM consignments WHERE id=?",
+                           (consignment_id,)).fetchone()
+        conn.execute("UPDATE consignment_works SET back_at=? WHERE consignment_id=?"
+                     " AND work_id=?", (today(), consignment_id, work_id))
+        if row:
+            conn.execute("UPDATE works SET location=NULL, updated_at=? WHERE id=?"
+                         " AND location=?", (now(), work_id, row["venue"]))
+
+
+def record_consignment_sale(consignment_id, work_id, sold_cents, sold_on=None):
+    """The venue sold it. Marks the piece sold in the catalogue too -- it is
+    gone, whoever handed it over -- and clears the location, because it is not
+    at the gallery any more either."""
+    day_ = sold_on or today()
+    with connect() as conn:
+        conn.execute("UPDATE consignment_works SET sold_on=?, sold_cents=?"
+                     " WHERE consignment_id=? AND work_id=?",
+                     (day_, sold_cents, consignment_id, work_id))
+        conn.execute("UPDATE works SET status='sold', sold_at=?, location=NULL,"
+                     " updated_at=? WHERE id=?", (day_, now(), work_id))
+
+
+def record_consignment_payment(consignment_id, work_id, paid=True):
+    with connect() as conn:
+        conn.execute("UPDATE consignment_works SET paid_on=? WHERE consignment_id=?"
+                     " AND work_id=?", (today() if paid else None,
+                                        consignment_id, work_id))
+
+
+def remove_from_consignment(consignment_id, work_id):
+    with connect() as conn:
+        conn.execute("DELETE FROM consignment_works WHERE consignment_id=? AND work_id=?",
+                     (consignment_id, work_id))
+
+
+def consignment_totals():
+    """What is out and what is owed, across every arrangement -- for the line
+    at the top of the page and the banner in the studio."""
+    active, ended = list_consignments()
+    out = sum(len(c["out"]) for c in active + ended)
+    owed = sum(c["owed_cents"] for c in active + ended)
+    return {"out": out, "owed_cents": owed, "owed": money(owed) if owed else None,
+            "overdue": [c for c in active if c["overdue"]]}
+
+
 # ------------------------------------------------------------ where to look
 # The calls-for-entry world publishes no feed, and paying a model to read the
 # web for her turned out to cost more than the answers were worth -- $1.14 for

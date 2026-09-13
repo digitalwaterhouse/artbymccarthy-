@@ -29,6 +29,23 @@
 </div>
 {% endif %}
 
+{# Work sitting in someone else's shop, and money they are holding. Neither
+   prompts for itself: a painting on consignment is out of sight, and an
+   unpaid share is a debt nobody sends an invoice for. #}
+{% if consign.owed or consign.overdue %}
+<div class="alerts due">
+  {% for c in consign.overdue %}
+  <a href="{{ url_for('site.admin_consignment', consignment_id=c.id) }}">
+    <b>{{ c.venue }}</b> was due back {{ c.ends_on|day }} &mdash;
+    {{ c.out|length }} piece{{ '' if c.out|length == 1 else 's' }} still there</a>
+  {% endfor %}
+  {% if consign.owed %}
+  <a href="{{ url_for('site.admin_consignments') }}">
+    <b>{{ consign.owed }}</b> owed to you on work that has sold on consignment</a>
+  {% endif %}
+</div>
+{% endif %}
+
 {% if orders or inquiries %}
 <div class="alerts">
   {% if orders %}<a href="{{ url_for('site.admin_orders') }}">{{ orders|length }} recent order(s)</a>{% endif %}
