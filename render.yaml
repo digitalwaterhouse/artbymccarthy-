@@ -62,6 +62,14 @@ services:
         sync: false
       - key: STRIPE_TAX
         value: "0"
+      # "Find calls near you" on the Opportunities page: Claude's server-side
+      # web search. Unset, finder.enabled() is False, the panel says so, and
+      # nothing else on the site notices. Declared here so the Blueprint lists
+      # every variable the service expects; the value is set in the dashboard.
+      # Spending is capped in the app itself (settings.search_budget_usd,
+      # default $5 a month), not here.
+      - key: ANTHROPIC_API_KEY
+        sync: false
       # THERE IS NO LOCAL MAIL SERVER ON RENDER. On p6 the app talked to postfix
       # on localhost:25 and that is why SMTP_HOST defaulted to localhost. Left
       # unset here, mailer.send() returns False and every enquiry and commission

@@ -511,7 +511,12 @@ def health():
     return jsonify(ok=True, works=len(works),
                    for_sale=len([w for w in works if w["status"] == "available"]),
                    sold=len([w for w in works if w["status"] == "sold"]),
-                   stripe=payments.enabled(), live=payments.live_mode(), prefix=PREFIX)
+                   stripe=payments.enabled(), live=payments.live_mode(),
+                   # Whether the optional keys have landed, so both can be
+                   # checked from outside without signing in. Booleans only --
+                   # this route is public and says nothing about the keys
+                   # themselves, only that something is configured.
+                   search=finder.enabled(), prefix=PREFIX)
 
 
 @site.route("/robots.txt")
