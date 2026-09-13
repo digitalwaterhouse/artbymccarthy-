@@ -1,11 +1,16 @@
 {% extends "admin/_layout.html" %}
 {% block title %}{{ o.title }}{% endblock %}
 {% block body %}
+{#- SIMPLIFIED. This page had four bordered fieldsets with uppercase legends,
+    sixteen fields and a thumbnail of every painting she owns -- for a screen
+    whose live content is a status, a date and a link.
+
+    So: the things that CHANGE are at the top and always visible, and the
+    things typed once are folded away. Nothing was removed; three groups became
+    three lines you can open. The fold count tells you whether there is
+    anything inside before you open it. -#}
 <div class="adminhead">
   <h1>{{ o.title }}</h1>
-  {# The call's own page, at the top where she reads it FROM -- the link was
-     stored and editable but appeared nowhere clickable, so opening the call
-     meant copying a URL out of a text box. #}
   {% if o.url %}<a class="link" href="{{ o.url }}" target="_blank" rel="noopener noreferrer">Open the call &nearr;</a>{% endif %}
   <a class="cta" href="{{ url_for('site.admin_packet', opportunity=o.id) }}">Build the packet</a>
   <a href="{{ url_for('site.admin_opportunities') }}">all opportunities</a>
@@ -13,12 +18,27 @@
 
 {% if o.days is not none and not o.closed %}
 <p class="deadlinebar u-{{ o.urgency }}">Closes {{ o.deadline|day }} &mdash;
-  {% if o.days == 0 %}today{% elif o.days == 1 %}tomorrow{% else %}{{ o.days }} days away{% endif %}</p>
+  {% if o.days == 0 %}today{% elif o.days == 1 %}tomorrow{% else %}{{ o.days }} days away{% endif %}
+  {%- if o.miles is not none %} &middot; {{ o.miles }} miles away{% endif %}
+  {%- if o.fee %} &middot; {{ o.fee }} to enter{% endif %}</p>
 {% elif o.closed %}
 <p class="deadlinebar u-gone">Closed {{ o.deadline|day }}.</p>
 {% endif %}
 
 <form class="formgrid" method="post">
+  {# The one control she comes back to change. First, not in a box at the
+     bottom under a heading that says "Where it stands". #}
+  <label>Where it stands
+    <select name="status" class="os-{{ o.status }}">
+      {% for st in statuses %}<option value="{{ st }}"{% if o.status == st %} selected{% endif %}>{{ opp_status_label(st) }}</option>{% endfor %}
+    </select>
+    {% if o.applied_on %}<span class="sub">Applied {{ o.applied_on|day }}.</span>{% endif %}
+  </label>
+  <label>Closes
+    <input name="deadline" type="date" value="{{ o.deadline or '' }}">
+    <span class="sub">The date this page sorts by and the reminder watches.</span>
+  </label>
+
   <label class="wide">Name <input name="title" value="{{ o.title }}" required></label>
   <label>Organisation <input name="org" value="{{ o.org or '' }}" placeholder="Gallery, council, foundation"></label>
   <label>Kind
@@ -27,66 +47,47 @@
     </select>
   </label>
   <label>Where <input name="location" value="{{ o.location or '' }}" placeholder="City, or online">
-    {% if o.miles is not none %}
-    {# Nominatim answers with the whole hierarchy down to "United States";
-       three parts is enough to show the right place was found. #}
-    <span class="sub">{{ (o.geo_place or o.location).split(',')[:3]|join(',') }}
-      &middot; <strong>{{ o.miles }} miles</strong> from the studio, as the crow flies</span>
-    {% elif o.location and o.geocoded_at %}
-    <span class="sub">Not found on the map, so this one shows no distance. Try &ldquo;City, State&rdquo;.</span>
-    {% elif o.location %}
+    {% if o.miles is none and o.location and o.geocoded_at %}
+    <span class="sub">Not found on the map. Try &ldquo;City, State&rdquo;.</span>
+    {% elif o.miles is none and o.location %}
     <span class="sub">Save to work out how far away it is.</span>
     {% endif %}
   </label>
   <label>Entry fee <input name="fee" value="{{ dollars(o.fee_cents) }}" placeholder="0" inputmode="decimal"></label>
-  <label class="wide">Link
-    <input name="url" value="{{ o.url or '' }}" placeholder="https://" inputmode="url">
-    <span class="sub">The page the call is on. It shows on the Opportunities list
-      as &ldquo;the call&rdquo;, so the prospectus is one click from the deadline.</span>
-  </label>
-
-  <fieldset class="wide accent-dates">
-    <legend>Dates</legend>
-    <div class="formgrid bare">
-      <label>Opens <input name="opens_on" type="date" value="{{ o.opens_on or '' }}"></label>
-      <label>Closes <input name="deadline" type="date" value="{{ o.deadline or '' }}"></label>
-      <label>They answer by <input name="notified_on" type="date" value="{{ o.notified_on or '' }}"></label>
-      <label>Show opens <input name="event_on" type="date" value="{{ o.event_on or '' }}"></label>
-      <label>Show closes <input name="event_ends" type="date" value="{{ o.event_ends or '' }}"></label>
-    </div>
-    <p class="sub">Closes is the one that matters &mdash; it is what this page sorts by
-       and what the reminder email watches. The rest are for when you get in.</p>
-  </fieldset>
-
-  <fieldset class="wide accent-spec">
-    <legend>What they ask for</legend>
-    <div class="formgrid bare">
-      <label>Pieces allowed <input name="max_works" type="number" min="1" value="{{ o.max_works or '' }}" placeholder="3"></label>
-      <label>Longest side, px <input name="img_longest" type="number" min="200" step="10" value="{{ o.img_longest or '' }}" placeholder="1920"></label>
-      <label>Max file size, MB <input name="img_max_mb" type="number" min="0.1" step="0.1" value="{{ o.img_max_mb or '' }}" placeholder="5"></label>
-    </div>
-    <p class="sub">Copy their image spec in once. The packet builder reads it from here,
-       so you never work it out again at eleven at night.</p>
-  </fieldset>
+  <label class="wide">Link <input name="url" value="{{ o.url or '' }}" placeholder="https://" inputmode="url"></label>
 
   <label class="wide">Notes
     <textarea name="notes" rows="4" placeholder="What they want, who to contact, whether it was worth it.">{{ o.notes or '' }}</textarea>
   </label>
 
-  <fieldset class="wide accent-stat">
-    <legend>Where it stands</legend>
-    <label>Status
-      <select name="status" class="os-{{ o.status }}">
-        {% for st in statuses %}<option value="{{ st }}"{% if o.status == st %} selected{% endif %}>{{ opp_status_label(st) }}</option>{% endfor %}
-      </select>
-    </label>
-    {% if o.applied_on %}<p class="sub">Applied {{ o.applied_on|day }}.</p>{% endif %}
-  </fieldset>
+  {# ---- typed once, then never again ---------------------------------- #}
+  {% set dates = [o.opens_on, o.notified_on, o.event_on, o.event_ends]|select|list|length %}
+  <details class="fold wide"{% if dates %} open{% endif %}>
+    <summary>The other dates{% if dates %} <span class="foldn">{{ dates }}</span>{% endif %}</summary>
+    <div class="formgrid bare">
+      <label>Opens <input name="opens_on" type="date" value="{{ o.opens_on or '' }}"></label>
+      <label>They answer by <input name="notified_on" type="date" value="{{ o.notified_on or '' }}"></label>
+      <label>Show opens <input name="event_on" type="date" value="{{ o.event_on or '' }}"></label>
+      <label>Show closes <input name="event_ends" type="date" value="{{ o.event_ends or '' }}"></label>
+    </div>
+  </details>
 
-  <fieldset class="wide">
-    <legend>Paintings sent to this</legend>
-    <p class="sub">Ticked automatically when you build a packet for this call. Kept
-       so that next year you can see a piece was already sent here.</p>
+  {% set spec = [o.max_works, o.img_longest, o.img_max_mb]|select|list|length %}
+  <details class="fold wide"{% if spec %} open{% endif %}>
+    <summary>What they ask for{% if spec %} <span class="foldn">{{ spec }}</span>{% endif %}</summary>
+    <div class="formgrid bare">
+      <label>Pieces allowed <input name="max_works" type="number" min="1" value="{{ o.max_works or '' }}" placeholder="3"></label>
+      <label>Longest side, px <input name="img_longest" type="number" min="200" step="10" value="{{ o.img_longest or '' }}" placeholder="1920"></label>
+      <label>Max file size, MB <input name="img_max_mb" type="number" min="0.1" step="0.1" value="{{ o.img_max_mb or '' }}" placeholder="5"></label>
+    </div>
+    <p class="sub">Copy their image spec in once. The packet builder reads it from
+       here, so you never work it out again at eleven at night.</p>
+  </details>
+
+  <details class="fold wide">
+    <summary>Paintings sent to this{% if o.work_ids %} <span class="foldn">{{ o.work_ids|length }}</span>{% endif %}</summary>
+    <p class="sub">Ticked automatically when you build a packet for this call. Kept so
+       that next year you can see a piece was already sent here.</p>
     <div class="pickers">
       {% for w in works %}
       <label class="pick">
@@ -97,7 +98,7 @@
       </label>
       {% endfor %}
     </div>
-  </fieldset>
+  </details>
 
   <div class="wide"><button class="cta" type="submit">Save</button></div>
 </form>
