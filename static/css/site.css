@@ -1835,11 +1835,62 @@ body.home{
 }
 .outlink:hover{color:var(--accent); border-bottom-color:var(--accent)}
 
+/* ---------- calls from outside ----------
+   A holding pen above her real list, and it must never be mistaken for it. So:
+   no paper, no rule down the left edge, a dotted border instead -- the visual
+   language of a draft. These were published by somebody else and have not been
+   judged yet; the two buttons say the only two things she can do about one. */
+.finder{
+  border:1px dashed var(--rule); border-radius:4px;
+  padding:clamp(13px,2vw,18px); margin:0 0 22px; background:#FCFCFA;
+}
+.finder-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
+.finder-head .offhead{margin:0; margin-right:auto}
+.finder-go{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:12px 0 0}
+.finder-go .sub{flex:1 1 18rem; min-width:0; line-height:1.5}
+.finder-note{margin:10px 0 0; line-height:1.55; max-width:70ch}
+.finds{list-style:none; margin:16px 0 0; padding:0}
+.finds li{
+  display:grid; grid-template-columns:minmax(0,1fr) 9.5rem auto; gap:6px 18px;
+  align-items:center; background:var(--paper); border:1px solid var(--line);
+  border-radius:3px; padding:12px 14px; margin-bottom:9px;
+}
+.find-what{min-width:0}
+.find-t{display:block; font-weight:600; color:var(--ink); line-height:1.3}
+/* The listing's own description. Clamped to two lines: it is there to say
+   whether this is worth opening, not to be read in full here. */
+.find-why{
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden; margin-top:3px; font-size:13px; color:var(--muted); line-height:1.45;
+}
+.find-what .outlink{display:inline-block; margin:5px 0 0 0}
+.find-when{text-align:right; white-space:nowrap}
+.find-when .dates{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px;
+  color:var(--ink); font-variant-numeric:tabular-nums; display:block;
+}
+.find-when .countdown{margin:4px 0 0}
+.find-when .miles{display:inline-block; margin:5px 0 0; justify-self:auto}
+.find-do{display:flex; align-items:center; gap:10px; white-space:nowrap}
+.find-do form{margin:0}
+.find-do .cta{padding:9px 18px; font-size:14px}
+@media (max-width:760px){
+  .finds li{grid-template-columns:minmax(0,1fr); gap:8px}
+  .find-when{text-align:left}
+  .find-when .countdown,.find-when .miles{display:inline-block; margin:0 0 0 8px}
+  .finder-go .cta{width:100%}
+}
+
 /* ---------- where to look ----------
    A short list of places, not a feature. Reads as a set of doors rather than a
    toolbar: the name is the link, the sentence under it says what is behind it,
    because "CaFE" tells a person nothing. */
-.lookhere{margin:0 0 22px}
+.lookhere{margin:16px 0 0}
+.lookhere > summary{
+  cursor:pointer; color:var(--accent); font:600 13px "Karla",sans-serif;
+  text-decoration:underline; text-underline-offset:3px; min-height:32px;
+  display:flex; align-items:center;
+}
 .looks{list-style:none; margin:12px 0 0; padding:0; display:grid;
   grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px}
 .looks li{

@@ -275,3 +275,50 @@ CREATE TABLE IF NOT EXISTS outings (
     created_at  TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_outings_dates ON outings(ends_on, starts_on, id);
+
+-- FOUND CALLS: open calls pulled from EntryThingy, waiting to be judged.
+--
+-- A HOLDING PEN, not a list of opportunities. Nothing here has been accepted:
+-- these were published by somebody else and she has not looked at them yet. A
+-- row waits with its source link until she presses Add, at which point it
+-- becomes a real `opportunities` row and this one records which -- or she
+-- dismisses it, and it stays dismissed so the next refresh does not offer it
+-- again.
+--
+-- This pen was first built for a paid web search that was removed for costing
+-- more than its answers were worth. The pen itself survived that because the
+-- shape was never the problem: suggestions from outside should always wait to
+-- be judged, whatever found them.
+CREATE TABLE IF NOT EXISTS found_calls (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    title          TEXT NOT NULL,
+    org            TEXT,
+    location       TEXT,
+    deadline       TEXT,          -- YYYY-MM-DD, from the listing's endDate
+    fee            TEXT,          -- as published: "$35.00", "free", or NULL
+    kind           TEXT,
+    url            TEXT,
+    why            TEXT,          -- the listing's own description, trimmed
+    source         TEXT,          -- where it came from, e.g. "entrythingy"
+    -- Distance is worked out from `location` the same way an opportunity's is,
+    -- and cached here so a refresh does not re-ask about the same town.
+    lat            REAL,
+    lon            REAL,
+    geo_query      TEXT,
+    -- new | added | dismissed
+    status         TEXT NOT NULL DEFAULT 'new',
+    opportunity_id INTEGER REFERENCES opportunities(id) ON DELETE SET NULL,
+    found_at       TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_found_status ON found_calls(status, deadline);
+
+-- A town seen before. Geocoding is one request a second to somebody else's
+-- server, and fifty listings share a dozen towns between them -- Brooklyn and
+-- Manhattan turn up again on every refresh. Looked up once, kept for good.
+CREATE TABLE IF NOT EXISTS places (
+    q          TEXT PRIMARY KEY,   -- the exact text that was looked up
+    lat        REAL,
+    lon        REAL,
+    name       TEXT,
+    looked_at  TEXT NOT NULL
+);

@@ -172,6 +172,17 @@ NEW_COLUMNS = {
         ("geo_place",   "TEXT"),
         ("geocoded_at", "TEXT"),
     ],
+    # found_calls already exists on the live database from an earlier version of
+    # this panel, and schema.sql is CREATE TABLE IF NOT EXISTS -- which does
+    # NOTHING to a table that is already there. These four columns therefore
+    # have to be added here or the first refresh fails with "no column named
+    # source" in production, which is exactly how this was caught in testing.
+    "found_calls": [
+        ("source",    "TEXT"),
+        ("lat",       "REAL"),
+        ("lon",       "REAL"),
+        ("geo_query", "TEXT"),
+    ],
     "works": [
         ("location",       "TEXT"),
         ("collection_id",  "INTEGER REFERENCES collections(id) ON DELETE SET NULL"),
@@ -1728,6 +1739,136 @@ def where_to_look(cfg):
                     "www.google.com/search?q=" + urllib.parse.quote(q),
                     "A plain web search, already written."))
     return out
+
+
+# --------------------------------------------------------------- found calls
+# The holding pen. Suggestions from outside wait here until she judges them --
+# see the schema note. Nothing here is an opportunity until she presses Add.
+def _found_key(title, url):
+    """Same call, seen twice. The URL is the strong signal; the title is the
+    fallback for a call listed at a different address each year."""
+    return ((url or "").strip().rstrip("/").lower(),
+            re.sub(r"[^a-z0-9]+", " ", (title or "").lower()).strip())
+
+
+def record_found(calls):
+    """Store what a refresh turned up, skipping anything already known --
+    including one she DISMISSED, which must not come back next month."""
+    seen, added = set(), 0
+    with connect() as conn:
+        for r in conn.execute("SELECT title, url FROM found_calls").fetchall():
+            seen.add(_found_key(r["title"], r["url"]))
+        # A call she already entered by hand is not a find either.
+        for r in conn.execute("SELECT title, url FROM opportunities").fetchall():
+            seen.add(_found_key(r["title"], r["url"]))
+        for c in calls:
+            key = _found_key(c.get("title"), c.get("url"))
+            if key in seen:
+                continue
+            seen.add(key)
+            conn.execute(
+                "INSERT INTO found_calls (title, org, location, deadline, fee,"
+                " kind, url, why, source, found_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (c["title"][:300], c.get("org"), c.get("location"),
+                 c.get("deadline"), c.get("fee"), c.get("kind"), c.get("url"),
+                 c.get("why"), c.get("source"), now()))
+            added += 1
+    return added
+
+
+def drop_closed_found(today_):
+    """A deadline that has passed is no longer a suggestion. Cleared rather
+    than left to clutter the pen -- and DELETED, not dismissed, so next year's
+    cycle of the same show is still allowed to appear."""
+    with connect() as conn:
+        return conn.execute(
+            "DELETE FROM found_calls WHERE status='new' AND deadline IS NOT NULL"
+            " AND deadline < ?", (today_,)).rowcount
+
+
+def list_found(status="new"):
+    here = studio_point()
+    with connect() as conn:
+        rows = [dict(r) for r in conn.execute(
+            "SELECT * FROM found_calls WHERE status=? ORDER BY"
+            " CASE WHEN deadline IS NULL THEN 1 ELSE 0 END, deadline, id",
+            (status,)).fetchall()]
+    for r in rows:
+        r["days"] = _days_until(r.get("deadline"))
+        _decorate_distance(r, here)
+    return rows
+
+
+def get_found(found_id):
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM found_calls WHERE id=?",
+                           (found_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def set_found_status(found_id, status, opportunity_id=None):
+    with connect() as conn:
+        conn.execute("UPDATE found_calls SET status=?, opportunity_id=? WHERE id=?",
+                     (status, opportunity_id, found_id))
+
+
+def found_counts():
+    with connect() as conn:
+        return {r["status"]: r["c"] for r in conn.execute(
+            "SELECT status, COUNT(*) c FROM found_calls GROUP BY status").fetchall()}
+
+
+def last_found_at():
+    with connect() as conn:
+        row = conn.execute("SELECT MAX(found_at) m FROM found_calls").fetchone()
+    return row["m"] if row else None
+
+
+# ----------------------------------------------------------- places, cached
+def place_point(q):
+    """Look a town up ONCE and keep it. Fifty listings share a dozen towns, and
+    Brooklyn turns up on every refresh; geocoding is one request a second to
+    somebody else's server and there is no reason to spend it twice."""
+    q = (q or "").strip()
+    if not q:
+        return None
+    with connect() as conn:
+        row = conn.execute("SELECT lat, lon FROM places WHERE q=?", (q,)).fetchone()
+    if row is not None:
+        return (row["lat"], row["lon"]) if row["lat"] is not None else None
+    hit = geocode(q)
+    with connect() as conn:
+        conn.execute("INSERT OR REPLACE INTO places (q, lat, lon, name, looked_at)"
+                     " VALUES (?,?,?,?,?)",
+                     (q, hit[0] if hit else None, hit[1] if hit else None,
+                      hit[2] if hit else None, now()))
+    # Nominatim asks for one request a second and this is the only place that
+    # can run them back to back. The sleep is AFTER the write and only on a
+    # real lookup: a town already in the cache costs nothing and waits for
+    # nothing, which is why the second press of the button is so much quicker
+    # than the first.
+    time.sleep(1.05)
+    return (hit[0], hit[1]) if hit else None
+
+
+def found_without_distance():
+    with connect() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT id, location FROM found_calls WHERE status='new'"
+            " AND lat IS NULL AND location IS NOT NULL AND TRIM(location) <> ''"
+            " AND (geo_query IS NULL OR TRIM(geo_query) <> TRIM(location))"
+            " ORDER BY deadline, id").fetchall()]
+
+
+def locate_found(found_id, place):
+    """Distance for one listing, through the place cache -- so a town already
+    known costs nothing and is instant."""
+    pt = place_point(place)
+    with connect() as conn:
+        conn.execute("UPDATE found_calls SET lat=?, lon=?, geo_query=? WHERE id=?",
+                     (pt[0] if pt else None, pt[1] if pt else None,
+                      (place or "").strip(), found_id))
+    return pt
 
 
 def _decorate_opp(o, counts=None):

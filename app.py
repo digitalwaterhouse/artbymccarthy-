@@ -22,6 +22,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import gallery
 import mailer
 import payments
+import listings
 
 PREFIX = os.environ.get("APP_PREFIX", "/artbymccarthy").rstrip("/")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "")
@@ -1479,9 +1480,87 @@ def admin_opportunities():
                            within=within, order=order,
                            here=gallery.studio_point(),
                            pending=len(gallery.ungeocoded_opportunities()),
-                           # Where to go looking, built from her own town. See
-                           # the template: free listing sites, opened in a tab.
+                           # Open calls pulled from EntryThingy's published
+                           # listings, waiting in the pen to be judged.
+                           found=gallery.list_found("new"),
+                           found_counts=gallery.found_counts(),
+                           last_found=gallery.last_found_at(),
+                           states=listings.states_for(cfg()),
+                           no_distance=len(gallery.found_without_distance()),
                            lookups=gallery.where_to_look(cfg()))
+
+
+# ------------------------------------------------------- calls from outside
+# EntryThingy publishes schema.org JSON-LD on its public listing pages and its
+# robots.txt asks to be read. No key, no bill, no model -- see listings.py.
+@site.route("/admin/opportunities/refresh", methods=["POST"])
+@admin_required
+def admin_opportunities_refresh():
+    today_ = gallery.today()
+    gone = gallery.drop_closed_found(today_)
+    calls, note = listings.open_calls(cfg(), today=today_)
+    fresh = gallery.record_found(calls) if calls else 0
+    bits = [note]
+    if fresh:
+        bits.append("%d new." % fresh)
+    elif calls:
+        bits.append("Nothing new since last time.")
+    if gone:
+        bits.append("%d closed one%s cleared." % (gone, "" if gone == 1 else "s"))
+    flash(" ".join(bits))
+    return redirect(url_for("site.admin_opportunities") + "#found")
+
+
+@site.route("/admin/opportunities/found-distance", methods=["POST"])
+@admin_required
+def admin_found_distance():
+    """Distances for the listings, through the cached place lookup. A town seen
+    before is free and instant; a new one is a request a second to somebody
+    else's server, so this is a button and capped per press."""
+    done, placed = 0, 0
+    # Twelve a press: uncached towns are a second each, and a request that
+    # takes half a minute looks broken however honest it is.
+    for row in gallery.found_without_distance()[:12]:
+        placed += 1 if gallery.locate_found(row["id"], row["location"]) else 0
+        done += 1
+    left = len(gallery.found_without_distance())
+    flash("Looked up %d town%s, %d placed on the map.%s"
+          % (done, "" if done == 1 else "s", placed,
+             (" %d to go -- press again." % left) if left else ""))
+    return redirect(url_for("site.admin_opportunities") + "#found")
+
+
+@site.route("/admin/found/<int:found_id>/<action>", methods=["POST"])
+@admin_required
+def admin_found(found_id, action):
+    f = gallery.get_found(found_id)
+    if not f:
+        abort(404)
+    if action == "dismiss":
+        # Remembered, not deleted: a call she has already turned down must not
+        # be offered again by the next refresh.
+        gallery.set_found_status(found_id, "dismissed")
+        flash("Put aside.")
+        return redirect(url_for("site.admin_opportunities") + "#found")
+    if action != "add":
+        abort(404)
+    oid = gallery.save_opportunity({
+        "title": f["title"], "org": f["org"], "location": f["location"],
+        "deadline": f["deadline"], "url": f["url"], "kind": f["kind"] or "show",
+        # The fee arrives as published ("$35", "free") and the column is cents.
+        # Parse what parses and leave the rest -- a wrong number in a money
+        # field is worse than an empty one.
+        "fee_cents": _price_cents((f["fee"] or "").replace("$", "").strip()),
+        "notes": "From the %s listings, %s.%s"
+                 % (f["source"] or "public", (f["found_at"] or "")[:10],
+                    ("\n\n" + f["why"]) if f["why"] else ""),
+        "status": "watching",
+    })
+    gallery.set_found_status(found_id, "added", oid)
+    if not app.config.get("TESTING"):
+        gallery.locate_opportunity(oid, (f["location"] or "").strip())
+    flash("Added to your list.")
+    return redirect(url_for("site.admin_opportunity", opportunity_id=oid))
 
 
 @site.route("/admin/opportunities/locate", methods=["POST"])
