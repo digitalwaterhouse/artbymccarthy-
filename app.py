@@ -5,6 +5,7 @@ off a blueprint rather than off the app: moving to the artist's own domain
 later means setting APP_PREFIX="" and repointing the proxy, nothing else.
 """
 import os
+import re
 import csv
 import json
 import io
@@ -21,6 +22,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import gallery
 import mailer
 import payments
+import finder
 
 PREFIX = os.environ.get("APP_PREFIX", "/artbymccarthy").rstrip("/")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "")
@@ -179,6 +181,13 @@ def day(iso):
 
 app.jinja_env.filters["day"] = day
 app.jinja_env.globals["status_label"] = gallery.status_label
+@app.template_filter("hostof")
+def hostof(url):
+    """Show a source as its site, not as 80 characters of query string."""
+    m = re.match(r"https?://(?:www\.)?([^/]+)", (url or "").strip(), re.I)
+    return m.group(1) if m else (url or "")
+
+
 app.jinja_env.globals["exhibition_dates"] = gallery.exhibition_dates
 app.jinja_env.globals["opp_kind_label"] = gallery.opp_kind_label
 app.jinja_env.globals["opp_status_label"] = gallery.opp_status_label
@@ -1470,7 +1479,71 @@ def admin_opportunities():
     return render_template("admin/opportunities.html", live=live, done=done,
                            within=within, order=order,
                            here=gallery.studio_point(),
-                           pending=len(gallery.ungeocoded_opportunities()))
+                           pending=len(gallery.ungeocoded_opportunities()),
+                           found=gallery.list_found("new"),
+                           found_counts=gallery.found_counts(),
+                           last_search=gallery.last_search_at(),
+                           finder_on=finder.enabled(),
+                           radii=[25, 75, 150])
+
+
+# ---------------------------------------------------------- finding the calls
+# The discovery half of this page. There is no feed to subscribe to anywhere in
+# the calls-for-entry world, so this searches the open web from her own town
+# and puts what it reads in a holding pen. It costs money and it can be wrong,
+# which is why it is a button she presses and why nothing it finds enters the
+# list without her.
+@site.route("/admin/opportunities/find", methods=["POST"])
+@admin_required
+def admin_opportunities_find():
+    if not finder.enabled():
+        flash("Searching needs an Anthropic API key set on the server.")
+        return redirect(url_for("site.admin_opportunities") + "#found")
+    miles = _int(request.form.get("miles")) or 75
+    calls, note = finder.search(cfg(), miles=miles,
+                                extra=request.form.get("extra") or "")
+    if calls:
+        fresh = gallery.record_found(calls)
+        skipped = len(calls) - fresh
+        flash("%s%s" % (note, (" %d already on your list." % skipped) if skipped else ""))
+    else:
+        flash(note)
+    return redirect(url_for("site.admin_opportunities") + "#found")
+
+
+@site.route("/admin/found/<int:found_id>/<action>", methods=["POST"])
+@admin_required
+def admin_found(found_id, action):
+    f = gallery.get_found(found_id)
+    if not f:
+        abort(404)
+    if action == "dismiss":
+        # Remembered, not deleted: a call she has already turned down must not
+        # be offered again by the next search.
+        gallery.set_found_status(found_id, "dismissed")
+        flash("Put aside.")
+        return redirect(url_for("site.admin_opportunities") + "#found")
+    if action != "add":
+        abort(404)
+    oid = gallery.save_opportunity({
+        "title": f["title"], "org": f["org"], "location": f["location"],
+        "deadline": f["deadline"], "url": f["url"], "kind": f["kind"],
+        # The fee arrives as it was written on the page ("$35", "no fee"), and
+        # the column is cents. Parse what parses and leave the rest for her --
+        # a wrong number in a money field is worse than an empty one.
+        "fee_cents": _price_cents((f["fee"] or "").replace("$", "").strip()),
+        # Where it came from, kept where she will read it. The search can be
+        # wrong about a deadline, and the note says to check before applying.
+        "notes": "Found by searching the web on %s. Check the deadline on the "
+                 "call's own page before applying.%s"
+                 % ((f["found_at"] or "")[:10], ("\n\n" + f["why"]) if f["why"] else ""),
+        "status": "watching",
+    })
+    gallery.set_found_status(found_id, "added", oid)
+    if not app.config.get("TESTING"):
+        gallery.locate_opportunity(oid, (f["location"] or "").strip())
+    flash("Added. Check the deadline against the call's own page.")
+    return redirect(url_for("site.admin_opportunity", opportunity_id=oid))
 
 
 @site.route("/admin/opportunities/locate", methods=["POST"])

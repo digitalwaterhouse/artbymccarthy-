@@ -48,6 +48,73 @@
 </form>
 {% endif %}
 
+{# ---- finding them --------------------------------------------------------
+   The discovery half. Nothing in the calls-for-entry world publishes a feed,
+   so this searches the open web from her own town and puts what it reads HERE,
+   in a holding pen, with the page it read attached. It is a button and not a
+   background job for two reasons: each press costs money, and a model can be
+   wrong about a deadline. Nothing reaches her real list until she says so. #}
+<section class="finder" id="found">
+  <div class="finder-head">
+    <h2 class="offhead up">Find calls near you</h2>
+    {% if last_search %}<span class="sub">Last searched {{ last_search[:10] }}</span>{% endif %}
+  </div>
+  {% if finder_on %}
+  <form class="finder-go" method="post" action="{{ url_for('site.admin_opportunities_find') }}">
+    <label class="sr" for="findmiles">How far</label>
+    <select id="findmiles" name="miles">
+      {% for m in radii %}<option value="{{ m }}"{% if m == 75 %} selected{% endif %}>within {{ m }} miles</option>{% endfor %}
+    </select>
+    <label class="sr" for="findextra">Anything particular</label>
+    <input id="findextra" name="extra" placeholder="Anything particular? (optional)">
+    <button class="cta" type="submit">Search the web</button>
+  </form>
+  <p class="sub finder-note">Searches gallery, arts-council and library sites around
+    {{ cfg.studio_location or 'your town' }}. Every result keeps the page it was read
+    from &mdash; <strong>check the deadline there before you apply</strong>, because a
+    search can misread one. Nothing is added to your list until you press Add.</p>
+  {% else %}
+  <p class="sub finder-note">Searching the web for calls needs an Anthropic API key
+    set on the server. Everything else on this page works without it.</p>
+  {% endif %}
+
+  {% if found %}
+  <ul class="finds">
+    {% for f in found %}
+    <li class="{{ 'is-closed' if f.closed }}">
+      <div class="find-what">
+        <span class="find-t">{{ f.title }}</span>
+        <span class="sub">{{ f.org or '' }}{% if f.org and f.location %} &middot; {% endif %}{{ f.location or '' }}
+          {%- if f.fee %} &middot; {{ f.fee }}{% endif %}</span>
+        {% if f.why %}<span class="find-why">{{ f.why }}</span>{% endif %}
+        {# The source, always. She checks the deadline against it, and the
+           terms for showing search results require citing where they came from. #}
+        {% if f.url %}<a class="outlink" href="{{ f.url }}" target="_blank" rel="noopener noreferrer">{{ f.url|hostof }} &nearr;</a>{% endif %}
+      </div>
+      <div class="find-when">
+        {% if f.deadline %}<span class="dates">{{ f.deadline|day }}</span>
+          {% if f.days is not none %}<span class="countdown">{% if f.days < 0 %}closed{% elif f.days == 0 %}today{% else %}{{ f.days }} days{% endif %}</span>{% endif %}
+        {% else %}<span class="sub">no deadline given</span>{% endif %}
+      </div>
+      <div class="find-do">
+        <form method="post" action="{{ url_for('site.admin_found', found_id=f.id, action='add') }}">
+          <button class="cta" type="submit">Add</button>
+        </form>
+        <form method="post" action="{{ url_for('site.admin_found', found_id=f.id, action='dismiss') }}">
+          <button class="link" type="submit">not for me</button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif finder_on and last_search %}
+  <p class="empty">Nothing new waiting.
+    {% if found_counts.get('dismissed') %}{{ found_counts['dismissed'] }} put aside,
+    {% endif %}{% if found_counts.get('added') %}{{ found_counts['added'] }} added to your list.{% endif %}</p>
+  {% endif %}
+</section>
+
+<h2 class="offhead up">Your list</h2>
 <form class="newrow" method="post">
   <label class="sr" for="newopp">Name the call</label>
   <input id="newopp" name="title" placeholder="Name the call" required>

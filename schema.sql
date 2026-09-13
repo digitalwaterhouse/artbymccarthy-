@@ -275,3 +275,28 @@ CREATE TABLE IF NOT EXISTS outings (
     created_at  TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_outings_dates ON outings(ends_on, starts_on, id);
+
+-- FOUND CALLS: what the web search turned up, waiting to be judged.
+--
+-- A HOLDING PEN, not a list of opportunities. Nothing here has been accepted:
+-- a model searched the web and reported what it read, and a deadline it got
+-- wrong would be a missed application. So a row sits here with its source link
+-- until she presses Add, at which point it becomes a real `opportunities` row
+-- and this one records which -- or she dismisses it, and it stays dismissed so
+-- the next search does not offer it again.
+CREATE TABLE IF NOT EXISTS found_calls (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    title          TEXT NOT NULL,
+    org            TEXT,
+    location       TEXT,
+    deadline       TEXT,          -- YYYY-MM-DD, or NULL when the page did not say
+    fee            TEXT,          -- as written on the page, not parsed to cents
+    kind           TEXT,
+    url            TEXT,
+    why            TEXT,
+    -- new | added | dismissed
+    status         TEXT NOT NULL DEFAULT 'new',
+    opportunity_id INTEGER REFERENCES opportunities(id) ON DELETE SET NULL,
+    found_at       TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_found_status ON found_calls(status, found_at);

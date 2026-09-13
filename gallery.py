@@ -1684,6 +1684,87 @@ def ungeocoded_opportunities():
             " ORDER BY id").fetchall()]
 
 
+# --------------------------------------------------------------- found calls
+# The holding pen for what the web search turned up. See the schema note: none
+# of this is an opportunity until she says so.
+def _found_key(title, url):
+    """Same call, seen twice. The URL is the strong signal; the title is the
+    fallback for a call listed at a different address each year."""
+    return ((url or "").strip().rstrip("/").lower(),
+            re.sub(r"[^a-z0-9]+", " ", (title or "").lower()).strip())
+
+
+def record_found(calls):
+    """Store what the search found, skipping anything already on the list --
+    including something she DISMISSED, which must not come back next week."""
+    seen, added = {}, 0
+    with connect() as conn:
+        for r in conn.execute("SELECT title, url FROM found_calls").fetchall():
+            seen[_found_key(r["title"], r["url"])] = True
+        # An opportunity she has already entered by hand is not a find either.
+        for r in conn.execute("SELECT title, url FROM opportunities").fetchall():
+            seen[_found_key(r["title"], r["url"])] = True
+        for c in calls:
+            key = _found_key(c.get("title"), c.get("url"))
+            if key in seen:
+                continue
+            seen[key] = True
+            conn.execute(
+                "INSERT INTO found_calls (title, org, location, deadline, fee,"
+                " kind, url, why, found_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                ((c.get("title") or "").strip()[:300], _clean(c.get("org")),
+                 _clean(c.get("location")), _clean(c.get("deadline")),
+                 _clean(c.get("fee")), _clean(c.get("kind")),
+                 _clean(c.get("url")), _clean(c.get("why")), now()))
+            added += 1
+    return added
+
+
+def _clean(v):
+    if v is None:
+        return None
+    v = str(v).strip()
+    return v[:500] if v and v.lower() not in ("null", "none", "n/a") else None
+
+
+def list_found(status="new"):
+    here = studio_point()
+    with connect() as conn:
+        rows = [dict(r) for r in conn.execute(
+            "SELECT * FROM found_calls WHERE status=? ORDER BY"
+            " CASE WHEN deadline IS NULL THEN 1 ELSE 0 END, deadline, id",
+            (status,)).fetchall()]
+    for r in rows:
+        r["days"] = _days_until(r.get("deadline"))
+        r["closed"] = r["days"] is not None and r["days"] < 0
+    return rows
+
+
+def get_found(found_id):
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM found_calls WHERE id=?",
+                           (found_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def set_found_status(found_id, status, opportunity_id=None):
+    with connect() as conn:
+        conn.execute("UPDATE found_calls SET status=?, opportunity_id=? WHERE id=?",
+                     (status, opportunity_id, found_id))
+
+
+def found_counts():
+    with connect() as conn:
+        return {r["status"]: r["c"] for r in conn.execute(
+            "SELECT status, COUNT(*) c FROM found_calls GROUP BY status").fetchall()}
+
+
+def last_search_at():
+    with connect() as conn:
+        row = conn.execute("SELECT MAX(found_at) m FROM found_calls").fetchone()
+    return row["m"] if row else None
+
+
 def _decorate_opp(o, counts=None):
     o["days"] = _days_until(o.get("deadline"))
     # Closed means the deadline is behind us, regardless of what she did about
