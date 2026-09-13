@@ -24,9 +24,7 @@
   <h1>Your site</h1>
   <a class="link" href="{{ url_for('site.index') }}" target="_blank" rel="noopener">Open the site &nearr;</a>
 </div>
-<p class="setlede">Every word a visitor reads. Each part saves on its own, so
-  changing one line is one small change &mdash; nothing else is touched. The four
-  pages are open; the things you set once are folded underneath.</p>
+<p class="setlede">Everything a visitor reads. Each part saves on its own.</p>
 
 
 {# ------------------------------------------------------------ front page -#}
@@ -35,8 +33,7 @@
     <h2>The front page</h2>
     <a class="link" href="{{ url_for('site.index') }}" target="_blank" rel="noopener">See it &nearr;</a>
   </div>
-  <p class="setsay">One painting, whole, on a dark ground, and the first words
-    anyone reads on your site.</p>
+  <p class="setsay">The first thing anyone sees.</p>
 
   {# The preview is the real thing in miniature -- same dark ground, same
      serif, same order -- so the fields below are visibly the words on that
@@ -65,19 +62,18 @@
     <input type="hidden" name="section" value="front">
     <label class="wide">Headline
       <input name="hero_title" value="{{ cfg.hero_title }}" placeholder="{{ hero_head }}">
-      <span class="sub">Leave it empty and the front page reads
-        &ldquo;{{ hero_head }}&rdquo; &mdash; your own phrase, from your bio.</span>
+      <span class="sub">Empty reads &ldquo;{{ hero_head }}&rdquo;.</span>
     </label>
     <label class="wide">The line under it
       <input name="hero_sub" value="{{ cfg.hero_sub }}">
-      <span class="sub">Empty falls back to the first line of your About text.</span>
+      <span class="sub">Empty uses the first line of your About text.</span>
     </label>
     <label class="wide">Caption for the photograph
       <input name="hero_caption" value="{{ cfg.hero_caption }}" placeholder="Title, year, medium">
     </label>
     <label class="wide">Change the photograph
       <input type="file" name="hero_photo" accept="image/jpeg,image/png,image/webp">
-      <span class="sub">It does not have to be for sale. Leave this alone to keep the one you have.</span>
+      <span class="sub">It need not be for sale.</span>
     </label>
     {% if cfg.hero_image %}
     <label class="check wide"><input type="checkbox" name="clear_hero" value="1"> Remove it and show my newest work instead</label>
@@ -92,8 +88,7 @@
     <h2>&ldquo;What these are&rdquo;</h2>
     <a class="link" href="{{ url_for('site.index') }}#available" target="_blank" rel="noopener">See it &nearr;</a>
   </div>
-  <p class="setsay">The band between the front photograph and the work, where a
-    visitor finds out these are boxes 2.5&Prime; deep and not pictures.</p>
+  <p class="setsay">The band that says these are boxes, not pictures.</p>
 
   <div class="setprev dark">
     <div class="setprev-box{% if not cfg.box_image %} noart{% endif %}">
@@ -118,17 +113,15 @@
     <input type="hidden" name="section" value="boxes">
     <label class="wide">The sentence beside it
       <textarea name="box_note" rows="3">{{ cfg.box_note }}</textarea>
-      <span class="sub">Shown as a quotation with your name under it. Empty shows only the measurements.</span>
+      <span class="sub">Shown as a quotation, with your name under it.</span>
     </label>
     <label class="wide">Caption under the photograph
       <input name="box_caption" value="{{ cfg.box_caption }}">
     </label>
     <label class="wide">Change the photograph
       <input type="file" name="box_photo" accept="image/jpeg,image/png,image/webp">
-      <span class="sub">One piece seen from an ANGLE, or edge-on in raking light, so the
-        depth reads. Every other photograph on the site is straight-on, which makes the
-        work look flat &mdash; this is the only place a visitor sees that these are boxes.
-        A plain surface near a window is enough.</span>
+      <span class="sub">From an angle, or edge-on, so the depth reads. It is the only
+        place a visitor sees these are boxes.</span>
     </label>
     {% if cfg.box_image %}
     <label class="check wide"><input type="checkbox" name="clear_box" value="1"> Remove it</label>
@@ -143,8 +136,7 @@
     <h2>The About page</h2>
     <a class="link" href="{{ url_for('site.about') }}" target="_blank" rel="noopener">See it &nearr;</a>
   </div>
-  <p class="setsay">You, in your own words, with your portrait beside it. A blank
-    line starts a new paragraph.</p>
+  <p class="setsay">You, in your own words. A blank line starts a new paragraph.</p>
 
   <div class="setprev">
     <div class="setprev-about{% if not cfg.about_image %} noart{% endif %}">
@@ -187,8 +179,7 @@
     <h2>The Commissions page</h2>
     <a class="link" href="{{ url_for('site.commissions') }}" target="_blank" rel="noopener">See it &nearr;</a>
   </div>
-  <p class="setsay">What somebody reads just before they ask you for a piece.
-    Shown above the enquiry form.</p>
+  <p class="setsay">Shown above the enquiry form.</p>
   <form class="setform" method="post">
     <input type="hidden" name="section" value="commissions">
     <label class="wide">Commissions note
@@ -202,8 +193,7 @@
 {# ------------------------------------------------------- name and contact -#}
 <details class="setcard setfold" id="name"{% if request.args.get('saved') == 'name' %} open{% endif %}>
   <summary><h2>Your name and how people reach you</h2></summary>
-  <p class="setsay">Used at the top of every page, in the browser tab, on labels
-    and certificates, and as the address enquiries come to.</p>
+  <p class="setsay">Your name at the top of every page, on labels, and for enquiries.</p>
   <form class="setform" method="post">
     <input type="hidden" name="section" value="name">
     <label class="wide">Site title
@@ -212,8 +202,7 @@
     </label>
     <label class="wide">Tagline
       <input name="tagline" value="{{ cfg.tagline }}">
-      <span class="sub">Shown under your name at the top of every page. It is
-        <em>not</em> the front-page headline &mdash; that has its own field.</span>
+      <span class="sub">Under your name at the top of every page. Not the headline.</span>
     </label>
     <label>Contact email
       <input name="artist_email" value="{{ cfg.artist_email }}" inputmode="email">
@@ -225,8 +214,7 @@
     </label>
     <label class="wide">Where you work
       <input name="studio_location" value="{{ cfg.studio_location }}" placeholder="Bedford, NY">
-      <span class="sub">Never shown to visitors. Opportunities measures from here, so
-        every call for entry says how far away it is.
+      <span class="sub">Never shown to visitors. Opportunities measures distance from here.
         {%- if cfg.studio_place %} Found: {{ cfg.studio_place }}.{% endif %}</span>
     </label>
     <div class="setsave">{{ savedpill('name') }}<button class="cta" type="submit">Save</button></div>
@@ -236,9 +224,7 @@
 {# ------------------------------------------------------- for applications -#}
 <details class="setcard setfold" id="applications"{% if request.args.get('saved') == 'applications' %} open{% endif %}>
   <summary><h2>For applications</h2></summary>
-  <p class="setsay">Nearly every call for entry asks for these two. Written here
-    once, they go out with every submission packet as plain text files &mdash; so
-    they are never retyped into a web form at midnight.</p>
+  <p class="setsay">Written once here, sent with every submission packet.</p>
   <form class="setform" method="post">
     <input type="hidden" name="section" value="applications">
     <label class="wide">Artist statement
@@ -258,8 +244,7 @@
 {# ----------------------------------------------------------------- rates -#}
 <details class="setcard setfold" id="shipping"{% if request.args.get('saved') == 'shipping' %} open{% endif %}>
   <summary><h2>Shipping</h2></summary>
-  <p class="setsay">What a buyer is charged to have a piece sent, by size band.
-    A work set to the &ldquo;quote&rdquo; band shows an enquiry form instead of a checkout.</p>
+  <p class="setsay">What a buyer pays for postage, by size band.</p>
   <form class="setform" method="post">
     <input type="hidden" name="section" value="shipping">
     <div class="rates wide">
@@ -272,7 +257,8 @@
       </label>
       {% endfor %}
     </div>
-    <p class="sub wide">Leave one blank to keep the rate it already has.</p>
+    <p class="sub wide">Leave one blank to keep the rate it has. A piece set to
+       &ldquo;quote&rdquo; shows an enquiry form instead of a checkout.</p>
     <div class="setsave">{{ savedpill('shipping') }}<button class="cta" type="submit">Save the rates</button></div>
   </form>
 </details>
@@ -281,8 +267,7 @@
 <details class="setcard setfold" id="paper"{% if request.args.get('saved') == 'paper' %} open{% endif %}>
   <summary><h2>The backdrop</h2></summary>
   <a class="link" href="{{ url_for('site.about') }}" target="_blank" rel="noopener">See it &nearr;</a>
-  <p class="setsay">The faint pattern behind the About, Commissions and Contact
-    pages. It never goes near the work itself.</p>
+  <p class="setsay">Behind the About, Commissions and Contact pages.</p>
   {# Four named choices, each with a sentence -- a dropdown hides three of them
      behind a click and tells you nothing about any of the four. #}
   <form class="setform" method="post">
@@ -306,8 +291,7 @@
 {# --------------------------------------------------------------- password -#}
 <details class="setcard setfold" id="password"{% if request.args.get('saved') == 'password' %} open{% endif %}>
   <summary><h2>Your password</h2></summary>
-  <p class="setsay">For signing in here. Changing it takes effect immediately and
-    affects nothing else on the site.</p>
+  <p class="setsay">For signing in here.</p>
   <form class="setform" method="post" action="{{ url_for('site.admin_password') }}">
     <label>Current password <input type="password" name="current" autocomplete="current-password" required></label>
     <label>New password <input type="password" name="new" autocomplete="new-password" minlength="10" required></label>
