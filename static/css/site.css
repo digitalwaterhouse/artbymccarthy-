@@ -770,6 +770,31 @@ body.admin{background:#F3F4F2; font-size:15px}
 .adminmain.narrowbox{max-width:22rem; margin:12vh auto}
 .adminhead{display:flex; align-items:center; gap:16px; margin-bottom:18px}
 .adminhead h1{font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.7rem; margin:0; margin-right:auto}
+/* ADD A PAINTING. The one action the studio exists for, and it used to be the
+   same slate rectangle as Save and Build a packet -- findable only by reading
+   every button on the page.
+
+   Two things make it unlike anything else here. The glyph is an empty square
+   with a plus in it: the shape of the work, 10.5 by 10.5, waiting to be filled.
+   And the colour is the turquoise the LANDING PAGE already gives its one real
+   action, borrowed inward -- so the studio's primary button and the shop's are
+   the same button, and it is the only turquoise one in here. Red is still only
+   sold; this takes nothing that means something else. */
+.cta.newwork{
+  display:inline-flex; align-items:center; gap:9px;
+  background:var(--turq); border-color:var(--turq); color:#06222A;
+  padding-left:20px; padding-right:24px;
+}
+.cta.newwork:hover{background:var(--turq-lo); border-color:var(--turq-lo); color:#06222A}
+.cta.newwork svg{width:17px; height:17px; flex:none; opacity:.85}
+.cta.newwork:hover svg{opacity:1}
+.cta.newwork:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+/* The plus grows out of the frame on hover -- a small nod that something is
+   about to be put inside it. Held back for anyone who does not want motion. */
+@media (prefers-reduced-motion:no-preference){
+  .cta.newwork svg path{transition:transform .18s cubic-bezier(.34,1.56,.64,1); transform-origin:center}
+  .cta.newwork:hover svg path{transform:scale(1.18)}
+}
 .alerts{display:flex; gap:14px; margin-bottom:16px; font-size:14px}
 /* Naming a collection is two fields' worth of work, so it happens on the list
    itself rather than behind a New screen. */

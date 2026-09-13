@@ -3,7 +3,20 @@
 {% block body %}
 <div class="adminhead">
   <h1>Artwork</h1>
-  <a class="cta" href="{{ url_for('site.admin_work') }}">Add a painting</a>
+  {# THE ONE THING SHE COMES HERE TO DO, and until now it was the same slate
+     rectangle as Save, Build a packet and every other button in the studio.
+     An empty square with a plus in it -- the shape of the work itself, 10.5 by
+     10.5 -- and the turquoise the front page already uses for its one real
+     action. It is the only turquoise button in the studio, which is what makes
+     it findable without reading it. #}
+  <a class="cta newwork" href="{{ url_for('site.admin_work') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <rect x="3" y="3" width="18" height="18" rx="1.5"/>
+      <path d="M12 8.5v7M8.5 12h7"/>
+    </svg>
+    <span>Add a painting</span>
+  </a>
 </div>
 
 {% if due %}
