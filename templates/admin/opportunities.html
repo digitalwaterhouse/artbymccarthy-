@@ -155,7 +155,7 @@
        description was most of the height -- it is on the call's own page,
        which the title now opens, and it is kept on the row as a tooltip and
        written into the notes if she adds it. #}
-    <li{% if f.why %} title="{{ f.why }}"{% endif %}>
+    <li id="found-{{ f.id }}"{% if f.why %} title="{{ f.why }}"{% endif %}>
       <div class="find-what">
         {% if f.url %}
         <a class="find-t" href="{{ f.url }}" target="_blank" rel="noopener noreferrer">{{ f.title }} &nearr;</a>
@@ -173,7 +173,7 @@
         <form method="post" action="{{ url_for('site.admin_found', found_id=f.id, action='add') }}">
           <button class="cta" type="submit">Add</button>
         </form>
-        <form method="post" action="{{ url_for('site.admin_found', found_id=f.id, action='dismiss') }}">
+        <form class="dismiss" method="post" action="{{ url_for('site.admin_found', found_id=f.id, action='dismiss') }}">
           <button class="link x" type="submit" title="Not for me" aria-label="Not for me">&times;</button>
         </form>
       </div>
@@ -202,4 +202,43 @@
   </details>
   {% endif %}
 </section>
+<script>
+/* "Not for me" takes the row out WHERE IT STANDS. It used to post and redirect,
+   which put her back at the top of the Calls section -- a long way from the row
+   she was reading when the list runs to thirty.
+
+   Progressive enhancement in the real sense: with this script missing, or if
+   the request fails, the button still submits normally and the old behaviour
+   returns. Nothing here is the only way to dismiss a call. */
+(function () {
+  var list = document.querySelector('.finds');
+  if (!list) return;
+
+  list.addEventListener('submit', function (e) {
+    var form = e.target.closest('form.dismiss');
+    if (!form) return;
+    e.preventDefault();
+    var row = form.closest('li');
+    form.querySelector('button').disabled = true;
+
+    fetch(form.action, {method: 'POST', headers: {'X-Requested-With': 'fetch'},
+                        credentials: 'same-origin'})
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        row.classList.add('going');
+        /* Waits for the fade rather than guessing at it, and still goes if the
+           browser reports no transition at all. */
+        var done = false, go = function () {
+          if (done) return;
+          done = true;
+          row.remove();
+          if (!list.querySelector('li')) window.location.reload();
+        };
+        row.addEventListener('transitionend', go);
+        setTimeout(go, 400);
+      })
+      .catch(function () { form.submit(); });   // fall back to the real POST
+  });
+})();
+</script>
 {% endblock %}

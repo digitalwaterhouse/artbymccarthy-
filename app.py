@@ -1690,6 +1690,13 @@ def admin_found(found_id, action):
         # Remembered, not deleted: a call she has already turned down must not
         # be offered again by the next refresh.
         gallery.set_found_status(found_id, "dismissed")
+        # Asked for by the page's own script? Then say nothing and let it take
+        # the row out where it stands. A redirect here sent her to the top of
+        # the Calls section, which is a long way from the row she was reading
+        # when the list runs to thirty. The form still works without any of
+        # this -- see the fallback below.
+        if request.headers.get("X-Requested-With") == "fetch":
+            return ("", 204)
         flash("Put aside.")
         return redirect(url_for("site.admin_opportunities") + "#found")
     if action != "add":

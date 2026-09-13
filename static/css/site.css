@@ -2263,6 +2263,16 @@ body.home{
 }
 .finds li:last-child{border-bottom:0}
 .finds li:hover{background:var(--paper-hi)}
+/* On its way out. Collapsing the row rather than just fading it means the ones
+   below move up into the space, so the list closes over it instead of leaving
+   a hole that the next repaint swallows. */
+.finds li.going{
+  opacity:0; transform:translateX(-10px);
+  transition:opacity .18s ease, transform .18s ease;
+}
+@media (prefers-reduced-motion:reduce){
+  .finds li.going{transition:opacity .12s ease; transform:none}
+}
 .find-what{min-width:0}
 /* The title IS the way out to the call, so the row loses its separate link. */
 .find-t{
