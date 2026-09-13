@@ -829,7 +829,8 @@ body.admin{background:var(--admin-bg); font-size:15px}
 /* The rail's width lives here rather than in two places: the arc below has to
    land exactly on the seam, and a column that drifted from it would leave the
    curve floating in the middle of the page. */
-.adminshell{--rail:228px; display:grid; grid-template-columns:var(--rail) minmax(0,1fr); position:relative}
+.adminshell{--rail:228px; --arc:34px;
+  display:grid; grid-template-columns:var(--rail) minmax(0,1fr); position:relative}
 /* WHERE THE RAIL MEETS THE PAGE. Purely decorative: the dark runs a little way
    along the top of the main area and curves back down to the seam, so the two
    halves read as one surface folding rather than two panels butted together.
@@ -869,11 +870,15 @@ body.admin{background:var(--admin-bg); font-size:15px}
 .adminshell::after{
   content:""; position:absolute; top:0; left:var(--rail); z-index:2;
   width:var(--arc,34px); height:var(--arc,34px); pointer-events:none;
+  /* Centred ON the radius, not inside it. The rail's stripe sits in the last
+     pixel INSIDE the rail, so a ring tucked inside the curve met it a pixel to
+     the right and the join showed as a jog. Straddling the radius puts the two
+     on the same pixel where they meet, at the bottom of the arc. */
   background:radial-gradient(circle at 100% 100%,
-      transparent calc(var(--arc,34px) - 1.5px),
-      var(--rail-edge) calc(var(--arc,34px) - 1.1px),
-      var(--rail-edge) calc(var(--arc,34px) - 0.2px),
-      transparent calc(var(--arc,34px) + 0.3px));
+      transparent calc(var(--arc,34px) - 0.9px),
+      var(--rail-edge) calc(var(--arc,34px) - 0.4px),
+      var(--rail-edge) calc(var(--arc,34px) + 0.5px),
+      transparent calc(var(--arc,34px) + 1.0px));
 }
 .adminside{
   /* align-self:start, NOT the grid default of stretch: a stretched item fills
@@ -881,8 +886,18 @@ body.admin{background:var(--admin-bg); font-size:15px}
   align-self:start; position:sticky; top:0;
   height:100vh; height:100dvh; overflow:auto;
   display:flex; flex-direction:column;
-  background:var(--rail-bg); color:#EAEDE9;
-  box-shadow:inset -1px 0 0 var(--rail-edge);
+  color:#EAEDE9;
+  /* The seam line is a 1px background stripe down the right edge that STARTS
+     at the bottom of the arc -- not an inset box-shadow, which had no way to
+     stop. It ran the full height of the rail, so above the fold you could see
+     a straight white line carrying on next to a curve that had already left.
+     background-attachment defaults to `scroll`, which for a scroll container
+     means fixed to the element and NOT moving with its contents, so the stripe
+     stays put if the nav ever needs to scroll. */
+  background:
+    linear-gradient(var(--rail-edge),var(--rail-edge))
+      no-repeat right 0 top var(--arc,34px) / 1px calc(100% - var(--arc,34px)),
+    var(--rail-bg);
 }
 /* The same bug as the public masthead, so the admin is visibly part of the
    site rather than a generic panel. It links home to the artwork list. */
@@ -970,7 +985,9 @@ body.admin{background:var(--admin-bg); font-size:15px}
   .adminside{
     position:static; height:auto; overflow:visible;
     flex-direction:row; flex-wrap:wrap; align-items:center; padding:0 12px;
-    box-shadow:inset 0 -1px 0 rgba(255,255,255,.10);
+    /* Flat colour again -- the vertical seam stripe belongs to the rail only. */
+    background:var(--rail-bg);
+    box-shadow:inset 0 -1px 0 var(--rail-edge);
   }
   .railtop{width:100%; padding-right:0}
   .adminbrand{padding:10px 16px 6px 0}
