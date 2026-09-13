@@ -11,8 +11,27 @@
   --line:#E4E3DD;
   --rule:#CFCEC6;
   --accent:#2F4A57;      /* slate blue, for links and the one button */
+  --on-accent:#fff;      /* what is legible ON that slate; it flips in dark */
   --dot:#C0392B;         /* sold. used nowhere else. */
   --focus:#2F4A57;
+
+  /* Surfaces that used to be hardcoded, named so a theme can move them. Each
+     is a shade OF the paper, not a colour: a hovered row and a table head are
+     the same sheet caught at a different angle. */
+  --paper-hi:#FBFBF9;    /* a row under the cursor, a message already sent */
+  --paper-lo:#FCFCFA;    /* the holding pen, a draft of a surface */
+  --head:#F7F7F4;        /* the heading row of a table */
+  --admin-bg:#F3F4F2;    /* the studio's ground, a shade off the shop's */
+  --draft-stripe:#F7F4EE;/* the barber's pole on an unpublished row */
+  /* The three things a screen ever has to say back. Kept as background/edge
+     pairs so a theme moves both together and never leaves dark text on a dark
+     tint. */
+  --accent-hi:#253c47;   /* the slate, pressed. In dark it goes LIGHTER, not darker */
+  --danger:#A3372B;      /* delete, failed to send. Not the sold dot. */
+  --pick-on:#F4FCFD;     /* the chosen one in a row of choices */
+  --warn-bg:#FFF6E5;  --warn-line:#E8D5A8;
+  --err-bg:#FBE9E7;   --err-line:#E0B4AE;
+  --ok-bg:#E6F5F2;    --ok-line:#B7DED6;  --ok-ink:#0E6E60;
 
   /* The landing palette is sampled from the collage on the front page --
      the turquoise ground, the chartreuse line, the yellow lens, the plum, and
@@ -35,6 +54,142 @@
   --mat-sage:#A6B189;
   --mat-plum:#9C8598;    /* was an ochre; it read as brown, which is in nothing she paints */
 }
+
+/* The mark is a photograph of a painted tile, so it carries its own light
+   ground wherever it goes. On a dark page that reads as a bright chip floating
+   free; the same hairline the dark entry already gives it seats it again.
+   Written twice for the same reason the token blocks are -- see above. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .wordmark .mark,
+  :root:not([data-theme="light"]) .adminbrand img{box-shadow:0 0 0 1px rgba(237,241,240,.16)}
+}
+:root[data-theme="dark"] .wordmark .mark,
+:root[data-theme="dark"] .adminbrand img{box-shadow:0 0 0 1px rgba(237,241,240,.16)}
+
+/* ---------- the lamp ----------
+   One button, three states, in the shop's nav and the studio's rail. Only the
+   glyph for the current state is drawn; the other two are display:none rather
+   than hidden with opacity, so nothing invisible can still be clicked.
+
+   It is deliberately quiet -- it inherits the colour of the nav it sits in and
+   is the same size as a link beside it. A theme switch is a preference, not a
+   feature, and it should not compete with the work. */
+.lamp{
+  -webkit-appearance:none; appearance:none; background:none; border:0; padding:6px;
+  margin:0; cursor:pointer; color:inherit; line-height:0; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  opacity:.62; transition:opacity .15s ease, transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+.lamp:hover{opacity:1}
+.lamp:active{transform:scale(.9)}
+.lamp svg{width:17px; height:17px; display:none}
+.lamp[data-mode=light] .lamp-sun,
+.lamp[data-mode=dark]  .lamp-moon,
+.lamp[data-mode=auto]  .lamp-auto{display:block}
+/* Before the script runs there is no data-mode, and a button with no glyph is
+   a mystery. The half-filled circle is the honest default: it IS following the
+   device until told otherwise. */
+.lamp:not([data-mode]) .lamp-auto{display:block}
+.lamp:focus-visible{outline:2px solid var(--focus); outline-offset:2px; opacity:1}
+/* In the studio rail it sits with the other utilities, which are small and
+   muted; on the dark entry it takes the same soft white as the nav links. */
+.adminside .util .lamp{padding:4px; margin-right:auto}
+.home .masthead .lamp{color:rgba(244,246,245,.62)}
+.home .masthead .lamp:hover{color:var(--turq-lo)}
+@media (prefers-reduced-motion:reduce){ .lamp{transition:opacity .15s ease} }
+
+/* ---------- dark ----------
+   THE TWO BLOCKS BELOW MUST STAY IDENTICAL. The first follows the machine's
+   own setting, the second follows hers when she has overruled it, and CSS has
+   no way to share one body of declarations between two selectors. They are
+   written from one source; if you edit one, edit the other.
+
+   The system block is guarded by :not([data-theme="light"]) so that choosing
+   light on a machine set to dark actually sticks -- without the guard the
+   media query would win every time and the toggle would only appear to work in
+   one direction. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+  /* A GALLERY AT NIGHT, not an inverted document. The greens and blues are the
+     same family as the dark entry the landing page already opens with
+     (--ground / --ground-deep), so the shop does not become a different site
+     after dark -- it becomes the same room with the lights down.
+
+     The work is still the loud thing. Every surface here is a shade of the
+     same near-black so a photograph sitting on it is the brightest object on
+     the screen, which is the whole argument of the light theme too. */
+  --wall:#0F161A;
+  --paper:#171F25;
+  --paper-hi:#1D262D;
+  --paper-lo:#141B21;
+  --head:#1A232A;
+  --admin-bg:#0B1115;
+  --ink:#E6EBE9;
+  --muted:#94A19C;
+  --line:#253037;
+  --rule:#3B4750;
+  /* Slate cannot be a link colour on near-black, so it lifts to the pale end
+     of the same hue -- and the text ON it goes dark, which is what --on-accent
+     is for. */
+  --accent:#7EB8C9;
+  --on-accent:#07161C;
+  --focus:#7EB8C9;
+  /* Still only sold, just lifted enough to read as red rather than as brown. */
+  --dot:#E2604E;
+  --plum:#AC93A9;
+  --accent-hi:#9ACBD9;
+  --danger:#F08A7A;
+  --pick-on:#12262C;
+  --draft-stripe:#1C2620;
+  --warn-bg:#2A2414;  --warn-line:#5A4A22;
+  --err-bg:#331F1C;   --err-line:#5F352F;
+  --ok-bg:#12302B;    --ok-line:#2B6157;  --ok-ink:#79D3C1;
+  }
+}
+:root[data-theme="dark"]{
+  /* A GALLERY AT NIGHT, not an inverted document. The greens and blues are the
+     same family as the dark entry the landing page already opens with
+     (--ground / --ground-deep), so the shop does not become a different site
+     after dark -- it becomes the same room with the lights down.
+
+     The work is still the loud thing. Every surface here is a shade of the
+     same near-black so a photograph sitting on it is the brightest object on
+     the screen, which is the whole argument of the light theme too. */
+  --wall:#0F161A;
+  --paper:#171F25;
+  --paper-hi:#1D262D;
+  --paper-lo:#141B21;
+  --head:#1A232A;
+  --admin-bg:#0B1115;
+  --ink:#E6EBE9;
+  --muted:#94A19C;
+  --line:#253037;
+  --rule:#3B4750;
+  /* Slate cannot be a link colour on near-black, so it lifts to the pale end
+     of the same hue -- and the text ON it goes dark, which is what --on-accent
+     is for. */
+  --accent:#7EB8C9;
+  --on-accent:#07161C;
+  --focus:#7EB8C9;
+  /* Still only sold, just lifted enough to read as red rather than as brown. */
+  --dot:#E2604E;
+  --plum:#AC93A9;
+  --accent-hi:#9ACBD9;
+  --danger:#F08A7A;
+  --pick-on:#12262C;
+  --draft-stripe:#1C2620;
+  --warn-bg:#2A2414;  --warn-line:#5A4A22;
+  --err-bg:#331F1C;   --err-line:#5F352F;
+  --ok-bg:#12302B;    --ok-line:#2B6157;  --ok-ink:#79D3C1;
+}
+
+/* Tell the browser which way round we are, so form controls, scrollbars and
+   the caret follow the page instead of staying light on a dark sheet. */
+:root{color-scheme:light}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){color-scheme:dark} }
+:root[data-theme="dark"]{color-scheme:dark}
+:root[data-theme="light"]{color-scheme:light}
+
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 /* "Available work" on the landing page drops the reader past the hero to the
@@ -292,11 +447,11 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 
 .cta{
   -webkit-appearance:none; appearance:none; display:inline-block;
-  background:var(--accent); color:#fff; border:1px solid var(--accent);
+  background:var(--accent); color:var(--on-accent); border:1px solid var(--accent);
   border-radius:2px; padding:13px 26px; font:600 15px/1 "Karla",sans-serif;
   letter-spacing:.04em; cursor:pointer; text-decoration:none;
 }
-.cta:hover{background:#253c47}
+.cta:hover{background:var(--accent-hi)}
 .cta{transition:background .2s ease, border-color .2s ease, color .2s ease}
 
 /* ---------- about ----------
@@ -576,7 +731,7 @@ textarea{resize:vertical}
 .hp{position:absolute !important; left:-9999px !important; width:1px; height:1px;
   overflow:hidden; opacity:0; pointer-events:none}
 .empty{color:var(--muted)}
-.flash{background:#FFF6E5; border:1px solid #E8D5A8; padding:10px 14px; margin-bottom:20px}
+.flash{background:var(--warn-bg); border:1px solid var(--warn-line); padding:10px 14px; margin-bottom:20px}
 
 /* ---------- footer ---------- */
 /* The sign-up sits in the footer of every page, which is where someone who has
@@ -607,7 +762,7 @@ textarea{resize:vertical}
   border-radius:2px; padding:11px 20px; font:600 14px/1 "Karla",sans-serif;
   letter-spacing:.03em; transition:background .2s ease, color .2s ease;
 }
-.btn-ghost:hover{background:var(--accent); color:#fff}
+.btn-ghost:hover{background:var(--accent); color:var(--on-accent)}
 /* On the dark entry the footer sits on the cream wall like everywhere else, so
    nothing special is needed there — but the home page paints its own ground
    under .foot, and the field would otherwise vanish into it. */
@@ -639,7 +794,7 @@ textarea{resize:vertical}
 /* ================= admin =================
    Deliberately plain. It is a working surface, used by one person, and it
    should look nothing like the shop so there is never a doubt which is which. */
-body.admin{background:#F3F4F2; font-size:15px}
+body.admin{background:var(--admin-bg); font-size:15px}
 /* The nav is a LEFT RAIL, not a top bar. There are five sections and they read
    as a list rather than as tabs across the top; a rail also hands the whole
    width of the page to the tables, which are the only thing in here that is
@@ -855,7 +1010,7 @@ body.admin{background:#F3F4F2; font-size:15px}
   resize:vertical;
 }
 .addresses{flex:1 1 100%; min-width:0}
-.err{background:#FBE9E7; border:1px solid #E0B4AE; padding:9px 12px}
+.err{background:var(--err-bg); border:1px solid var(--err-line); padding:9px 12px}
 
 /* ---------- the working surface ----------
    Still not the shop: this is a tool, and it should never be mistaken for the
@@ -869,10 +1024,10 @@ body.admin{background:#F3F4F2; font-size:15px}
 }
 .grid-t th,.grid-t td{padding:11px 13px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle}
 .grid-t tbody tr:last-child td{border-bottom:0}
-.grid-t tbody tr:hover{background:#FBFBF9}
+.grid-t tbody tr:hover{background:var(--paper-hi)}
 .grid-t thead th{
   font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted);
-  font-weight:600; background:#F7F7F4; border-bottom:1px solid var(--rule);
+  font-weight:600; background:var(--head); border-bottom:1px solid var(--rule);
 }
 /* Pieces carries every painting she owns, so its rows are tightened: the
    title and its line of detail sit closer, and the cell padding comes in.
@@ -942,7 +1097,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px;
 }
 .link:hover{color:var(--ink)}
-.link.danger{color:#A3372B}
+.link.danger{color:var(--danger)}
 
 .formgrid{
   display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px 14px;
@@ -972,7 +1127,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .panel .cta:hover,
 .formgrid input[type=file]:hover::file-selector-button,
 .setform input[type=file]:hover::file-selector-button{
-  background:var(--accent); color:#fff;
+  background:var(--accent); color:var(--on-accent);
 }
 
 /* The file input was the one raw browser control left in the studio — a grey
@@ -989,13 +1144,13 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .formgrid input[type=file]::file-selector-button,
 .setform input[type=file]::file-selector-button{
   -webkit-appearance:none; appearance:none;
-  background:var(--accent); color:#fff; border:1px solid var(--accent);
+  background:var(--accent); color:var(--on-accent); border:1px solid var(--accent);
   border-radius:2px; padding:9px 18px; margin-right:12px;
   font:600 13.5px/1 "Karla",sans-serif; letter-spacing:.04em; cursor:pointer;
   transition:background .2s ease, border-color .2s ease;
 }
 .formgrid input[type=file]:hover::file-selector-button,
-.setform input[type=file]:hover::file-selector-button{background:#24404b; border-color:#24404b}
+.setform input[type=file]:hover::file-selector-button{background:var(--accent-hi); border-color:var(--accent-hi)}
 .formgrid input[type=file]:focus-visible,
 .setform input[type=file]:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
 .rates{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px}
@@ -1023,11 +1178,11 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   font-size:16px; line-height:1; padding:7px 8px; color:var(--muted);
   min-height:34px; min-width:32px; text-decoration:none; border-radius:2px;
 }
-.mover:hover:not([disabled]){color:var(--accent); background:#F1F3F2}
+.mover:hover:not([disabled]){color:var(--accent); background:var(--paper-hi)}
 .mover[disabled]{opacity:.22; cursor:default}
 /* A draft is not on the wall, and the row says so at a glance rather than
    making you read the status menu. */
-.grid-t tr.is-draft{background:repeating-linear-gradient(135deg,#fff,#fff 9px,#F7F4EE 9px,#F7F4EE 18px)}
+.grid-t tr.is-draft{background:repeating-linear-gradient(135deg,var(--paper),var(--paper) 9px,var(--draft-stripe) 9px,var(--draft-stripe) 18px)}
 .grid-t tr.is-draft td[data-label="Title"] a::after{
   content:"draft"; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
   color:var(--plum); border:1px solid var(--plum); border-radius:2px;
@@ -1156,10 +1311,10 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
    It fills the moment the card is touched. JS-set: with the script missing
    every button stays filled and working, which is the right way round. */
 .setsave .cta.idle{background:transparent; color:var(--accent)}
-.setsave .cta.idle:hover{background:var(--accent); color:#fff}
+.setsave .cta.idle:hover{background:var(--accent); color:var(--on-accent)}
 .savedpill{
-  font:600 12.5px "Karla",sans-serif; color:#0E6E60; letter-spacing:.02em;
-  background:#E6F5F2; border:1px solid #B7DED6; border-radius:99px; padding:4px 12px;
+  font:600 12.5px "Karla",sans-serif; color:var(--ok-ink); letter-spacing:.02em;
+  background:var(--ok-bg); border:1px solid var(--ok-line); border-radius:99px; padding:4px 12px;
   transition:opacity .5s ease;
 }
 .savedpill::before{content:"\2713\00a0"}
@@ -1249,7 +1404,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 /* The waiting count. Only drawn when there is one, so an empty folder is a
    plain word rather than a permanent zero nobody reads. */
 .folders .n{
-  background:var(--accent); color:#fff; border-radius:999px; min-width:18px;
+  background:var(--accent); color:var(--on-accent); border-radius:999px; min-width:18px;
   padding:2px 6px; font-size:11px; letter-spacing:0; text-align:center;
 }
 .back{display:inline-block; margin-bottom:14px; font-size:13.5px; color:var(--muted);
@@ -1264,10 +1419,10 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 /* A reply that has already gone, shown under the message it answers. Indented
    and quieter than the incoming mail so the two sides of the exchange are
    distinguishable at a glance without colour doing all the work. */
-.msg.sent-note{background:#FBFBF9; margin-left:clamp(0px,4vw,34px)}
+.msg.sent-note{background:var(--paper-hi); margin-left:clamp(0px,4vw,34px)}
 .msg .answered{color:var(--accent)}
-.msg .failed{color:#A3372B}
-.sendfail{background:#FDF0EE; border:1px solid #E8C4BD; padding:10px 14px; margin:0 0 14px}
+.msg .failed{color:var(--danger)}
+.sendfail{background:var(--err-bg); border:1px solid var(--err-line); padding:10px 14px; margin:0 0 14px}
 
 .compose{display:flex; flex-direction:column; gap:12px; max-width:46rem;
   background:var(--paper); border:1px solid var(--line); padding:clamp(14px,2.4vw,20px)}
@@ -1275,7 +1430,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 .compose-acts{display:flex; flex-wrap:wrap; align-items:center; gap:16px}
 .compose-acts .spacer{flex:1}
 .fineprint{margin:0; font-size:12.5px; color:var(--muted); line-height:1.5}
-.msg{background:#fff; border:1px solid var(--line); padding:13px 15px}
+.msg{background:var(--paper); border:1px solid var(--line); padding:13px 15px}
 .msg.done{opacity:.55}
 .msg header{display:flex; flex-wrap:wrap; gap:10px; align-items:baseline; margin-bottom:8px}
 .msg .kind{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); border:1px solid var(--rule); padding:2px 6px}
@@ -1295,7 +1450,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   margin:34px 0 6px; color:var(--muted);
 }
 .grid-t.off{background:transparent}
-.grid-t.off tbody tr{background:#FBFBF9}
+.grid-t.off tbody tr{background:var(--paper-hi)}
 .grid-t.off td[data-label="Email"]{color:var(--muted); text-decoration:line-through}
 
 /* ---------- the schedule ----------
@@ -1320,7 +1475,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   border:1px solid var(--turq); border-radius:2px; padding:1px 6px;
 }
 .sched .what a{font-weight:600}
-.sched.past li{background:#FBFBF9}
+.sched.past li{background:var(--paper-hi)}
 .sched.past .dates{color:var(--muted)}
 
 /* Ticking paintings into a show. A grid of real thumbnails, because she knows
@@ -1342,7 +1497,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   border-radius:2px; flex:none;
 }
 .pick span{min-width:0; overflow-wrap:anywhere}
-.pick:has(input:checked){border-color:var(--turq); background:#F4FCFD}
+.pick:has(input:checked){border-color:var(--turq); background:var(--pick-on)}
 .danger-row{margin-top:22px}
 
 /* One row of filters above the list. Wraps rather than scrolls; every control
@@ -1381,7 +1536,7 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
   text-decoration:none; cursor:pointer; white-space:nowrap;
   transition:background .2s ease, color .2s ease;
 }
-.btn-out:hover{background:var(--accent); color:#fff}
+.btn-out:hover{background:var(--accent); color:var(--on-accent)}
 /* Small variant, for an outline button that sits in a row of text links --
    the full-height one is a toolbar control and towers over them. */
 .btn-out.sm{min-height:32px; padding:0 12px; font-size:13px; letter-spacing:.02em}
@@ -1861,7 +2016,7 @@ body.home{
 }
 .ostat.s-watching{border-color:var(--turq); color:var(--accent)}
 .ostat.s-applied{border-color:var(--plum); color:var(--plum)}
-.ostat.s-accepted{border-color:var(--accent); background:var(--accent); color:#fff}
+.ostat.s-accepted{border-color:var(--accent); background:var(--accent); color:var(--on-accent)}
 @media (max-width:640px){
   .sched.opps li{grid-template-columns:minmax(0,1fr)}
   .ostat{justify-self:start; margin-top:4px}
@@ -1917,7 +2072,7 @@ body.home{
    judged yet; the two buttons say the only two things she can do about one. */
 .finder{
   border:1px dashed var(--rule); border-radius:4px;
-  padding:clamp(13px,2vw,18px); margin:0 0 22px; background:#FCFCFA;
+  padding:clamp(13px,2vw,18px); margin:0 0 22px; background:var(--paper-lo);
 }
 .finder-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
 .finder-head .offhead{margin:0; margin-right:auto}
@@ -1942,7 +2097,7 @@ body.home{
   border-bottom:1px solid var(--line);
 }
 .finds li:last-child{border-bottom:0}
-.finds li:hover{background:#FBFBF9}
+.finds li:hover{background:var(--paper-hi)}
 .find-what{min-width:0}
 /* The title IS the way out to the call, so the row loses its separate link. */
 .find-t{
@@ -1965,7 +2120,7 @@ a.find-t:hover{color:var(--accent); text-decoration:underline; text-underline-of
    than the button that matters, and the tooltip and aria-label carry the word. */
 .link.x{font-size:17px; line-height:1; padding:5px 8px; min-height:0; color:var(--muted);
   text-decoration:none}
-.link.x:hover{color:#A3372B}
+.link.x:hover{color:var(--danger)}
 @media (max-width:760px){
   .finds li{grid-template-columns:minmax(0,1fr) auto; gap:4px 10px; padding:11px 12px}
   .find-what{grid-column:1/-1}
@@ -2008,7 +2163,7 @@ a.find-t:hover{color:var(--accent); text-decoration:underline; text-underline-of
   margin:0 0 16px; padding:9px 14px; border-radius:3px; font-size:14.5px;
   background:var(--paper); border:1px solid var(--line); border-left:3px solid var(--rule);
 }
-.deadlinebar.u-soon{border-left-color:var(--gold); background:#FFFBF0}
+.deadlinebar.u-soon{border-left-color:var(--gold); background:var(--warn-bg)}
 .deadlinebar.u-month{border-left-color:var(--turq)}
 .deadlinebar.u-gone{color:var(--muted)}
 
@@ -2017,7 +2172,7 @@ a.find-t:hover{color:var(--accent); text-decoration:underline; text-underline-of
    into one row is unreadable. */
 .alerts.due{flex-direction:column; gap:6px; margin-bottom:14px}
 .alerts.due a{
-  padding:8px 13px; background:#FFFBF0; border:1px solid var(--line);
+  padding:8px 13px; background:var(--warn-bg); border:1px solid var(--line);
   border-left:3px solid var(--gold); border-radius:3px; color:var(--ink);
   text-decoration:none;
 }

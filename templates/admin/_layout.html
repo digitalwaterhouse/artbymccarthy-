@@ -30,7 +30,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}Studio{% endblock %} &mdash; {{ cfg.site_title }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=98">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=99">
+<script>
+/* BEFORE FIRST PAINT, and inlined for that reason: a dark reader must never be
+   flashed a white page on the way to a page they already chose to be dark.
+   Wrapped because localStorage throws outright in some privacy modes. */
+try{var t=localStorage.getItem("abm-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t)}catch(e){}
+</script>
 </head>
 <body class="admin">
 <div class="adminshell">
@@ -68,6 +74,7 @@
     {% endfor %}
   </nav>
   <div class="util">
+    {% include "_theme.html" %}
     <a href="{{ url_for('site.index') }}">View site &nearr;</a>
     <a class="out" href="{{ url_for('site.admin_logout') }}">Sign out</a>
   </div>
@@ -77,5 +84,6 @@
 {% block body %}{% endblock %}
 </main>
 </div>
+<script src="{{ url_for('static', filename='js/theme.js') }}?v=99" defer></script>
 </body>
 </html>
