@@ -18,6 +18,14 @@
   <rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3.5 6.5L12 13l8.5-6.5"/>
 {%- elif name == 'contacts' -%}
   <circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/>
+{%- elif name == 'collections' -%}
+  {#- A work in front of a work: the front card is the group you are looking at,
+      the one behind is the rest of them. -#}
+  <rect x="3" y="7" width="14" height="14" rx="1.5"/><path d="M7 7V4.5A1.5 1.5 0 0 1 8.5 3H20a1 1 0 0 1 1 1v11.5a1.5 1.5 0 0 1-1.5 1.5H17"/>
+{%- elif name == 'editions' -%}
+  {#- A sheet with the stroke of a fraction across it -- 1/25, which is what an
+      edition is. -#}
+  <path d="M8.5 3H18a1 1 0 0 1 1 1v12.5"/><rect x="4" y="6.5" width="11.5" height="14.5" rx="1.5"/><path d="M12.4 10.6l-5 6.8"/>
 {%- elif name == 'settings' -%}
   <path d="M4 7h10M18 7h2M4 12h2M10 12h10M4 17h8M16 17h4"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="14" cy="17" r="2"/>
 {%- endif -%}
@@ -30,7 +38,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{% block title %}Studio{% endblock %} &mdash; {{ cfg.site_title }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=107">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=108">
 <script>
 /* BEFORE FIRST PAINT, and inlined for that reason: a dark reader must never be
    flashed a white page on the way to a page they already chose to be dark.
@@ -63,11 +71,13 @@ try{var t=localStorage.getItem("abm-theme");if(t==="dark"||t==="light")document.
     {% set art = ['admin_works','admin_work','admin_collections','admin_collection','admin_editions'] %}
     <a class="grp{% if endpoint in art %} open{% endif %}" href="{{ url_for('site.admin_works') }}">{{ icon('artwork') }}<span>Artwork</span></a>
     <div class="subnav">
-      {% for eps, label, href in [
-           (['admin_works','admin_work'],             "Pieces",      url_for('site.admin_works')),
-           (['admin_collections','admin_collection'], "Collections", url_for('site.admin_collections')),
-           (['admin_editions'],                       "Editions",    url_for('site.admin_editions'))] %}
-      <a href="{{ href }}"{% if endpoint in eps %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
+      {% for eps, label, href, ic in [
+           (['admin_works','admin_work'],             "Pieces",      url_for('site.admin_works'),       "artwork"),
+           (['admin_collections','admin_collection'], "Collections", url_for('site.admin_collections'), "collections"),
+           (['admin_editions'],                       "Editions",    url_for('site.admin_editions'),    "editions")] %}
+      {#- The label is wrapped so a phone can clip it and leave the glyph, the
+          same way the sections above do. -#}
+      <a href="{{ href }}"{% if endpoint in eps %} class="on" aria-current="page"{% endif %}>{{ icon(ic) }}<span>{{ label }}</span></a>
       {% endfor %}
     </div>
     {% for ep, label, href, ic in [
@@ -90,6 +100,6 @@ try{var t=localStorage.getItem("abm-theme");if(t==="dark"||t==="light")document.
 {% block body %}{% endblock %}
 </main>
 </div>
-<script src="{{ url_for('static', filename='js/theme.js') }}?v=107" defer></script>
+<script src="{{ url_for('static', filename='js/theme.js') }}?v=108" defer></script>
 </body>
 </html>

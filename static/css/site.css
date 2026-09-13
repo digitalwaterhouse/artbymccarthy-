@@ -964,6 +964,11 @@ body.admin{background:var(--admin-bg); font-size:15px}
   border-left:3px solid transparent;
   transition:color .15s, background .15s, border-color .15s;
 }
+/* The three children carry glyphs now, for the phone's single icon row. In the
+   rail they stay indented words under their parent -- a second column of icons
+   inside an indent would read as a different kind of thing, and the indent is
+   what says these belong to Artwork. */
+.adminside .subnav a svg{display:none}
 .adminside .subnav a:hover{color:#fff; background:rgba(255,255,255,.07)}
 .adminside .subnav a.on{color:#fff; background:rgba(255,255,255,.10); border-left-color:var(--turq)}
 .adminside nav a.on{color:#fff; background:rgba(255,255,255,.10); border-left-color:var(--turq)}
@@ -1018,18 +1023,29 @@ body.admin{background:var(--admin-bg); font-size:15px}
   }
   .adminside nav a.on{border-bottom-color:var(--turq)}
   .adminside nav a.on svg,.adminside nav a.grp.open svg{opacity:1}
-  /* The three ways into the catalogue are only worth a row when she is IN the
-     catalogue. Six sections out of seven now get no second row at all. */
-  .adminside nav a.grp:not(.open) + .subnav{display:none}
-  /* Laid down as a bar there is no room to indent, so the group heading and
-     its three children read as one wrapping row of items. */
-  .adminside .subnav{flex-direction:row; flex-wrap:wrap; padding-bottom:0; width:100%;
-    justify-content:center; gap:0 4px}
+  /* ONE ROW OF NINE. The hierarchy the rail draws -- Artwork, and three ways
+     into it -- needs an indent to mean anything, and a bar has no indent to
+     give. So down here it flattens: the group heading goes (it only ever led
+     to Pieces, which is now in the row itself) and its three children join
+     their siblings. display:contents dissolves the wrapper so they become
+     items of the same flex row rather than a row of their own.
+
+     Nine across a 390px phone is 40px each. Under the 44px ideal, and the
+     honest alternative was a second row of words on three pages out of nine. */
+  .adminside nav a.grp{display:none}
+  .adminside .subnav{display:contents}
   .adminside .subnav a{
-    padding:12px 11px 9px; font-size:11.5px; letter-spacing:.06em;
-    text-transform:uppercase; border-left:0; border-bottom:3px solid transparent;
+    display:flex; justify-content:center; align-items:center;
+    padding:11px 0 8px; flex:1 1 0; min-width:34px;
+    border-left:0; border-bottom:3px solid transparent;
+  }
+  .adminside .subnav a svg{display:block; width:21px; height:21px; opacity:.72; flex:none}
+  .adminside .subnav a > span{
+    position:absolute; width:1px; height:1px; overflow:hidden;
+    clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap;
   }
   .adminside .subnav a.on{border-bottom-color:var(--turq)}
+  .adminside .subnav a.on svg{opacity:1}
   .adminside .util{
     margin-top:0; flex-direction:row; gap:18px; padding:6px 0 8px; width:100%;
     box-shadow:none; justify-content:flex-end; font-size:12.5px;
