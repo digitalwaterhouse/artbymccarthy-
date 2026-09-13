@@ -521,7 +521,7 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
    The enquiry forms were a stack of inputs on an empty page. They are boxed
    now, in the same white-mat-in-a-dark-box the portrait uses, because that is
    the one piece of furniture this site already owns. */
-.panel{
+.pane .panel{
   /* The portrait's mount, exactly: white mat, dark box, the inset shadow that
      gives a shadow box its depth, and a block of the collage turquoise offset
      behind it. There it is an absolutely positioned ::before, which works
@@ -539,13 +539,13 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 }
 .pane-message .panel{--block:var(--mat-sage)}
 .pane-commission .panel{--block:var(--mat-plum)}
-.panel .stack{margin-top:0; max-width:none}
-.panel h2{
+.pane .panel .stack{margin-top:0; max-width:none}
+.pane .panel h2{
   font-family:"Newsreader",Georgia,serif; font-weight:400; font-size:1.35rem;
   margin:0 0 4px; letter-spacing:-.01em;
 }
-.panel .fine{margin:0 0 18px}
-.panel .cta{width:100%; text-align:center}
+.pane .panel .fine{margin:0 0 18px}
+.pane .panel .cta{width:100%; text-align:center}
 
 /* copy on one side, the form on the other */
 .split{
@@ -627,7 +627,7 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
   #mode-message:checked ~ .pane-message,
   #mode-commission:checked ~ .pane-commission{grid-template-columns:1fr}
   /* the offset block pulls in so it cannot run off the side of a phone */
-  .panel{
+  .pane .panel{
     box-shadow:12px 12px 0 0 var(--block),
                0 14px 32px rgba(13,22,30,.22),
                inset 0 3px 10px rgba(13,22,30,.15);
@@ -1251,12 +1251,12 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
 /* Outline, not solid. Move it / Record / Choose Files are local "add a row"
    controls inside their own panels; filling all three made them compete with
    Save, which is the page's one real commitment. */
-.panel .cta,
+.admin .panel .cta,
 .formgrid input[type=file]::file-selector-button,
 .setform input[type=file]::file-selector-button{
   background:transparent; color:var(--accent); border:1px solid var(--accent);
 }
-.panel .cta:hover,
+.admin .panel .cta:hover,
 .formgrid input[type=file]:hover::file-selector-button,
 .setform input[type=file]:hover::file-selector-button{
   background:var(--accent); color:var(--on-accent);
@@ -1703,22 +1703,33 @@ select.st-draft{border-color:var(--muted); border-left-style:dashed}
    then the photographs. These sit two-across where there is room, and each
    carries a compact header instead of a serif h2 with its own margins — which
    is most of the height saved. */
-.panels{
+.admin .panels{
   display:grid; grid-template-columns:repeat(auto-fit,minmax(370px,1fr));
   gap:14px; margin:18px 0 26px; align-items:start;
 }
-.panel{
+/* SCOPED TO .admin, AND box-shadow:none.
+   `.panel` was already taken -- it is the shadow-box mount on the contact
+   page, a 9px dark frame with a 20px offset slab of mat board behind it and
+   the inset shadow that gives a real shadow box its depth. This rule sits
+   after it and weighs the same, so it was overriding background, border and
+   padding while quietly INHERITING all three shadows. The three cards on a
+   painting's page have been wearing a mount built for one enquiry form,
+   complete with a turquoise slab sticking out behind each of them.
+   Scoping it under .admin settles the collision, and the reset is explicit so
+   nobody has to know the other rule exists. */
+.admin .panel{
   background:var(--paper); border:1px solid var(--line); border-radius:3px;
   padding:16px 18px 18px; min-width:0;
+  box-shadow:none; position:static;
 }
-.panel-wide{grid-column:1/-1}
-.panel > h3{
+.admin .panel-wide{grid-column:1/-1}
+.admin .panel > h3{
   margin:0 0 12px; font-family:"Karla",sans-serif;
   font-size:11px; letter-spacing:.09em; text-transform:uppercase;
   color:var(--accent); font-weight:600;
 }
-.panel .now{margin:0 0 2px; font-size:15px}
-.panel .now strong{font-weight:600}
+.admin .panel .now{margin:0 0 2px; font-size:15px}
+.admin .panel .now strong{font-weight:600}
 /* Care wants its whole row of fields; on a half-width panel that means the
    controls wrap rather than squeeze to nothing. */
 .moverow{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 0; align-items:center}

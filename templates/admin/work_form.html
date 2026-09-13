@@ -6,6 +6,13 @@
   {% if w %}<a href="{{ url_for('site.work', slug=w.slug) }}">view on the site</a>{% endif %}
 </div>
 
+{#- SIMPLIFIED, the same way a call's page was. Seventeen fields in one flat
+    grid, every one of them shown -- including on New painting, where a person
+    adding their first piece met the shipping band and the web address before
+    they had typed a title.
+
+    What a painting IS stays visible. What it is CATALOGUED as, and how it is
+    LISTED, fold away and open themselves when they hold something. -#}
 <form class="formgrid" method="post" enctype="multipart/form-data">
   <label class="wide">Title <input name="title" value="{{ w.title if w else '' }}" required></label>
   <label>Year <input name="year" value="{{ w.year if w and w.year else '' }}" inputmode="numeric"></label>
@@ -23,49 +30,63 @@
       {% endfor %}
     </select>
   </label>
-  <label>Shipping band
-    <select name="ship_band">
-      {% for b in ['small','medium','large','rolled','quote'] %}
-        <option value="{{ b }}" {% if w and w.ship_band == b %}selected{% endif %}>{{ b }}</option>
-      {% endfor %}
-    </select>
-  </label>
-
-  <label>Collection
-    <select name="collection_id">
-      <option value="">— none —</option>
-      {# Indented, not flattened: "Fireflies" on its own does not say which
-         body of work it belongs to. #}
-      {% for c in collections %}
-        <option value="{{ c.id }}" {% if w and w.collection_id == c.id %}selected{% endif %}>{% if c.depth %}&nbsp;&nbsp;&nbsp;&nbsp;&#8627; {% endif %}{{ c.name }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  {# Catalogue detail, not stock: this says the piece is one of a run, it does
-     not put 25 of them up for sale. #}
-  <label>Edition of <input name="edition_size" value="{{ w.edition_size if w and w.edition_size else '' }}" inputmode="numeric" placeholder="25"></label>
-  <label>This one is # <input name="edition_number" value="{{ w.edition_number if w and w.edition_number else '' }}" inputmode="numeric" placeholder="4"></label>
-
-  <label>Signed <input name="signed_where" value="{{ w.signed_where if w else '' }}" placeholder="Lower right, front"></label>
-  <label class="check"><input type="checkbox" name="framed" {% if w and w.framed %}checked{% endif %}> Framed</label>
-  <label class="check"><input type="checkbox" name="ready_to_hang" {% if not w or w.ready_to_hang %}checked{% endif %}> Ready to hang</label>
 
   <label class="wide">About this piece <textarea name="story" rows="4">{{ w.story if w else '' }}</textarea></label>
-  <label>Sort order <input name="sort" value="{{ w.sort if w else 0 }}" inputmode="numeric"></label>
-  <label>Web address <input name="slug" value="{{ w.slug if w else '' }}" placeholder="made from the title"></label>
 
-  <fieldset class="wide">
-    <legend>Add photographs</legend>
-    <label>Which kind?
-      <select name="kind">
-        <option value="full">The whole painting</option>
-        <option value="detail">A detail crop</option>
-        <option value="scale">On a wall, for scale</option>
-      </select>
-    </label>
+  {# Adding a photograph is a thing she does often, so it stays in the open --
+     but as a plain group rather than a bordered box. #}
+  <label>Add photographs
+    <select name="kind">
+      <option value="full">The whole painting</option>
+      <option value="detail">A detail crop</option>
+      <option value="scale">On a wall, for scale</option>
+    </select>
+  </label>
+  <label>Choose files
     <input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple>
-    <p class="sub">JPEG, PNG or WebP. Resized on upload; location data is stripped.</p>
-  </fieldset>
+    <span class="sub">JPEG, PNG or WebP. Resized on upload; location data is stripped.</span>
+  </label>
+
+  {% set cat = w and [w.collection_id, w.edition_size, w.edition_number, w.signed_where]|select|list|length %}
+  <details class="fold wide"{% if cat %} open{% endif %}>
+    <summary>Catalogue details{% if cat %} <span class="foldn">{{ cat }}</span>{% endif %}</summary>
+    <div class="formgrid bare">
+      <label>Shipping band
+        <select name="ship_band">
+          {% for b in ['small','medium','large','rolled','quote'] %}
+            <option value="{{ b }}" {% if w and w.ship_band == b %}selected{% endif %}>{{ b }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Collection
+        <select name="collection_id">
+          <option value="">&mdash; none &mdash;</option>
+          {# Indented, not flattened: "Fireflies" on its own does not say which
+             body of work it belongs to. #}
+          {% for c in collections %}
+            <option value="{{ c.id }}" {% if w and w.collection_id == c.id %}selected{% endif %}>{% if c.depth %}&nbsp;&nbsp;&nbsp;&nbsp;&#8627; {% endif %}{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      {# Catalogue detail, not stock: this says the piece is one of a run, it
+         does not put 25 of them up for sale. #}
+      <label>Edition of <input name="edition_size" value="{{ w.edition_size if w and w.edition_size else '' }}" inputmode="numeric" placeholder="25"></label>
+      <label>This one is # <input name="edition_number" value="{{ w.edition_number if w and w.edition_number else '' }}" inputmode="numeric" placeholder="4"></label>
+      <label>Signed <input name="signed_where" value="{{ w.signed_where if w else '' }}" placeholder="Lower right, front"></label>
+      <label class="check"><input type="checkbox" name="framed" {% if w and w.framed %}checked{% endif %}> Framed</label>
+      <label class="check"><input type="checkbox" name="ready_to_hang" {% if not w or w.ready_to_hang %}checked{% endif %}> Ready to hang</label>
+    </div>
+  </details>
+
+  <details class="fold wide">
+    <summary>How it is listed</summary>
+    <div class="formgrid bare">
+      <label>Sort order <input name="sort" value="{{ w.sort if w else 0 }}" inputmode="numeric"></label>
+      <label>Web address <input name="slug" value="{{ w.slug if w else '' }}" placeholder="made from the title"></label>
+    </div>
+    <p class="sub">Both are worked out for you. Sort order only matters when you
+       want a piece out of its natural place on the wall.</p>
+  </details>
 
   <div class="wide"><button class="cta" type="submit">Save</button></div>
 </form>
