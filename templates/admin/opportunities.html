@@ -48,113 +48,6 @@
 </form>
 {% endif %}
 
-{# ---- calls from outside -------------------------------------------------
-   Open calls, IN HERE, with an Add button -- she should not have to go and
-   read somebody else's website to fill in her own list. EntryThingy publishes
-   schema.org JSON-LD on its public listing pages and its robots.txt asks to be
-   read, so this takes the structured data: the name, the deadline, the town,
-   the organiser and the fee, exactly as published. No key, no bill, no model.
-
-   They still WAIT here rather than joining her list: they were published by
-   somebody else and she has not looked at them yet. Add moves one across;
-   "not for me" remembers, so the next refresh does not offer it again. #}
-<section class="finder" id="found">
-  <div class="finder-head">
-    <h2 class="offhead up">Calls near you</h2>
-    {% if last_found %}<span class="sub">Updated {{ last_found[:10] }}</span>{% endif %}
-  </div>
-
-  {% if states %}
-  <form class="finder-go" method="post" action="{{ url_for('site.admin_opportunities_refresh') }}">
-    <button class="cta" type="submit">Get the latest</button>
-    <span class="sub">Open calls listed in {{ states|join(' and ') }}, free to read.
-      Nothing joins your list until you press Add.</span>
-  </form>
-  {% else %}
-  <p class="sub finder-note">Put your town in
-    <a href="{{ url_for('site.admin_settings') }}#name">Your site</a> and calls near
-    you will be listed here.</p>
-  {% endif %}
-
-  {# How far ahead to look. Thirty days by default: a deadline six months out
-     is not a thing to act on today, and sixty calls sorted by date bury the
-     three she could enter this month under fifty she cannot yet. The rest are
-     still there, one click away -- kept, not re-fetched. #}
-  {% if found or days != 30 %}
-  <div class="oppfilter horizon">
-    <span class="oppfilter-t">Closing within</span>
-    {% for d in horizons %}
-    <a class="chip{% if days == d %} on{% endif %}"
-       href="{{ url_for('site.admin_opportunities', within=within or none, sort=(order if order == 'distance' else none), days=(none if d == 30 else d)) }}#found">{{ '30 days' if d == 30 else ('90 days' if d == 90 else 'any time') }}</a>
-    {% endfor %}
-    {% if days and found_total > found|length %}
-    <span class="sub">{{ found_total - found|length }} more close later.</span>
-    {% endif %}
-  </div>
-  {% endif %}
-
-  {% if no_distance %}
-  <form class="finder-go" method="post" action="{{ url_for('site.admin_found_distance') }}">
-    {# "these" would be a lie while the list is narrowed to thirty days: the
-       count is every listing without a distance, not the ones on screen. #}
-    <button class="link" type="submit">Work out the distance for {{ no_distance }} listing{{ '' if no_distance == 1 else 's' }} &rarr;</button>
-  </form>
-  {% endif %}
-
-  {% if found %}
-  <ul class="finds">
-    {% for f in found %}
-    <li>
-      <div class="find-what">
-        <span class="find-t">{{ f.title }}</span>
-        <span class="sub">{{ f.org or '' }}{% if f.org and f.location %} &middot; {% endif %}{{ f.location or '' }}
-          {%- if f.fee %} &middot; {{ f.fee }}{% endif %}</span>
-        {% if f.why %}<span class="find-why">{{ f.why }}</span>{% endif %}
-        {% if f.url %}<a class="outlink" href="{{ f.url }}" target="_blank" rel="noopener noreferrer">read the call &nearr;</a>{% endif %}
-      </div>
-      <div class="find-when">
-        {% if f.deadline %}<span class="dates">{{ f.deadline|day }}</span>
-          {% if f.days is not none %}<span class="countdown">{% if f.days == 0 %}today{% elif f.days == 1 %}tomorrow{% else %}{{ f.days }} days{% endif %}</span>{% endif %}
-        {% else %}<span class="sub">no deadline given</span>{% endif %}
-        {% if f.miles is not none %}<span class="miles n-{{ f.near }}">{{ f.miles }} mi</span>{% endif %}
-      </div>
-      <div class="find-do">
-        <form method="post" action="{{ url_for('site.admin_found', found_id=f.id, action='add') }}">
-          <button class="cta" type="submit">Add</button>
-        </form>
-        <form method="post" action="{{ url_for('site.admin_found', found_id=f.id, action='dismiss') }}">
-          <button class="link" type="submit">not for me</button>
-        </form>
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-  {% elif states and days and found_total %}
-  <p class="empty">Nothing closes in the next {{ days }} days.
-    <a href="{{ url_for('site.admin_opportunities', days=0) }}#found">Show all {{ found_total }}</a>.</p>
-  {% elif states %}
-  <p class="empty">{% if last_found %}Nothing waiting.
-    {% if found_counts.get('added') %}{{ found_counts['added'] }} added to your list,
-    {% endif %}{% if found_counts.get('dismissed') %}{{ found_counts['dismissed'] }} put aside.
-    {% endif %}Press Get the latest for new ones.
-    {% else %}Press Get the latest to see what is open.{% endif %}</p>
-  {% endif %}
-
-  {% if lookups %}
-  <details class="lookhere">
-    <summary>Other places to look</summary>
-    <ul class="looks">
-      {% for name, href, note in lookups %}
-      <li>
-        <a class="look" href="https://{{ href }}" target="_blank" rel="noopener noreferrer">{{ name }} &nearr;</a>
-        <span class="sub">{{ note }}</span>
-      </li>
-      {% endfor %}
-    </ul>
-  </details>
-  {% endif %}
-</section>
-
 <h2 class="offhead up">Your list</h2>
 <form class="newrow" method="post">
   <label class="sr" for="newopp">Name the call</label>
@@ -214,4 +107,115 @@
   {% endfor %}
 </ul>
 {% endif %}
+
+{# ---- calls from outside -------------------------------------------------
+   Open calls, IN HERE, with an Add button -- she should not have to go and
+   read somebody else's website to fill in her own list. EntryThingy publishes
+   schema.org JSON-LD on its public listing pages and its robots.txt asks to be
+   read, so this takes the structured data: the name, the deadline, the town,
+   the organiser and the fee, exactly as published. No key, no bill, no model.
+
+   They still WAIT here rather than joining her list: they were published by
+   somebody else and she has not looked at them yet. Add moves one across;
+   "not for me" remembers, so the next refresh does not offer it again. #}
+<section class="finder" id="found">
+  <div class="finder-head">
+    <h2 class="offhead up">Calls near you</h2>
+    {% if last_found %}<span class="sub">Updated {{ last_found[:10] }}</span>{% endif %}
+  </div>
+
+  {% if states %}
+  <form class="finder-go" method="post" action="{{ url_for('site.admin_opportunities_refresh') }}">
+    <button class="cta" type="submit">Get the latest</button>
+    <span class="sub">Open calls listed in {{ states|join(' and ') }}, free to read.
+      Nothing joins your list until you press Add.</span>
+  </form>
+  {% else %}
+  <p class="sub finder-note">Put your town in
+    <a href="{{ url_for('site.admin_settings') }}#name">Your site</a> and calls near
+    you will be listed here.</p>
+  {% endif %}
+
+  {# How far ahead to look. Thirty days by default: a deadline six months out
+     is not a thing to act on today, and sixty calls sorted by date bury the
+     three she could enter this month under fifty she cannot yet. The rest are
+     still there, one click away -- kept, not re-fetched. #}
+  {% if found or days != 30 %}
+  <div class="oppfilter horizon">
+    <span class="oppfilter-t">Closing within</span>
+    {% for d in horizons %}
+    <a class="chip{% if days == d %} on{% endif %}"
+       href="{{ url_for('site.admin_opportunities', within=within or none, sort=(order if order == 'distance' else none), days=(none if d == 30 else d)) }}#found">{{ '30 days' if d == 30 else ('90 days' if d == 90 else 'any time') }}</a>
+    {% endfor %}
+    {% if days and found_total > found|length %}
+    <span class="sub">{{ found_total - found|length }} more close later.</span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if no_distance %}
+  <form class="finder-go" method="post" action="{{ url_for('site.admin_found_distance') }}">
+    {# "these" would be a lie while the list is narrowed to thirty days: the
+       count is every listing without a distance, not the ones on screen. #}
+    <button class="link" type="submit">Work out the distance for {{ no_distance }} listing{{ '' if no_distance == 1 else 's' }} &rarr;</button>
+  </form>
+  {% endif %}
+
+  {% if found %}
+  <ul class="finds">
+    {% for f in found %}
+    {# Two lines, not five. Thirty of these sit under her own list and the
+       description was most of the height -- it is on the call's own page,
+       which the title now opens, and it is kept on the row as a tooltip and
+       written into the notes if she adds it. #}
+    <li{% if f.why %} title="{{ f.why }}"{% endif %}>
+      <div class="find-what">
+        {% if f.url %}
+        <a class="find-t" href="{{ f.url }}" target="_blank" rel="noopener noreferrer">{{ f.title }} &nearr;</a>
+        {% else %}<span class="find-t">{{ f.title }}</span>{% endif %}
+        <span class="sub">{{ f.org or '' }}{% if f.org and f.location %} &middot; {% endif %}{{ f.location or '' }}
+          {%- if f.fee %} &middot; {{ f.fee }}{% endif %}</span>
+      </div>
+      <div class="find-when">
+        {% if f.deadline %}<span class="dates">{{ f.deadline|day }}</span>
+          {% if f.days is not none %}<span class="countdown">{% if f.days == 0 %}today{% elif f.days == 1 %}tomorrow{% else %}{{ f.days }}d{% endif %}</span>{% endif %}
+        {% else %}<span class="sub">no date</span>{% endif %}
+      </div>
+      {% if f.miles is not none %}<span class="miles n-{{ f.near }}">{{ f.miles }} mi</span>{% else %}<span></span>{% endif %}
+      <div class="find-do">
+        <form method="post" action="{{ url_for('site.admin_found', found_id=f.id, action='add') }}">
+          <button class="cta" type="submit">Add</button>
+        </form>
+        <form method="post" action="{{ url_for('site.admin_found', found_id=f.id, action='dismiss') }}">
+          <button class="link x" type="submit" title="Not for me" aria-label="Not for me">&times;</button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif states and days and found_total %}
+  <p class="empty">Nothing closes in the next {{ days }} days.
+    <a href="{{ url_for('site.admin_opportunities', days=0) }}#found">Show all {{ found_total }}</a>.</p>
+  {% elif states %}
+  <p class="empty">{% if last_found %}Nothing waiting.
+    {% if found_counts.get('added') %}{{ found_counts['added'] }} added to your list,
+    {% endif %}{% if found_counts.get('dismissed') %}{{ found_counts['dismissed'] }} put aside.
+    {% endif %}Press Get the latest for new ones.
+    {% else %}Press Get the latest to see what is open.{% endif %}</p>
+  {% endif %}
+
+  {% if lookups %}
+  <details class="lookhere">
+    <summary>Other places to look</summary>
+    <ul class="looks">
+      {% for name, href, note in lookups %}
+      <li>
+        <a class="look" href="https://{{ href }}" target="_blank" rel="noopener noreferrer">{{ name }} &nearr;</a>
+        <span class="sub">{{ note }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</section>
 {% endblock %}
