@@ -44,7 +44,7 @@
       <img src="{{ img_url(cfg.hero_image,'s','jpg') }}" alt="">
       {% endif %}
       <div>
-        <p class="pv-eyebrow">&ldquo;The Box Series&rdquo; &middot; Multimedia</p>
+        {% if cfg.hero_eyebrow %}<p class="pv-eyebrow">{{ cfg.hero_eyebrow }}</p>{% endif %}
         {# The SAME fallback the front page uses, from the same constant. It read
            `hero_title or tagline or "..."` here, which has not been the site's
            behaviour since the landing page stopped falling through to the
@@ -60,6 +60,11 @@
 
   <form class="setform" method="post" enctype="multipart/form-data">
     <input type="hidden" name="section" value="front">
+    {# Above the headline on the page, so above it here. #}
+    <label class="wide">The small line above it
+      <input name="hero_eyebrow" value="{{ cfg.hero_eyebrow }}" placeholder="&ldquo;The Box Series&rdquo; &middot; Multimedia">
+      <span class="sub">Empty takes the line off the page altogether.</span>
+    </label>
     <label class="wide">Headline
       <input name="hero_title" value="{{ cfg.hero_title }}" placeholder="{{ hero_head }}">
       <span class="sub">Empty reads &ldquo;{{ hero_head }}&rdquo;.</span>

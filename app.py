@@ -1485,7 +1485,7 @@ def admin_subscribers_csv():
 def admin_settings():
     if request.method == "POST":
         keys = ["site_title", "tagline", "about", "artist_email", "commission_note",
-                "hero_title", "hero_sub", "hero_caption", "about_caption",
+                "hero_eyebrow", "hero_title", "hero_sub", "hero_caption", "about_caption",
                 "box_caption", "box_note", "page_bg",
                 "artist_name", "artist_statement", "artist_bio",
                 "studio_location"]

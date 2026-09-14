@@ -24,7 +24,7 @@
   </div>
 
   <div class="hero-say">
-    <p class="eyebrow">&ldquo;The Box Series&rdquo; &middot; Multimedia</p>
+    {% if cfg.hero_eyebrow %}<p class="eyebrow">{{ cfg.hero_eyebrow }}</p>{% endif %}
     <h1>{{ hero.title }}</h1>
     {% if hero.sub %}<p class="lede">{{ hero.sub }}</p>
     {% elif cfg.about %}<p class="lede">{{ cfg.about.split("\n")[0] }}</p>{% endif %}

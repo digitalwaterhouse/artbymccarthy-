@@ -59,6 +59,12 @@ DEFAULT_SETTINGS = {
     # add_image), not a work id, so the piece on the front can be one the shop
     # is not selling -- a sold favourite, or work still in the studio.
     "hero_image": "",
+    # The small line above the headline. SEEDED with what the template used to
+    # say rather than left empty, so the page reads the same the day this
+    # becomes editable -- and an empty value now means she took the line off,
+    # which is a thing she is allowed to want. That is why it is not a fallback
+    # in the template: a default there could never be cleared.
+    "hero_eyebrow": "“The Box Series” · Multimedia",
     "hero_title": "",
     "hero_sub": "",
     "hero_caption": "",
