@@ -181,6 +181,8 @@ def _asset_version():
 
 
 ASSET_VERSION = _asset_version()
+# The commit this instance is running, short. Empty off Render.
+BUILD = (os.environ.get("RENDER_GIT_COMMIT") or "")[:7]
 
 
 @app.context_processor
@@ -634,7 +636,12 @@ def health():
                    # session key dies with the process and she will be signed
                    # out at every restart. Where the key came from, never the
                    # key.
-                   session_key=SECRET_KEY_SOURCE)
+                   session_key=SECRET_KEY_SOURCE,
+                   # WHICH BUILD IS ANSWERING. Render sets this on every
+                   # deploy; without it "is my change live yet" can only be
+                   # asked of the stylesheet's hash, which says nothing at all
+                   # when the change was in the Python or a template.
+                   build=BUILD)
 
 
 @site.route("/robots.txt")
