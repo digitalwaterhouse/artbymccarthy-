@@ -24,6 +24,7 @@
   --rail-bg:#141A18;
   --rail-edge:rgba(255,255,255,.10);   /* the hairline down the rail's edge */
   --paper-hi:#FBFBF9;    /* a row under the cursor, a message already sent */
+  --panel-soft:#F1F0EA;  /* a quiet panel ON the wall: Previous/Next */
   --paper-lo:#FCFCFA;    /* the holding pen, a draft of a surface */
   --head:#F7F7F4;        /* the heading row of a table */
   --admin-bg:#F3F4F2;    /* the studio's ground, a shade off the shop's */
@@ -161,6 +162,7 @@
   --wall:#0F161A;
   --paper:#171F25;
   --paper-hi:#1D262D;
+  --panel-soft:#1A232A;
   --paper-lo:#141B21;
   --head:#1A232A;
   --admin-bg:#0B1115;
@@ -198,6 +200,7 @@
   --wall:#0F161A;
   --paper:#171F25;
   --paper-hi:#1D262D;
+  --panel-soft:#1A232A;
   --paper-lo:#141B21;
   --head:#1A232A;
   --admin-bg:#0B1115;
@@ -776,12 +779,21 @@ main, .foot{position:relative; z-index:1}
    outward, away from the piece you are on. */
 .step{
   display:flex; flex-direction:column; gap:4px; min-width:0;
-  padding:12px 0 0; border:0; border-top:1px solid var(--rule);
-  border-radius:0; background:none; box-shadow:none;
+  /* A QUIET PANEL, not a button. The pair was a hairline and some type on a
+     wall almost the same colour, which is right in a catalogue and wrong at
+     the foot of a long page: they were easy to scroll past without seeing.
+     A ground a shade off the wall is enough to find them by -- still no
+     border, no shadow, no rounded corners, so the convention holds and they
+     do not turn into a web control. The hairline stays: it is the catalogue's
+     mark and the thing that darkens under the cursor. */
+  padding:12px 14px 14px; border:0; border-top:1px solid var(--rule);
+  border-radius:0; background:var(--panel-soft); box-shadow:none;
   text-decoration:none; color:var(--ink);
-  transition:border-color .18s ease;
+  transition:border-color .18s ease, background .18s ease;
 }
-.step:hover{border-top-color:var(--ink)}
+/* Lifts towards the paper under the cursor rather than darkening: the page is
+   light, so the thing being pointed at should come forward. */
+.step:hover{border-top-color:var(--ink); background:var(--paper-hi)}
 .step:hover .step-t{text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px}
 .step:hover .step-dir{color:var(--ink)}
 /* Without the box there is nothing to outline, so focus needs saying. */
@@ -817,7 +829,9 @@ main, .foot{position:relative; z-index:1}
 @media (prefers-reduced-motion:reduce){.step{transition:none} .step:hover{transform:none}}
 @media (max-width:640px){
   .stepper{gap:10px}
-  .step{padding:10px 12px; max-width:9.5rem}
+  /* The panel fills its half of the row now. It used to be capped, which only
+     mattered while there was nothing to see but the words. */
+  .step{padding:10px 12px 12px}
   .step-t{font-size:14px}
   .step-count{display:none}
 }
