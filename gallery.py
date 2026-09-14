@@ -1220,6 +1220,21 @@ def image_base_in_use(base):
             "'box_image') AND value=? LIMIT 1", (base,)).fetchone())
 
 
+def is_image_base(base):
+    """Is this stem one of her paintings' photographs?
+
+    The front page's hero can be CHOSEN from the work rather than uploaded, and
+    what comes back from that form is a stem in a text field -- so it is checked
+    against the images table before it is written into a setting. Nothing here
+    trusts a value that arrived in a request.
+    """
+    if not base:
+        return False
+    with connect() as conn:
+        return bool(conn.execute("SELECT 1 FROM images WHERE base=? LIMIT 1",
+                                 (base,)).fetchone())
+
+
 def drop_image_files(base):
     """The six files behind one stem, unless something still points at it.
     Returns whether they went."""

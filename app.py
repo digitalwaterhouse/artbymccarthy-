@@ -1501,11 +1501,19 @@ def admin_settings():
                 vals["ship_%s_cents" % band] = c
         f = request.files.get("hero_photo")
         old_hero = cfg().get("hero_image") or ""
+        # CHOSEN FROM THE WORK, or uploaded, or cleared -- in that order of
+        # insistence. An empty pick means "leave the photograph alone", which is
+        # not the same as clearing it, so the two are separate controls.
+        # The stem is checked against the images table rather than trusted: it
+        # arrives as text in a form field like anything else.
+        pick = (request.form.get("hero_pick") or "").strip()
         if f and f.filename:
             try:
                 vals["hero_image"] = gallery.store_photo(f.read())
             except ValueError as e:
                 flash(str(e))
+        elif pick and pick != old_hero and gallery.is_image_base(pick):
+            vals["hero_image"] = pick
         elif request.form.get("clear_hero"):
             vals["hero_image"] = ""
         # Six files per replacement, at print widths, so the one it replaces is
@@ -1575,7 +1583,14 @@ def admin_settings():
         sec = request.form.get("section", "")
         return redirect(url_for("site.admin_settings", saved=sec or None)
                         + ("#" + sec if sec else ""))
-    return render_template("admin/settings.html")
+    # The hero can be picked from her own paintings, so the page needs them --
+    # drafts included, because a piece can be photographed and written up long
+    # before it goes on the wall, and it is still hers to put on the front page.
+    return render_template("admin/settings.html",
+                           works=gallery.list_works(include_draft=True),
+                           # Whether the hero IS one of them, which is what says
+                           # if any radio below is already the chosen one.
+                           hero_is_work=gallery.is_image_base(cfg().get("hero_image")))
 
 
 # -------------------------------------------------------------- consignment

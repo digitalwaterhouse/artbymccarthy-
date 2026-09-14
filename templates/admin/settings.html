@@ -71,7 +71,32 @@
     <label class="wide">Caption for the photograph
       <input name="hero_caption" value="{{ cfg.hero_caption }}" placeholder="Title, year, medium">
     </label>
-    <label class="wide">Change the photograph
+    {# HER OWN WORK FIRST. The hero used to be an upload and nothing else, so
+       putting a painting she had already photographed on the front page meant
+       finding the file again and sending a second copy of it. Picking one here
+       points the front page at the photograph that is already on the piece --
+       one file, and changing the hero later cannot take it away from the
+       painting (see gallery.drop_image_files). #}
+    <fieldset class="wide">
+      <legend>The photograph</legend>
+      <div class="pickers">
+        <label class="pick">
+          <input type="radio" name="hero_pick" value="" {% if not hero_is_work %}checked{% endif %}>
+          <span class="pick-none">Leave it as it is{% if not cfg.hero_image %} &mdash; newest work shows{% endif %}</span>
+        </label>
+        {% for w in works if w.images %}
+        <label class="pick">
+          <input type="radio" name="hero_pick" value="{{ w.images[0].base }}"
+                 {% if cfg.hero_image == w.images[0].base %}checked{% endif %}>
+          <img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">
+          <span>{{ w.title }}{% if w.status == 'draft' %} <span class="sub">draft</span>{% endif %}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <span class="sub">Pick one of your pieces, or upload a photograph that is
+        not on the wall at all.</span>
+    </fieldset>
+    <label class="wide">Upload a different one instead
       <input type="file" name="hero_photo" accept="image/jpeg,image/png,image/webp">
       <span class="sub">It need not be for sale.</span>
     </label>
