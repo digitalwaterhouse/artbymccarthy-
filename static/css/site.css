@@ -428,16 +428,26 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
    thing anyone sees and they are all one size in life -- 10.5in square -- so
    they are hung 550px square and the wall is centred under them rather than
    stretched to the window.
-   minmax() and auto-fit, not a bare 550px track: below about 1200px that puts
-   one painting on a row instead of two, and on a phone the track shrinks to
-   the screen rather than running off the side of it. */
+   550 is a CEILING, and the count of columns is set by hand rather than by
+   auto-fit. Auto-fit decides how many tracks to make from their MINIMUM, so a
+   minimum small enough to keep two across on a small laptop also let a wide
+   screen make three narrow ones -- the size and the count have to be settled
+   separately. Two from 880px, and they shrink a little between there and
+   1150px rather than dropping a painting to its own row; three only once
+   three actually fit at full size; one, at the width of the screen, below. */
 .home .grid{
   columns:auto;
   display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(min(100%, 550px), 550px));
+  grid-template-columns:minmax(0, 550px);
   justify-content:center;
   column-gap:clamp(18px,2.6vw,34px);
   row-gap:clamp(22px,3vw,40px);
+}
+@media (min-width:880px){
+  .home .grid{grid-template-columns:repeat(2, minmax(0, 550px))}
+}
+@media (min-width:1840px){
+  .home .grid{grid-template-columns:repeat(3, minmax(0, 550px))}
 }
 .home .tile{margin:0}
 .tile{
