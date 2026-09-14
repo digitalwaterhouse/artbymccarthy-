@@ -506,6 +506,14 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
    itself can no longer be sticky because it is now as tall as its container
    and would have nothing to travel through. */
 .facts{display:flex; flex-direction:column; min-height:100%}
+/* WHERE THE STICKY DETAILS ARE ALLOWED TO GET TO. position:sticky travels
+   inside its containing block, and its containing block used to be the whole
+   aside -- so on a long page the details kept going and rode down over the
+   Previous/Next at the foot of the column. This holds them: it takes the
+   height the stepper does not, so the travel ends exactly where the stepper
+   begins. min-height:0 because a flex item will not shrink below its content
+   without it. */
+.facts-hold{flex:1 1 auto; min-height:0}
 .facts-inner{position:sticky; top:28px}
 .stepper{margin-top:auto}
 .facts h1{font-size:clamp(1.6rem,3vw,2.1rem)}

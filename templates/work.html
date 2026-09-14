@@ -41,7 +41,13 @@
   <aside class="facts">
     {# The details sit in their own box so the aside itself can be full-height:
        that is what lets the stepper hang off the bottom while this part still
-       sticks to the top as you scroll. #}
+       sticks to the top as you scroll.
+
+       TWO boxes, not one, and the outer one is the point: a sticky element can
+       travel to the bottom of its PARENT, so with the stepper a sibling the
+       details slid straight down over Previous/Next as you scrolled. The
+       parent now stops where the stepper starts, and so does the travel. #}
+    <div class="facts-hold">
     <div class="facts-inner">
     <h1>{{ w.title }}</h1>
     <dl>
@@ -85,6 +91,7 @@
           <button class="cta" type="submit">Enquire</button>
         </form>
       {% endif %}
+    </div>
     </div>
     </div>
 
