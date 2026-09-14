@@ -11,6 +11,7 @@ import json
 import io
 import time
 import functools
+import hashlib
 import secrets
 import threading
 from datetime import datetime, timedelta
@@ -159,6 +160,29 @@ QUIET_PAGES = ("about", "contact")
 PAGE_ALIAS = {"commissions": "contact"}
 
 
+def _asset_version():
+    """A cache-buster the stylesheet cannot forget to change.
+
+    `?v=116` was typed into base.html by hand, which means every edit to the
+    stylesheet is also a promise to remember a number in another file -- and
+    the promise was broken the first time it was tested: a day of layout work
+    shipped behind a version returning visitors already had cached, so the new
+    CSS was live and invisible. This is the file's own content, so it changes
+    when and only when the file does.
+    """
+    h = hashlib.sha1()
+    for rel in ("css/site.css", "js/theme.js"):
+        try:
+            with open(os.path.join(app.static_folder, rel), "rb") as fh:
+                h.update(fh.read())
+        except OSError:          # missing file is not worth a 500 on every page
+            h.update(rel.encode())
+    return h.hexdigest()[:10]
+
+
+ASSET_VERSION = _asset_version()
+
+
 @app.context_processor
 def inject():
     c = cfg()
@@ -177,6 +201,7 @@ def inject():
     # from base.html now rather than from the landing page alone.
     slides = viewer_slides()
     return {"cfg": c, "prefix": PREFIX, "stripe_on": payments.enabled(),
+            "asset_version": ASSET_VERSION,
             "noindex": NOINDEX, "wordmark": wordmark(c["site_title"]),
             "slides": slides, "has_archive": getattr(g, "_has_archive", False),
             "signature_name": signature_name(), "pagekey": key, "nav": nav, "endpoint": ep,

@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Karla:wght@400;500;700&family=Mrs+Saint+Delafield&display=swap">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=116">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v={{ asset_version }}">
 <script>
 /* BEFORE FIRST PAINT, and inlined for that reason: a dark reader must never be
    flashed a white page on the way to a page they already chose to be dark.
@@ -124,6 +124,39 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
   });
 })();
 </script>
-<script src="{{ url_for('static', filename='js/theme.js') }}?v=116" defer></script>
+<script>
+/* THE MASTHEAD STICKS IN CSS; this does the two things CSS cannot.
+
+   It publishes the header's real height as --navh, because anything that has
+   to clear it -- a jump to #available, the sticky details beside a painting --
+   cannot assume a number: the nav is one row beside the wordmark on a laptop
+   and a second row under it on a phone.
+
+   And it marks the header once the page has actually moved. There is no CSS
+   selector for "stuck", and the home page needs one: up at the top the
+   masthead is invisible over the dark entry, and it can only take a background
+   once it is travelling over the work. */
+(function(){
+  var h = document.querySelector('.masthead');
+  if (!h) return;
+  var stuck = false;
+  function measure(){
+    document.documentElement.style.setProperty('--navh', h.offsetHeight + 'px');
+  }
+  function onScroll(){
+    var now = (window.scrollY || document.documentElement.scrollTop || 0) > 6;
+    if (now === stuck) return;
+    stuck = now;
+    h.classList.toggle('stuck', now);
+    measure();                 // on a phone it draws itself in as it goes
+  }
+  measure();
+  onScroll();
+  addEventListener('scroll', onScroll, {passive:true});
+  addEventListener('resize', measure);
+  addEventListener('load', measure);      // the webfonts settle the height
+})();
+</script>
+<script src="{{ url_for('static', filename='js/theme.js') }}?v={{ asset_version }}" defer></script>
 </body>
 </html>

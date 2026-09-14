@@ -231,7 +231,7 @@
 :root[data-theme="light"]{color-scheme:light}
 
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%; scroll-padding-top:calc(var(--navh, 113px) + 14px)}
 /* "Available work" on the landing page drops the reader past the hero to the
    wall. Jumping there cuts -- the page simply becomes a different page and you
    have to work out what moved. Gliding shows the hero leaving, so the wall
@@ -276,7 +276,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   outline:2px solid var(--focus); outline-offset:2px;
 }
 .skip{position:absolute; left:-9999px}
-.skip:focus{left:12px; top:12px; background:var(--paper); padding:8px 12px; z-index:20}
+.skip:focus{left:12px; top:12px; background:var(--paper); padding:8px 12px; z-index:40}
 
 /* ---------- masthead ---------- */
 .masthead{
@@ -514,7 +514,7 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
    begins. min-height:0 because a flex item will not shrink below its content
    without it. */
 .facts-hold{flex:1 1 auto; min-height:0}
-.facts-inner{position:sticky; top:28px}
+.facts-inner{position:sticky; top:calc(var(--navh, 113px) + 22px)}
 .stepper{margin-top:auto}
 .facts h1{font-size:clamp(1.6rem,3vw,2.1rem)}
 .facts dl{display:grid; grid-template-columns:auto 1fr; gap:6px 18px; margin:18px 0 0; font-size:15px}
@@ -552,7 +552,28 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 /* Named children only. A `.split > *` rule also matches the background svg,
    outranks .page-bg's position:absolute, and drops it back into the flow --
    which silently added 1800px to the page height. */
-.masthead, main, .foot{position:relative; z-index:1}
+main, .foot{position:relative; z-index:1}
+/* ---------- THE NAV FOLLOWS YOU DOWN ----------
+   Sticky on every page. Above the fixed pattern layer and everything in the
+   flow (z-index 30), under the gallery overlay (1000), which must still cover
+   it. --navh is measured at runtime and published on :root -- the header is
+   113px on a wide screen but the nav wraps under the wordmark on a phone, so
+   anything that needs to clear it has to ask rather than assume. */
+.masthead{position:sticky; top:0; z-index:30}
+/* Only once it has left the top of the page: at rest it is part of the page,
+   and on the home page that means staying invisible over the dark entry. */
+.masthead.stuck{box-shadow:0 10px 24px rgba(23,26,24,.07)}
+.home .masthead.stuck{
+  background:var(--ground-deep);
+  border-bottom-color:rgba(237,241,240,.14);
+  box-shadow:0 10px 26px rgba(0,0,0,.35);
+}
+/* A phone gives up a lot of screen to a 150px header that never leaves, so it
+   draws itself in once it is travelling. */
+@media (max-width:700px){
+  .masthead.stuck{padding-top:11px; padding-bottom:9px}
+  .masthead.stuck .wordmark .mark{width:38px; height:38px}
+}
 .about > .prose, .about > .portrait,
 .split > .prose, .split > .panel,
 .panelled > .prose, .panelled > .panel{position:relative; z-index:1}
@@ -1880,7 +1901,7 @@ body.home{
      border and 4px of padding here made the home header 5px shorter, which
      moved the whole page under it and read as the nav sitting in a different
      place from one page to the next. */
-  background:transparent; border-bottom-color:transparent; position:relative; z-index:2;
+  background:transparent; border-bottom-color:transparent;
 }
 .home .masthead .wordmark{color:#F4F6F5}
 .home .wordmark-pre{color:var(--turq)}
