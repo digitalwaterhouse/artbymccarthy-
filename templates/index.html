@@ -72,7 +72,7 @@
     <a class="tile" href="{{ url_for('site.work', slug=w.slug) }}">
       {% if w.images %}
         <picture>
-          <source type="image/webp" srcset="{{ img_url(w.images[0].base,'s') }} 600w, {{ img_url(w.images[0].base,'m') }} 1400w" sizes="(max-width: 700px) 92vw, 30vw">
+          <source type="image/webp" srcset="{{ img_url(w.images[0].base,'s') }} 600w, {{ img_url(w.images[0].base,'m') }} 1400w" sizes="(max-width: 700px) 92vw, 550px">
           <img src="{{ img_url(w.images[0].base,'m','jpg') }}" alt="{{ w.title }}" loading="lazy">
         </picture>
       {% else %}

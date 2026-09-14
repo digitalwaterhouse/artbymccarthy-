@@ -422,6 +422,24 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
    Columns, not a row grid: paintings are not one aspect ratio and cropping
    them to make a tidy grid is the one thing a gallery site must not do. */
 .grid{columns:3 300px; column-gap:clamp(18px,2.6vw,34px)}
+/* THE FRONT PAGE HANGS THEM AT A FIXED SIZE. Everywhere else the wall is a
+   column layout that fills whatever width it is given, which is right for a
+   collection of unknown length; on the landing page the pieces are the first
+   thing anyone sees and they are all one size in life -- 10.5in square -- so
+   they are hung 550px square and the wall is centred under them rather than
+   stretched to the window.
+   minmax() and auto-fit, not a bare 550px track: below about 1200px that puts
+   one painting on a row instead of two, and on a phone the track shrinks to
+   the screen rather than running off the side of it. */
+.home .grid{
+  columns:auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(min(100%, 550px), 550px));
+  justify-content:center;
+  column-gap:clamp(18px,2.6vw,34px);
+  row-gap:clamp(22px,3vw,40px);
+}
+.home .tile{margin:0}
 .tile{
   break-inside:avoid; display:block; margin:0 0 clamp(22px,3vw,40px);
   text-decoration:none; color:inherit;
