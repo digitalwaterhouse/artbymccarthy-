@@ -502,12 +502,14 @@ def delete_work(work_id):
                          (work_id,)).fetchone()["c"]
         if n:
             return False
-    for img in w["images"]:
-        drop_image_files(img["base"])
     with connect() as conn:
         conn.execute("UPDATE inquiries SET work_id=NULL WHERE work_id=?", (work_id,))
         conn.execute("DELETE FROM images WHERE work_id=?", (work_id,))
         conn.execute("DELETE FROM works WHERE id=?", (work_id,))
+    # The rows go first and the files after: a photograph that is also the hero
+    # or the About picture stays on disk, because something still points at it.
+    for img in w["images"]:
+        drop_image_files(img["base"])
     return True
 
 
@@ -1146,12 +1148,39 @@ def add_image(work_id, data, kind="full", alt=None):
     return base
 
 
+# WHO ELSE IS USING THIS PHOTOGRAPH. The hero, About and box pictures are plain
+# SETTINGS -- a stem, no images row -- and one of them may well be a painting's
+# own photograph, chosen because that is the piece she wants on the front page.
+# That is exactly what broke Tuk Tuk Travels on 2026-09-14: replacing the hero
+# unlinked the old stem, and the old stem was still that painting's only
+# photograph, so its images row pointed at six files that no longer existed.
+#
+# So nothing is deleted while any row still names it. The LAST reference takes
+# the files with it, which means every caller must remove its own row FIRST and
+# then ask for the files -- see delete_image, the one that always did.
+def image_base_in_use(base):
+    if not base:
+        return True
+    with connect() as conn:
+        if conn.execute("SELECT 1 FROM images WHERE base=? LIMIT 1",
+                        (base,)).fetchone():
+            return True
+        return bool(conn.execute(
+            "SELECT 1 FROM settings WHERE key IN ('hero_image','about_image',"
+            "'box_image') AND value=? LIMIT 1", (base,)).fetchone())
+
+
 def drop_image_files(base):
+    """The six files behind one stem, unless something still points at it.
+    Returns whether they went."""
+    if image_base_in_use(base):
+        return False
     for suffix, _ in SIZES:
         for ext in ("webp", "jpg"):
             p = os.path.join(PHOTO_DIR, f"{base}-{suffix}.{ext}")
             if os.path.exists(p):
                 os.remove(p)
+    return True
 
 
 def delete_image(image_id):

@@ -1401,10 +1401,13 @@ def admin_settings():
                 flash(str(e))
         elif request.form.get("clear_hero"):
             vals["hero_image"] = ""
-        # The hero photo has no images row, so nothing else would ever collect
-        # it -- six files per replacement, at print widths.
+        # Six files per replacement, at print widths, so the one it replaces is
+        # collected -- but AFTER the new stem is saved, and only if nothing else
+        # names the old one. The hero is often a painting's own photograph, and
+        # unlinking it here took that painting's picture down with it.
+        freed = []
         if old_hero and vals.get("hero_image", old_hero) != old_hero:
-            gallery.drop_image_files(old_hero)
+            freed.append(old_hero)
 
         old_about = cfg().get("about_image") or ""
         fa = request.files.get("about_photo")
@@ -1416,7 +1419,7 @@ def admin_settings():
         elif request.form.get("clear_about"):
             vals["about_image"] = ""
         if old_about and vals.get("about_image", old_about) != old_about:
-            gallery.drop_image_files(old_about)
+            freed.append(old_about)
 
         # Same three moves again for the box photograph on the landing page.
         old_box = cfg().get("box_image") or ""
@@ -1429,7 +1432,7 @@ def admin_settings():
         elif request.form.get("clear_box"):
             vals["box_image"] = ""
         if old_box and vals.get("box_image", old_box) != old_box:
-            gallery.drop_image_files(old_box)
+            freed.append(old_box)
 
         # The studio address is stored with the two numbers geocoded from it, so
         # Opportunities can say how far a call is. Looked up only when the text
@@ -1453,6 +1456,11 @@ def admin_settings():
                           "\"Town, State\" works best." % typed)
 
         gallery.save_settings(vals)
+        # Now that the new stems are written, the replaced ones are no longer
+        # named by settings and can go -- unless a painting's images row still
+        # points at them, which drop_image_files checks for itself.
+        for stem in freed:
+            gallery.drop_image_files(stem)
         # Back to the card she was working in, and marked as saved there rather
         # than in a banner at the top of a long page: on a screen this tall the
         # confirmation has to appear where her eyes already are, or pressing
