@@ -29,7 +29,7 @@
     {% if c.parent %}<a class="crumb" href="{{ url_for('site.collection', slug=c.parent.slug) }}">{{ c.parent.name }}</a>{% endif %}
   </nav>
   <h1>{{ c.name }}</h1>
-  {% if c.blurb %}<p class="lede">{{ c.blurb }}</p>{% endif %}
+  {% if c.blurb %}<div class="lede">{{ c.blurb|paras }}</div>{% endif %}
 </section>
 {% if works %}{{ grid(works) }}{% endif %}
 {# Each subcategory keeps its own heading: the grouping is the reason it
@@ -39,7 +39,7 @@
     <h2>{{ k.name }}</h2>
     <a href="{{ url_for('site.collection', slug=k.slug) }}">see only these</a>
   </div>
-  {% if k.blurb %}<p class="lede">{{ k.blurb }}</p>{% endif %}
+  {% if k.blurb %}<div class="lede">{{ k.blurb|paras }}</div>{% endif %}
   {{ grid(items) }}
 {% endfor %}
 {% if not works and not groups %}

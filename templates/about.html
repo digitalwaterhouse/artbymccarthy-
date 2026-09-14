@@ -11,7 +11,7 @@
   <div class="prose">
     <h1>About</h1>
     {% if cfg.about %}
-      {% for p in cfg.about.split("\n") %}{% if p.strip() %}<p>{{ p }}</p>{% endif %}{% endfor %}
+      {{ cfg.about|paras }}
     {% else %}
       <p class="empty">The About text is set in the admin.</p>
     {% endif %}

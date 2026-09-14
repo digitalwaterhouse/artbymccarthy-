@@ -57,7 +57,7 @@
         <dd>{% if w.collection.parent %}<a href="{{ url_for('site.collection', slug=w.collection.parent.slug) }}">{{ w.collection.parent.name }}</a> &rarr; {% endif %}<a href="{{ url_for('site.collection', slug=w.collection.slug) }}">{{ w.collection.name }}</a></dd>{% endif %}
     </dl>
 
-    {% if w.story %}<p class="story">{{ w.story }}</p>{% endif %}
+    {% if w.story %}<div class="story">{{ w.story|paras }}</div>{% endif %}
 
     <div class="buy">
       {% if w.status == 'sold' %}

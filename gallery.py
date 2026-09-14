@@ -733,6 +733,56 @@ def get_collection(slug=None, collection_id=None):
     return c
 
 
+def excerpt(text, limit=220):
+    """The opening of a longer piece of writing, cut where a sentence ends.
+
+    For the front page, which borrows the first of what she has written about
+    a collection and links to the rest. Cutting mid-sentence reads as a
+    truncation error rather than an opening, so the cut is taken at the last
+    full stop that fits; only if there is not one does it fall back to a word
+    boundary and an ellipsis. Returns (text, was_shortened) -- the second is
+    what tells the page whether a "read more" is owed.
+    """
+    body = (text or "").strip()
+    if not body:
+        return "", False
+    first = body.split("\n\n")[0].strip() or body
+    one_para = len(first) == len(body)
+    if len(first) <= limit:
+        return first, not one_para
+    window = first[:limit + 1]
+    cut = max(window.rfind(". "), window.rfind("! "), window.rfind("? "))
+    if cut > limit // 3:
+        return first[:cut + 1], True
+    space = window.rfind(" ")
+    return (first[:space] if space > 0 else first[:limit]).rstrip(" ,;:-") + "\u2026", True
+
+
+def common_collection(works):
+    """The one body of work a list of paintings all belongs to, or None.
+
+    The wall on the home page is not a catalogue of everything she has made:
+    at the moment every piece for sale on it is from one collection, and
+    saying so is the difference between a grid of paintings and a SHOW. The
+    name and the sentence under it come from Collections in the studio, so the
+    front page says what she says.
+
+    A subcategory counts as its parent -- Sri Lanka \u2192 Sailboat is still Sri
+    Lanka -- and one painting filed nowhere, or a second body of work going up
+    for sale, returns None and the wall goes back to being a wall rather than
+    claiming to be something it is not.
+    """
+    tops = set()
+    for w in works:
+        c = w.get("collection")
+        if not c:
+            return None
+        tops.add(c["parent"]["id"] if c.get("parent") else c["id"])
+        if len(tops) > 1:
+            return None
+    return get_collection(collection_id=tops.pop()) if len(tops) == 1 else None
+
+
 def collection_family(collection_id):
     """This collection and anything filed under it.
 

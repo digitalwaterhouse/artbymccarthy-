@@ -19,6 +19,7 @@ from flask import (Flask, Blueprint, render_template, request, redirect,
                    has_request_context, g,
                    url_for, session, abort, send_from_directory, jsonify,
                    Response, flash, send_file)
+from markupsafe import Markup, escape
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import gallery
@@ -243,6 +244,20 @@ def day(iso):
 
 app.jinja_env.filters["day"] = day
 app.jinja_env.globals["status_label"] = gallery.status_label
+@app.template_filter("paras")
+def paras(text):
+    """Her line breaks, kept.
+
+    Everything she writes -- a collection's About box, the story beside a
+    painting -- arrives as plain text with blank lines in it, and HTML throws
+    those away: two paragraphs and a scrap of dialogue came out as one run-on
+    block. Each line becomes its own paragraph, escaped, which is what the
+    About page already did by hand and now does through here.
+    """
+    lines = [line.strip() for line in (text or "").split("\n") if line.strip()]
+    return Markup("".join("<p>%s</p>" % escape(line) for line in lines))
+
+
 @app.template_filter("hostof")
 def hostof(url):
     """Show a source as its site, not as 80 characters of query string."""
@@ -378,7 +393,13 @@ def index():
         first = next((w for w in works + sold if w["images"]), None)
         if first:
             hero["base"] = first["images"][0]["base"]
-    return render_template("index.html", works=works, hero=hero)
+    # The wall is one body of work at the moment, so it says which one, in her
+    # words: the opening of that collection's own About box, with the rest a
+    # click away. Her subtitle stands in until the box is written.
+    wall = gallery.common_collection(works)
+    say, more = gallery.excerpt(wall["blurb"] or hero["sub"], 300) if wall else ("", False)
+    return render_template("index.html", works=works, hero=hero,
+                           wall=wall, wall_say=say, wall_more=more)
 
 
 @site.route("/archive")

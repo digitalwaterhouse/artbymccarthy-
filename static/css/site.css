@@ -485,6 +485,10 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 .facts dt{color:var(--muted)}
 .facts dd{margin:0}
 .story{margin:20px 0 0; color:var(--ink)}
+/* Her writing arrives as paragraphs now rather than as one block, here and
+   wherever a collection's About box is shown. */
+.story p, .lede p{margin:0 0 .75em}
+.story p:last-child, .lede p:last-child{margin-bottom:0}
 .buy{margin-top:26px; border-top:1px solid var(--line); padding-top:20px}
 .price{font-family:"Newsreader",Georgia,serif; font-size:1.6rem; margin:0 0 14px}
 .soldline{font-size:1.05rem; margin:0 0 10px}
@@ -1973,6 +1977,24 @@ body.home{
   margin:0; margin-right:auto; letter-spacing:-.01em;
 }
 .wall-head .fine{margin:0}
+/* The collection the wall is showing, on its own line under "Available" --
+   full width, because it wraps the heading row rather than sitting in it. The
+   name is set as the hero's eyebrow is, but in the link colour: the entry's
+   turquoise is for a dark ground and would go pale on this one. */
+.wall-coll{flex:1 0 100%; margin:6px 0 0}
+.wall-coll > a{
+  font-size:11.5px; letter-spacing:.2em; text-transform:uppercase; font-weight:700;
+  color:var(--accent); text-decoration:none;
+  border-bottom:1px solid transparent;
+}
+.wall-coll > a:hover{border-bottom-color:currentColor}
+/* The rest of what she wrote is on the collection's own page. Set as a link in
+   the sentence, not as another eyebrow. */
+.wall-coll .more{color:var(--accent); white-space:nowrap}
+.wall-coll p{
+  margin:7px 0 0; max-width:56ch;
+  color:var(--muted); font-size:14.5px; line-height:1.6;
+}
 
 @media (max-width:900px){
   .hero{grid-template-columns:1fr; padding-bottom:clamp(38px,8vw,60px)}
