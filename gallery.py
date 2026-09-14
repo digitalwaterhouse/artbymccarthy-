@@ -203,6 +203,17 @@ NEW_COLUMNS = {
 }
 
 
+# Written into the live settings ONCE, on the deploy that introduces them --
+# for a value that is this site's own rather than a sensible default for any
+# gallery, and that would otherwise have to be typed in by hand after a deploy
+# that already knows it. The marker key is what makes it once.
+SEED_ONCE = [
+    # The Google property Paul made for artbymccarthy.com. The tag still does
+    # not load for anyone until they allow it -- see templates/_analytics.html.
+    ("ga_measurement_id", "G-9FE9BCEFQC", "ga_measurement_id_seeded"),
+]
+
+
 def _migrate(conn):
     for table, cols in NEW_COLUMNS.items():
         have = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
@@ -218,6 +229,22 @@ def _migrate(conn):
                  "ON works(collection_id, sort, id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_collections_parent "
                  "ON collections(parent_id, sort, name)")
+    # ONE-TIME VALUES. DEFAULT_SETTINGS only ever fills a key that is MISSING,
+    # which is no use for a setting whose empty row already exists -- and the
+    # box has to stay emptyable, so this cannot be a fallback in the template
+    # either. Each of these writes once, leaves a marker, and never looks again:
+    # emptying the box afterwards means it stays empty.
+    for key, value, marker in SEED_ONCE:
+        done = conn.execute("SELECT 1 FROM settings WHERE key=?", (marker,)).fetchone()
+        if done:
+            continue
+        cur = conn.execute("UPDATE settings SET value=? WHERE key=? AND value=''",
+                           (value, key))
+        if not cur.rowcount:
+            conn.execute("INSERT OR IGNORE INTO settings(key,value) VALUES(?,?)",
+                         (key, value))
+        conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES(?,?)",
+                     (marker, now()))
 
 
 # ------------------------------------------------------------------ settings
