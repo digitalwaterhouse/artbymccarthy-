@@ -11,8 +11,9 @@ import json
 import io
 import time
 import functools
+import secrets
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import (Flask, Blueprint, render_template, request, redirect,
                    has_request_context, g,
@@ -53,7 +54,56 @@ HERO_HEAD = "Black and white treasure boxes"
 # Flask serves /static from the app root, not the blueprint, so on a subpath
 # the stylesheet would 404 -- the prefix has to be pushed into it here.
 app = Flask(__name__, static_url_path=(PREFIX + "/static") if PREFIX else "/static")
-app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
+
+
+def _secret_key():
+    """The key that signs her session cookie, and WHERE IT CAME FROM.
+
+    A key that changes signs her out, mid-sentence and with nothing in any log
+    to say why. `os.urandom()` as the fallback meant exactly that: a new key
+    every time the instance restarted, and -- worse, because it needs no
+    restart at all -- a DIFFERENT key in every gunicorn worker, so two requests
+    a second apart could disagree about whether she was logged in.
+
+    SECRET_KEY from the environment still wins. Without one, a key is minted
+    ONCE and kept beside the database, on the disk that survives a deploy. The
+    file is created exclusively, so workers starting together cannot each write
+    their own; the loser reads the winner's. Only if the directory refuses to
+    be written does this fall back to a per-process key, and then it says so on
+    /health rather than looking fine and logging her out all afternoon.
+    """
+    env = (os.environ.get("SECRET_KEY") or "").strip()
+    if env:
+        return env, "env"
+    path = os.path.join(gallery.BASE, "data", "secret_key")
+    try:
+        # This runs before gallery.init_db(), so on a first deploy onto an
+        # empty disk the directory is not there yet.
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    except OSError:
+        pass
+    for attempt in (1, 2):
+        try:
+            with open(path) as fh:
+                saved = fh.read().strip()
+            if saved:
+                return saved, "file"
+        except OSError:
+            pass
+        if attempt == 2:
+            break
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            with os.fdopen(fd, "w") as fh:
+                fh.write(secrets.token_hex(32))
+        except FileExistsError:
+            continue            # another worker got there first; read theirs
+        except OSError:
+            break
+    return secrets.token_hex(32), "ephemeral"
+
+
+app.secret_key, SECRET_KEY_SOURCE = _secret_key()
 # Behind the Plesk proxy: without this every generated absolute URL is http,
 # which Stripe rejects as a return URL.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
@@ -66,6 +116,12 @@ app.config.update(
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=True,
     MAX_CONTENT_LENGTH=25 * 1024 * 1024,     # one phone photo, comfortably
+    # Ninety days, and it slides forward on every request she makes, so the
+    # studio does not ask for a password in the middle of a working afternoon.
+    # Flask's own default is 31 days; it is written down here because the
+    # length of time she stays signed in is a decision, not a framework detail.
+    PERMANENT_SESSION_LIFETIME=timedelta(days=90),
+    SESSION_REFRESH_EACH_REQUEST=True,
 )
 
 site = Blueprint("site", __name__, url_prefix=PREFIX or None)
@@ -527,7 +583,12 @@ def health():
                    for_sale=len([w for w in works if w["status"] == "available"]),
                    sold=len([w for w in works if w["status"] == "sold"]),
                    stripe=payments.enabled(), live=payments.live_mode(),
-                   env=ENV_NAME or "production", prefix=PREFIX)
+                   env=ENV_NAME or "production", prefix=PREFIX,
+                   # "ephemeral" is the one to worry about: it means the
+                   # session key dies with the process and she will be signed
+                   # out at every restart. Where the key came from, never the
+                   # key.
+                   session_key=SECRET_KEY_SOURCE)
 
 
 @site.route("/robots.txt")
