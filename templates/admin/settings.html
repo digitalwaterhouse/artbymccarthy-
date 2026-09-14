@@ -318,6 +318,27 @@
   </form>
 </details>
 
+{# -------------------------------------------------------------- visitors -#}
+<details class="setcard setfold" id="visitors"{% if request.args.get('saved') == 'visitors' %} open{% endif %}>
+  <summary><h2>Counting visitors</h2></summary>
+  <p class="setsay">Google Analytics, if you want it. Empty means no tag on the
+     site at all &mdash; which is how it ships.</p>
+  <form class="setform" method="post">
+    <input type="hidden" name="section" value="visitors">
+    <label class="wide">Measurement ID
+      <input name="ga_measurement_id" value="{{ cfg.ga_measurement_id }}" placeholder="G-XXXXXXXXXX" spellcheck="false">
+      <span class="sub">From Google Analytics, under Admin &rarr; Data streams.
+        It starts with G-. Paste the ID itself, not the code block around it.</span>
+    </label>
+    <p class="sub">The tag sets a cookie and sends what it collects to Google,
+       so visitors are asked first: a single line at the foot of the page with
+       Allow and No thanks. Whichever they choose is remembered and they are not
+       asked again, and a refusal means no tag, no cookie and nothing sent.
+       Nobody signed in here is ever counted &mdash; the studio has no tag.</p>
+    <div class="setsave">{{ savedpill('visitors') }}<button class="cta" type="submit">Save</button></div>
+  </form>
+</details>
+
 {# --------------------------------------------------------------- password -#}
 <details class="setcard setfold" id="password"{% if request.args.get('saved') == 'password' %} open{% endif %}>
   <summary><h2>Your password</h2></summary>

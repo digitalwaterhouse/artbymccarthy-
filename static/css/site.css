@@ -836,6 +836,23 @@ main, .foot{position:relative; z-index:1}
   .step-count{display:none}
 }
 
+/* ---------- the consent line ----------
+   One line at the foot of the window, not a dialogue box over the work: it is
+   a question about a cookie, not a thing to interrupt a gallery for. Above the
+   page but under the viewer, which still has to cover everything. */
+.consent{
+  position:fixed; left:0; right:0; bottom:0; z-index:900;
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
+  gap:10px 22px; padding:14px clamp(16px,4vw,40px);
+  background:var(--paper); border-top:1px solid var(--rule);
+  box-shadow:0 -10px 30px rgba(23,26,24,.10);
+}
+.consent p{margin:0; font-size:14px; color:var(--ink); max-width:54ch}
+.consent-do{display:flex; gap:10px; flex:none}
+.consent .cta{padding:9px 18px; font-size:13.5px}
+.consent .cta.ghost{background:transparent; color:var(--ink); border-color:var(--rule)}
+.consent .cta.ghost:hover{border-color:var(--ink); background:transparent}
+
 /* ---------- prose & forms ---------- */
 .prose{max-width:62ch}
 .prose.narrow{max-width:46ch}

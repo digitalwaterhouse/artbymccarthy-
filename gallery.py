@@ -70,6 +70,11 @@ DEFAULT_SETTINGS = {
     "hero_caption": "",
     # A portrait for the About page. Same idea as hero_image: a photo base,
     # not a work, because the artist is not for sale.
+    # Google's measurement ID (G-...), pasted in the studio. Empty means there
+    # is no tag on the site at all -- not a disabled one, none -- and that is
+    # the default. See templates/_analytics.html for why it also waits to be
+    # allowed once it IS set.
+    "ga_measurement_id": "",
     "about_image": "",
     "about_caption": "",
     # THE BOX BAND on the landing page. These pieces are shadow boxes, 2.5in
