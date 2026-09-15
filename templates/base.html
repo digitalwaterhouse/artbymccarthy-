@@ -160,6 +160,10 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
 {# Only when she has pasted a measurement ID, and even then only after the
    visitor agrees. Public pages only: the studio has its own layout. #}
 {% if cfg.ga_measurement_id %}{% include "_analytics.html" %}{% endif %}
+{# Plausible is cookieless, so unlike the tag above it does not wait to be
+   allowed -- it counts the visitors who declined too, which is why it is here.
+   Public pages only, same as the other one: the studio is never counted. #}
+{% if cfg.plausible_domain %}{% include "_plausible.html" %}{% endif %}
 <script src="{{ url_for('static', filename='js/theme.js') }}?v={{ asset_version }}" defer></script>
 </body>
 </html>

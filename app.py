@@ -1485,7 +1485,7 @@ def admin_subscribers_csv():
 def admin_settings():
     if request.method == "POST":
         keys = ["site_title", "tagline", "about", "artist_email", "commission_note",
-                "ga_measurement_id",
+                "ga_measurement_id", "plausible_domain",
                 "hero_eyebrow", "hero_title", "hero_sub", "hero_caption", "about_caption",
                 "box_caption", "box_note", "page_bg",
                 "artist_name", "artist_statement", "artist_bio",
@@ -1511,6 +1511,24 @@ def admin_settings():
                 vals.pop("ga_measurement_id", None)
             else:
                 vals["ga_measurement_id"] = ga.upper()
+
+        # A BARE DOMAIN, or nothing. Plausible identifies the site by the
+        # domain you registered with it, so what belongs in the box is
+        # "artbymccarthy.com" and not a URL or the whole snippet. The near
+        # misses worth refusing are the ones that leave the script loading and
+        # reporting nothing: a scheme, a trailing path, or a stray space.
+        # Empty is always allowed -- that is how the script comes off the site.
+        pd = (request.form.get("plausible_domain") or "").strip().lower()
+        if "plausible_domain" in request.form:
+            pd = re.sub(r"^https?://", "", pd).strip("/")
+            if pd and not re.fullmatch(r"[a-z0-9]([a-z0-9-]*[a-z0-9])?"
+                                       r"(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+", pd):
+                flash("That does not look like a domain. Paste just the site "
+                      "itself \u2014 artbymccarthy.com \u2014 with no https:// "
+                      "and no slash.")
+                vals.pop("plausible_domain", None)
+            else:
+                vals["plausible_domain"] = pd
 
         # The rates are entered in dollars but stored in cents, because that is
         # what payments.py charges from. A blank or unreadable field LEAVES THE

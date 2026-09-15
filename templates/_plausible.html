@@ -1,0 +1,24 @@
+{# --------------------------------------------------------------- plausible
+   A visitor count that does not need to ask.
+
+   WHY THIS SITS OUTSIDE THE CONSENT BAR while Google's tag sits inside it, and
+   the distinction is the entire point of adding it: Plausible sets no cookie
+   and stores nothing on the device. ePrivacy consent is about reading from or
+   writing to a visitor's machine, so with nothing stored there is nothing to
+   ask about -- which is why this script can run for everyone, including the
+   people who said "No thanks" to Google and the people who never answered.
+
+   That is the gap it fills. The consent bar means Google only ever counted the
+   share of visitors who pressed Allow, and those are not a random sample, so
+   the number was both smaller than the truth and bent in a direction nobody
+   could measure. This counts the rest.
+
+   The domain is a setting, pasted in the studio, exactly like the measurement
+   ID -- nothing here names an account, and taking it off the site is emptying
+   one box rather than a deploy. It must match the domain registered with
+   Plausible or the script loads and reports into nowhere.
+
+   NOT a replacement for Google's tag. Both can run; they answer different
+   questions and disagreeing totals are expected, not a fault. #}
+<script defer data-domain="{{ cfg.plausible_domain }}"
+        src="https://plausible.io/js/script.js"></script>
