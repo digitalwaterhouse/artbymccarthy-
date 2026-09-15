@@ -217,6 +217,12 @@ SEED_ONCE = [
     # The Google property Paul made for artbymccarthy.com. The tag still does
     # not load for anyone until they allow it -- see templates/_analytics.html.
     ("ga_measurement_id", "G-9FE9BCEFQC", "ga_measurement_id_seeded"),
+    # The Umami site Paul registered for artbymccarthy.com. Unlike the line
+    # above this one DOES start counting the moment it lands, because Umami
+    # sets no cookie and so is not behind the consent bar -- see
+    # templates/_umami.html. The id is not a secret: it is served in the page
+    # to every visitor, which is why it sits here rather than in an env var.
+    ("umami_website_id", "a2e56b53-119f-4292-b647-84d8c26fa805", "umami_website_id_seeded"),
 ]
 
 
