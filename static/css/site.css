@@ -852,6 +852,12 @@ main, .foot{position:relative; z-index:1}
   background:var(--paper); border-top:1px solid var(--rule);
   box-shadow:0 -10px 30px rgba(23,26,24,.10);
 }
+/* `display:flex` above outranks the browser's own `[hidden]{display:none}`, so
+   without this line `bar.hidden = true` sets the attribute and changes nothing
+   on screen: the answer is recorded, the tag is or isn't loaded, and the bar
+   sits there through every page as though neither button did anything. The
+   gallery overlay carries the same guard a few hundred lines down. */
+.consent[hidden]{display:none}
 .consent p{margin:0; font-size:14px; color:var(--ink); max-width:54ch}
 .consent-do{display:flex; gap:10px; flex:none}
 .consent .cta{padding:9px 18px; font-size:13.5px}
