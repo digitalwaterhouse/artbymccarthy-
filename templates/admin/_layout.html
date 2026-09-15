@@ -31,6 +31,11 @@
       room. Not the box (that is an order leaving) and not the frame (that is
       the catalogue). -#}
   <path d="M3 9l1.8-4.2A1.5 1.5 0 0 1 6.2 4h11.6a1.5 1.5 0 0 1 1.4.8L21 9z"/><path d="M4.6 9v10.4A1.6 1.6 0 0 0 6.2 21h11.6a1.6 1.6 0 0 0 1.6-1.6V9"/><path d="M9.6 21v-5.8h4.8V21"/>
+{%- elif name == 'visitors' -%}
+  {#- Footfall: three marks on a baseline, the near one taller. Not an eye
+      (that reads as surveillance, and this counts nobody personally) and not
+      a rising chart (the number goes down some weeks). -#}
+  <path d="M3 20h18"/><path d="M7 20v-5"/><path d="M12 20V7"/><path d="M17 20v-8"/>
 {%- elif name == 'settings' -%}
   <path d="M4 7h10M18 7h2M4 12h2M10 12h10M4 17h8M16 17h4"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="14" cy="17" r="2"/>
 {%- endif -%}
@@ -93,6 +98,7 @@ try{var t=localStorage.getItem("abm-theme");if(t==="dark"||t==="light")document.
          ("admin_orders",      "Orders",   url_for('site.admin_orders'), "orders"),
          ("admin_inquiries",   "Messages", url_for('site.admin_inquiries'), "messages"),
          ("admin_subscribers", "Contacts", url_for('site.admin_subscribers'), "contacts"),
+         ("admin_visitors",    "Visitors", url_for('site.admin_visitors'), "visitors"),
          ("admin_settings",    "Your site", url_for('site.admin_settings'), "settings")] %}
     {%- set wide_only = (ep == 'admin_settings') %}
     <a{% if wide_only %} class="only-wide{{ ' on' if endpoint == ep else '' }}"{% endif %} href="{{ href }}"{% if not wide_only and endpoint == ep or (ep == 'admin_exhibitions' and endpoint == 'admin_exhibition') or (ep == 'admin_consignments' and endpoint == 'admin_consignment') or (ep == 'admin_opportunities' and endpoint in ['admin_opportunity','admin_packet']) or (ep == 'admin_inquiries' and endpoint in ['admin_message','admin_message_draft','admin_message_new']) %} class="on" aria-current="page"{% endif %}>{{ icon(ic) }}<span>{{ label }}</span></a>

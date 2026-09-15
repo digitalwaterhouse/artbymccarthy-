@@ -1,0 +1,115 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Visitors{% endblock %}
+{% block body %}
+{#- The numbers Umami collects, drawn here so they are somewhere she already
+    is. Deliberately NOT a chart: for four headline figures and two short
+    leaderboards a plot would be decoration -- the tile IS the right form when
+    the number is the message. -#}
+<div class="adminhead">
+  <h1>Visitors</h1>
+  {% if configured %}
+  <div class="vperiod" role="group" aria-label="Period">
+    {% for d, label in [(1,'Today'),(7,'7 days'),(30,'30 days'),(90,'90 days')] %}
+      <a href="{{ url_for('site.admin_visitors', days=d) }}"
+         {% if d == days %}class="on" aria-current="true"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% if not configured %}
+  {# Say which half is missing. "Not configured" sends you to look at both. #}
+  <p class="sub">This page reads the counts back out of Umami, which needs two things:</p>
+  <ul class="sub vneed">
+    <li>{% if have_id %}<strong>Done</strong> &mdash; the website ID{% else %}The <strong>website ID</strong>, which is what puts the counter on the site at all{% endif %}</li>
+    <li>An <strong>API key</strong>, which is what lets this page read the numbers back.
+        Umami &rarr; profile &rarr; Settings &rarr; API keys &rarr; Create key.</li>
+  </ul>
+  <p class="sub">Both live in <a class="link" href="{{ url_for('site.admin_settings') }}#visitors">Your site &rarr; Counting visitors</a>.
+     The counter works with just the ID; the key is only for this page.</p>
+
+{% elif err %}
+  {# Never render zeroes when the question could not be asked -- "nobody came"
+     and "I could not reach Umami" look identical otherwise, and only one of
+     them is something to act on. #}
+  <div class="vwarn">
+    <p><strong>Could not read the numbers.</strong></p>
+    <p class="sub">{{ err }}</p>
+    <p class="sub">The counter on the site is unaffected &mdash; it keeps recording either way.
+       This page only reads.</p>
+  </div>
+
+{% else %}
+  {% set d = stats %}
+  <p class="statline">
+    {% if days == 1 %}Today so far{% else %}The last {{ days }} days{% endif %}
+    <span class="sep">·</span> compared with the {{ days }} before
+  </p>
+
+  {#- Four tiles. Each carries its comparison IN WORDS as well as direction:
+      a coloured arrow alone is unreadable to anyone who cannot separate the
+      two hues, and unreadable to everyone in print. -#}
+  <div class="vtiles">
+    {% for label, value, prev, suffix, hint in [
+         ('Visitors',   d.visitors.value,  d.visitors.prev,  '', 'People, not visits'),
+         ('Page views', d.pageviews.value, d.pageviews.prev, '', 'Pages opened in total'),
+         ('Bounced',    d.bounce_pct,      None,             '%', 'Left after one page'),
+         ('Average visit', d.avg_seconds,  None,             's', 'Seconds on the site')] %}
+    <div class="vtile">
+      <p class="vlab">{{ label }}</p>
+      <p class="vnum">{{ '{:,}'.format(value) }}{{ suffix }}</p>
+      {% if prev is not none %}
+        {% set diff = value - prev %}
+        <p class="vdelta">
+          {%- if prev == 0 and value == 0 -%}no change
+          {%- elif prev == 0 -%}new &mdash; nothing in the period before
+          {%- elif diff == 0 -%}the same as before
+          {%- else -%}
+            {{ 'up' if diff > 0 else 'down' }}
+            {{ ((diff / prev) * 100)|abs|round|int }}%
+            <span class="sub2">({{ '{:,}'.format(prev) }} before)</span>
+          {%- endif -%}
+        </p>
+      {% else %}
+        <p class="vdelta sub2">{{ hint }}</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="vcols">
+    {% for title, rows, empty_say in [
+         ('Most-read pages', pages, 'No pages recorded yet.'),
+         ('Where they came from', referrers, 'Nothing yet — a direct visit has no referrer, so early on this is usually empty.')] %}
+    <section class="vlist">
+      <h2>{{ title }}</h2>
+      {% if rows %}
+        {% set top = rows[0].count or 1 %}
+        <table class="grid-t vtable">
+          <tbody>
+          {% for r in rows %}
+            <tr>
+              <td data-label="">
+                {#- The bar is magnitude only -- one hue, no scale, no axis.
+                    It is there so the shape of the list reads at a glance;
+                    the number beside it is the actual answer. -#}
+                <span class="vbar" style="--w: {{ (100 * r.count / top)|round(1) }}%"></span>
+                <span class="vname">{{ r.name or ('Direct / typed in' if title.startswith('Where') else '/') }}</span>
+              </td>
+              <td class="right num" data-label="">{{ '{:,}'.format(r.count) }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="sub empty">{{ empty_say }}</p>
+      {% endif %}
+    </section>
+    {% endfor %}
+  </div>
+
+  <p class="sub vfoot">Counted without cookies, so this includes the people who
+     said no to Google &mdash; and excludes crawlers, which never run the script.
+     Figures are cached for a few minutes.</p>
+{% endif %}
+{% endblock %}

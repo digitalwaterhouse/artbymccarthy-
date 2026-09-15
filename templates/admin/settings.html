@@ -340,6 +340,20 @@
       <span class="sub">From Umami, on the site's Settings page. A long id with
         dashes &mdash; not the web address.</span>
     </label>
+    <label class="wide">Umami API key
+      {#- NOT rendered back. A studio page that redisplays a key hands it to
+          anything that can read the page; and because it is never shown, an
+          empty box cannot mean "delete it" -- it means "not retyped". The tick
+          below is how it is removed. -#}
+      <input name="umami_api_key" type="password" value="" autocomplete="off"
+             spellcheck="false" placeholder="{{ 'Saved — type a new key to replace it' if cfg.umami_api_key else 'Paste the key to read your numbers here' }}">
+      <span class="sub">Only needed for the <a class="link" href="{{ url_for('site.admin_visitors') }}">Visitors</a>
+        page in here &mdash; counting works without it. Umami &rarr; profile &rarr;
+        Settings &rarr; API keys. Leave blank to keep the one you have.</span>
+    </label>
+    {% if cfg.umami_api_key %}
+    <label class="inline"><input type="checkbox" name="umami_api_key_clear" value="1"> Forget the saved key</label>
+    {% endif %}
     <p class="sub">Umami sets no cookie and stores nothing on the visitor's
        machine, so it is not behind the Allow bar: it counts everyone, including
        the people who said no to Google and the ones who never answered. That is
