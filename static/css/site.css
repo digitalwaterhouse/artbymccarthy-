@@ -2640,44 +2640,9 @@ select.os-accepted{border-color:var(--accent)}
 .crumb:hover{color:var(--accent)}
 
 /* ------------------------------------------------------------- visitors
-   The studio's own read of the Umami numbers. Four tiles and two lists --
-   no chart, because for a headline figure the tile IS the chart, and a plot
-   of four numbers would be decoration standing where the answer should be.
-   Every colour here is an existing token, so dark mode follows for free. */
-.vperiod{display:flex; gap:2px; background:var(--paper-lo);
-         border:1px solid var(--line); border-radius:8px; padding:2px}
-.vperiod a{padding:5px 11px; border-radius:6px; font-size:13px;
-           color:var(--muted); text-decoration:none; white-space:nowrap}
-.vperiod a:hover{color:var(--ink)}
-.vperiod a.on{background:var(--paper); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.05)}
-
-.vtiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
-        gap:12px; margin:0 0 26px}
-.vtile{border:1px solid var(--line); border-radius:10px; padding:14px 16px;
-       background:var(--paper-lo)}
-.vlab{margin:0; font-size:13px; color:var(--muted)}
-/* Tabular figures so the numbers line up when the period changes and 9 becomes
-   1,204 -- a column that reflows on every reload is hard to read twice. */
-.vnum{margin:2px 0 4px; font-family:"Newsreader",Georgia,serif; font-weight:400;
-      font-size:1.9rem; line-height:1.1; color:var(--ink);
-      font-variant-numeric:tabular-nums}
-.vdelta{margin:0; font-size:13px; color:var(--muted)}
-
-.vcols{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:26px}
-.vlist h2{font-family:"Newsreader",Georgia,serif; font-weight:400;
-          font-size:1.15rem; margin:0 0 8px}
-.vtable td{position:relative}
-.vtable .vname{position:relative; word-break:break-word}
-/* One hue, no axis, sitting BEHIND the label rather than beside it: the row is
-   the thing being read and the bar is only its weight. 2px inset keeps a gap
-   between neighbouring fills. */
-.vbar{position:absolute; left:0; top:2px; bottom:2px; width:var(--w);
-      background:var(--accent); opacity:.13; border-radius:0 4px 4px 0;
-      pointer-events:none}
+   A signpost to Umami rather than a dashboard: the free plan issues no API
+   key, so the figures cannot be read in here. Only the two rules the page
+   still uses are kept -- the tile and bar rules went with the dashboard. */
 .vfoot{margin-top:24px; max-width:60ch}
 .vneed{margin:0 0 14px; padding-left:18px}
 .vneed li{margin:3px 0}
-.vwarn{border:1px solid var(--warn-line); background:var(--warn-bg);
-       border-radius:10px; padding:14px 16px; max-width:60ch}
-.vwarn p{margin:0 0 6px}
-.vwarn p:last-child{margin-bottom:0}

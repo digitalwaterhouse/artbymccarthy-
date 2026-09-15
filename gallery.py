@@ -81,11 +81,6 @@ DEFAULT_SETTINGS = {
     # -- Google counts the visitors who agreed to a cookie, Umami counts
     # everyone, which is the whole reason it is here. See _umami.html.
     "umami_website_id": "",
-    # The key that reads the numbers back OUT, for the studio's Visitors page.
-    # Unlike the id above this one IS a secret -- it can read every site on the
-    # account -- so it is never rendered into a page, only sent server-side.
-    # Empty means the Visitors page explains itself instead of showing figures.
-    "umami_api_key": "",
     "about_image": "",
     "about_caption": "",
     # THE BOX BAND on the landing page. These pieces are shadow boxes, 2.5in

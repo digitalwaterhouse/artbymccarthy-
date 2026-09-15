@@ -24,7 +24,6 @@ from markupsafe import Markup, escape
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import gallery
-import umami
 import mailer
 import payments
 import listings
@@ -1416,37 +1415,19 @@ def admin_inquiry_delete(inq_id):
 @site.route("/admin/visitors")
 @admin_required
 def admin_visitors():
-    """How many people came, drawn here rather than on Umami's own site.
+    """Where the visitor numbers are, rather than the numbers themselves.
 
-    THE PERIOD IS A QUERY STRING, not a stored preference: it is the one
-    control on the page and it should survive a reload but not outlive the
-    visit. Anything outside the offered set falls back to 30 rather than being
-    passed through to the API, which would otherwise take ?days=99999 happily.
+    They were drawn in here first, reading Umami's API. That needs an API key,
+    and the free plan does not issue one -- so rather than leave a page that
+    can only explain why it is empty, this hands over to Umami's own dashboard
+    and says what is being counted. The link is built from the website id that
+    is already set for the counter, so there is nothing extra to configure.
     """
-    c = cfg()
-    site_id = (c.get("umami_website_id") or "").strip()
-    api_key = (c.get("umami_api_key") or "").strip()
-
-    try:
-        days = int(request.args.get("days", 30))
-    except ValueError:
-        days = 30
-    if days not in (1, 7, 30, 90):
-        days = 30
-
-    stats = pages = referrers = None
-    err = None
-    if site_id and api_key:
-        stats, err = umami.overview(site_id, api_key, days)
-        pages, e2 = umami.top(site_id, api_key, "url", days)
-        referrers, e3 = umami.top(site_id, api_key, "referrer", days)
-        err = err or e2 or e3
-
-    return render_template("admin/visitors.html",
-                           stats=stats, pages=pages, referrers=referrers,
-                           days=days, err=err,
-                           configured=bool(site_id and api_key),
-                           have_id=bool(site_id))
+    site_id = (cfg().get("umami_website_id") or "").strip()
+    return render_template(
+        "admin/visitors.html",
+        site_id=site_id,
+        dash_url="https://cloud.umami.is/websites/%s" % site_id if site_id else None)
 
 
 @site.route("/admin/subscribers")
@@ -1566,20 +1547,6 @@ def admin_settings():
                 vals.pop("umami_website_id", None)
             else:
                 vals["umami_website_id"] = uid
-
-        # THE API KEY IS A SECRET and the others on this page are not, so it
-        # behaves differently on purpose. It is never rendered back into the
-        # form -- a page that redisplays a key hands it to anything that can
-        # read the studio's HTML -- which means a blank box cannot mean "clear
-        # it" the way the boxes above do: a blank box is just a key that was
-        # not retyped. So blank LEAVES IT ALONE, and removing it is a deliberate
-        # tick. Whitespace is stripped because a copied key often brings some.
-        if "umami_api_key" in request.form:
-            ak = (request.form.get("umami_api_key") or "").strip()
-            if request.form.get("umami_api_key_clear") == "1":
-                vals["umami_api_key"] = ""
-            elif ak:
-                vals["umami_api_key"] = ak
 
         # The rates are entered in dollars but stored in cents, because that is
         # what payments.py charges from. A blank or unreadable field LEAVES THE
