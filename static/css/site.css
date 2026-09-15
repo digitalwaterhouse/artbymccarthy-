@@ -836,46 +836,6 @@ main, .foot{position:relative; z-index:1}
   .step-count{display:none}
 }
 
-/* ---------- the consent line ----------
-   One line at the foot of the window, not a dialogue box over the work: it is
-   a question about a cookie, not a thing to interrupt a gallery for. Above the
-   page but under the viewer, which still has to cover everything. */
-.consent{
-  position:fixed; left:0; right:0; bottom:0; z-index:900;
-  display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
-  gap:10px 22px;
-  /* The bottom edge of this bar is the bottom edge of the phone, where the home
-     indicator lives and the browser's own toolbar slides in and out. Pad past it
-     or the buttons sit in a strip the browser answers for, and the tap never
-     reaches them. 0px for the fallback: env() with no unit is invalid in calc. */
-  padding:14px clamp(16px,4vw,40px) calc(14px + env(safe-area-inset-bottom,0px));
-  background:var(--paper); border-top:1px solid var(--rule);
-  box-shadow:0 -10px 30px rgba(23,26,24,.10);
-}
-/* `display:flex` above outranks the browser's own `[hidden]{display:none}`, so
-   without this line `bar.hidden = true` sets the attribute and changes nothing
-   on screen: the answer is recorded, the tag is or isn't loaded, and the bar
-   sits there through every page as though neither button did anything. The
-   gallery overlay carries the same guard a few hundred lines down. */
-.consent[hidden]{display:none}
-.consent p{margin:0; font-size:14px; color:var(--ink); max-width:54ch}
-.consent-do{display:flex; gap:10px; flex:none}
-.consent .cta{padding:9px 18px; font-size:13.5px}
-.consent .cta.ghost{background:transparent; color:var(--ink); border-color:var(--rule)}
-.consent .cta.ghost:hover{border-color:var(--ink); background:transparent}
-/* On a phone the question wraps to two lines and the two buttons are left
-   sharing the last of the room at the very foot of the screen. Give them a row
-   of their own and a 44px target -- the size a thumb actually lands on. */
-@media (max-width:640px){
-  .consent{gap:12px; text-align:center}
-  .consent p{max-width:none}
-  .consent-do{width:100%; justify-content:center; gap:12px}
-  .consent .cta{
-    display:inline-flex; align-items:center; justify-content:center;
-    flex:1 1 0; max-width:210px; min-height:44px; padding:11px 18px;
-  }
-}
-
 /* ---------- prose & forms ---------- */
 .prose{max-width:62ch}
 .prose.narrow{max-width:46ch}

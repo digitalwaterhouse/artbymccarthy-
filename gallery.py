@@ -70,11 +70,6 @@ DEFAULT_SETTINGS = {
     "hero_caption": "",
     # A portrait for the About page. Same idea as hero_image: a photo base,
     # not a work, because the artist is not for sale.
-    # Google's measurement ID (G-...), pasted in the studio. Empty means there
-    # is no tag on the site at all -- not a disabled one, none -- and that is
-    # the default. See templates/_analytics.html for why it also waits to be
-    # allowed once it IS set.
-    "ga_measurement_id": "",
     # Umami's website id, pasted in the studio, and the SAME idea as the line
     # above: empty means no script at all, not a disabled one. It sits beside
     # Google's rather than replacing it because they answer different questions
@@ -214,14 +209,11 @@ NEW_COLUMNS = {
 # gallery, and that would otherwise have to be typed in by hand after a deploy
 # that already knows it. The marker key is what makes it once.
 SEED_ONCE = [
-    # The Google property Paul made for artbymccarthy.com. The tag still does
-    # not load for anyone until they allow it -- see templates/_analytics.html.
-    ("ga_measurement_id", "G-9FE9BCEFQC", "ga_measurement_id_seeded"),
-    # The Umami site Paul registered for artbymccarthy.com. Unlike the line
-    # above this one DOES start counting the moment it lands, because Umami
-    # sets no cookie and so is not behind the consent bar -- see
-    # templates/_umami.html. The id is not a secret: it is served in the page
-    # to every visitor, which is why it sits here rather than in an env var.
+    # The Umami site Paul registered for artbymccarthy.com. It starts counting
+    # the moment it lands: Umami sets no cookie, so nobody is asked and there is
+    # no bar at the foot of the page -- see templates/_umami.html. The id is not
+    # a secret: it is served in the page to every visitor, which is why it sits
+    # here rather than in an env var.
     ("umami_website_id", "a2e56b53-119f-4292-b647-84d8c26fa805", "umami_website_id_seeded"),
 ]
 

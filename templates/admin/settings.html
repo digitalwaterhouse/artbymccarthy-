@@ -321,15 +321,10 @@
 {# -------------------------------------------------------------- visitors -#}
 <details class="setcard setfold" id="visitors"{% if request.args.get('saved') == 'visitors' %} open{% endif %}>
   <summary><h2>Counting visitors</h2></summary>
-  <p class="setsay">Two ways of counting, and you can use either or both.
-     Empty means that one is not on the site at all &mdash; which is how it ships.</p>
+  <p class="setsay">Counting is by Umami, which sets no cookie. Empty means no
+     counter on the site at all &mdash; which is how it ships.</p>
   <form class="setform" method="post">
     <input type="hidden" name="section" value="visitors">
-    <label class="wide">Measurement ID
-      <input name="ga_measurement_id" value="{{ cfg.ga_measurement_id }}" placeholder="G-XXXXXXXXXX" spellcheck="false">
-      <span class="sub">From Google Analytics, under Admin &rarr; Data streams.
-        It starts with G-. Paste the ID itself, not the code block around it.</span>
-    </label>
     <p class="sub">The tag sets a cookie and sends what it collects to Google,
        so visitors are asked first: a single line at the foot of the page with
        Allow and No thanks. Whichever they choose is remembered and they are not
@@ -341,11 +336,10 @@
         dashes &mdash; not the web address.</span>
     </label>
     <p class="sub">Umami sets no cookie and stores nothing on the visitor's
-       machine, so it is not behind the Allow bar: it counts everyone, including
-       the people who said no to Google and the ones who never answered. That is
-       what it is for. It also ignores crawlers, which only count when you tally
-       page requests instead. Running both is fine &mdash; they measure
-       different things, so expect the two numbers to disagree.</p>
+       machine, so nobody is asked for permission and there is no bar at the foot
+       of the page. It counts everyone and ignores crawlers, which never run the
+       script. Nobody signed in here is ever counted &mdash; the studio has no
+       counter. The figures are on <a class="link" href="{{ url_for('site.admin_visitors') }}">Visitors</a>.</p>
     <div class="setsave">{{ savedpill('visitors') }}<button class="cta" type="submit">Save</button></div>
   </form>
 </details>

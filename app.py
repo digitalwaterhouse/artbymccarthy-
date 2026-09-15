@@ -1503,7 +1503,7 @@ def admin_subscribers_csv():
 def admin_settings():
     if request.method == "POST":
         keys = ["site_title", "tagline", "about", "artist_email", "commission_note",
-                "ga_measurement_id", "umami_website_id",
+                "umami_website_id",
                 "hero_eyebrow", "hero_title", "hero_sub", "hero_caption", "about_caption",
                 "box_caption", "box_note", "page_bg",
                 "artist_name", "artist_statement", "artist_bio",
@@ -1515,20 +1515,6 @@ def admin_settings():
         # submitted card does not contain, i.e. saving the headline would wipe
         # the About text. save_settings only writes the keys it is handed.
         vals = {k: request.form[k] for k in keys if k in request.form}
-
-        # A MEASUREMENT ID, or nothing. Typed by hand from Google's screen into
-        # a box, so the one thing worth refusing is a near miss -- a whole
-        # snippet pasted in, or the UA-... id from the old Analytics, which
-        # would leave the tag quietly doing nothing on every page. Empty is
-        # always allowed: that is how the tag comes off the site.
-        ga = (request.form.get("ga_measurement_id") or "").strip()
-        if "ga_measurement_id" in request.form:
-            if ga and not re.fullmatch(r"G-[A-Z0-9]{4,20}", ga, re.I):
-                flash("That does not look like a measurement ID. It starts with "
-                      "G- and has no spaces \u2014 G-XXXXXXXXXX.")
-                vals.pop("ga_measurement_id", None)
-            else:
-                vals["ga_measurement_id"] = ga.upper()
 
         # A WEBSITE ID, or nothing. Umami identifies the site by the id it
         # gives you when you add the site, which is a UUID -- so what belongs
