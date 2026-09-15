@@ -335,16 +335,17 @@
        Allow and No thanks. Whichever they choose is remembered and they are not
        asked again, and a refusal means no tag, no cookie and nothing sent.
        Nobody signed in here is ever counted &mdash; the studio has no tag.</p>
-    <label class="wide">Plausible domain
-      <input name="plausible_domain" value="{{ cfg.plausible_domain }}" placeholder="artbymccarthy.com" spellcheck="false">
-      <span class="sub">The site as you registered it with Plausible. Just the
-        domain &mdash; no https://, no slash.</span>
+    <label class="wide">Umami website ID
+      <input name="umami_website_id" value="{{ cfg.umami_website_id }}" placeholder="0f8c1a2b-3d4e-5f60-7182-93a4b5c6d7e8" spellcheck="false">
+      <span class="sub">From Umami, on the site's Settings page. A long id with
+        dashes &mdash; not the web address.</span>
     </label>
-    <p class="sub">Plausible sets no cookie and stores nothing on the visitor's
+    <p class="sub">Umami sets no cookie and stores nothing on the visitor's
        machine, so it is not behind the Allow bar: it counts everyone, including
        the people who said no to Google and the ones who never answered. That is
-       what it is for. Running both is fine &mdash; they measure different
-       things, so expect the two numbers to disagree.</p>
+       what it is for. It also ignores crawlers, which only count when you tally
+       page requests instead. Running both is fine &mdash; they measure
+       different things, so expect the two numbers to disagree.</p>
     <div class="setsave">{{ savedpill('visitors') }}<button class="cta" type="submit">Save</button></div>
   </form>
 </details>

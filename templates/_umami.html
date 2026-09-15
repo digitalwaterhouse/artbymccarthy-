@@ -1,0 +1,30 @@
+{# ------------------------------------------------------------------- umami
+   A visitor count that does not need to ask.
+
+   WHY THIS SITS OUTSIDE THE CONSENT BAR while Google's tag sits inside it, and
+   the distinction is the entire point of adding it: Umami sets no cookie and
+   stores nothing on the device. ePrivacy consent is about reading from or
+   writing to a visitor's machine, so with nothing stored there is nothing to
+   ask about -- which is why this script can run for everyone, including the
+   people who said "No thanks" to Google and the people who never answered.
+
+   That is the gap it fills. The consent bar means Google only ever counted the
+   share of visitors who pressed Allow, and those are not a random sample, so
+   the number was both smaller than the truth and bent in a direction nobody
+   could measure. This counts the rest.
+
+   IT ALSO ONLY COUNTS REAL BROWSERS, which matters more than it sounds. A
+   crawler fetches the page and leaves without running any of this, so it never
+   registers -- the mistake the whales app made was counting page requests
+   instead, and 1,440 "visitors" turned out to be about one person and a lot of
+   datacentre robots.
+
+   The id is a setting, pasted in the studio -- nothing here names an account,
+   and taking it off the site is emptying one box rather than a deploy. It must
+   be the website id Umami shows on the site's Settings page, not the domain.
+   Self-hosting later changes only the src below; the id keeps working.
+
+   NOT a replacement for Google's tag. Both can run; they answer different
+   questions and disagreeing totals are expected, not a fault. #}
+<script defer src="https://cloud.umami.is/script.js"
+        data-website-id="{{ cfg.umami_website_id }}"></script>

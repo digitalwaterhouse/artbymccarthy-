@@ -75,12 +75,12 @@ DEFAULT_SETTINGS = {
     # the default. See templates/_analytics.html for why it also waits to be
     # allowed once it IS set.
     "ga_measurement_id": "",
-    # Plausible's domain, pasted in the studio, and the SAME idea as the line
+    # Umami's website id, pasted in the studio, and the SAME idea as the line
     # above: empty means no script at all, not a disabled one. It sits beside
     # Google's rather than replacing it because they answer different questions
-    # -- Google counts the visitors who agreed to a cookie, Plausible counts
-    # everyone, which is the whole reason it is here. See _plausible.html.
-    "plausible_domain": "",
+    # -- Google counts the visitors who agreed to a cookie, Umami counts
+    # everyone, which is the whole reason it is here. See _umami.html.
+    "umami_website_id": "",
     "about_image": "",
     "about_caption": "",
     # THE BOX BAND on the landing page. These pieces are shadow boxes, 2.5in
