@@ -12,7 +12,7 @@
       </picture>
     {% endif %}
     <div class="cap">
-      <span class="t">{{ w.title }}{% if w.year %}, {{ w.year }}{% endif %}</span>
+      <span class="t">{{ w.title }}</span>
       {% if w.status == 'sold' %}<span class="p dot">Sold</span>
       {% elif w.price %}<span class="p">{{ w.price }}</span>{% endif %}
     </div>

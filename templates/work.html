@@ -51,7 +51,6 @@
     <div class="facts-inner">
     <h1>{{ w.title }}</h1>
     <dl>
-      {% if w.year %}<dt>Year</dt><dd>{{ w.year }}</dd>{% endif %}
       {% if w.medium %}<dt>Medium</dt><dd>{{ w.medium }}</dd>{% endif %}
       {% if w.dims %}<dt>Size</dt><dd>{{ w.dims }}</dd>{% endif %}
       <dt>Framing</dt><dd>{{ 'Framed' if w.framed else 'Unframed' }}{{ ', ready to hang' if w.ready_to_hang else '' }}</dd>

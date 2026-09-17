@@ -50,7 +50,7 @@
               : w.status === 'nfs' ? 'Not for sale'
               : w.status === 'reserved' ? 'Reserved'
               : (w.price || '');
-    return '<span class="gm-t">' + w.title + (w.year ? ', ' + w.year : '') + '</span>'
+    return '<span class="gm-t">' + w.title + '</span>'
          + (line.length ? '<span class="gm-m">' + line.join(' &middot; ') + '</span>' : '')
          + '<span class="gm-p">' + price
          + ' <a class="gm-link" href="' + w.url + '">See this work &rarr;</a></span>';

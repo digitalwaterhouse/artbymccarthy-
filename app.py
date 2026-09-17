@@ -392,7 +392,7 @@ def _viewer_entry(w, group):
     so the payload sitting in the page stays small."""
     img = w["images"][0] if w["images"] else None
     return {
-        "slug": w["slug"], "title": w["title"], "year": w["year"],
+        "slug": w["slug"], "title": w["title"],
         "medium": w["medium"], "dims": w["dims"], "group": group,
         "price": w["price"], "status": w["status"],
         "m": img_url(img["base"], "m", "jpg") if img else None,
