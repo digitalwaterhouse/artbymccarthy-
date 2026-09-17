@@ -416,10 +416,35 @@ def index():
         "sub": c.get("hero_sub") or "",
         "caption": c.get("hero_caption") or "",
     }
+    # EVERY photograph of the hero painting, not just one, so the hero can
+    # cross-dissolve between them. hero["base"] stays the first and is what
+    # og:image still points at -- a rotating share image would be a lie.
+    #
+    # Three cases, in the order they actually happen: the setting is empty and
+    # the hero falls back to the first painting on the wall (all its shots);
+    # the setting names one of her paintings' photographs (that painting's
+    # shots, led by the one she picked); or it is a standalone upload that
+    # belongs to no work, and then there is nothing to rotate.
+    pool = works + sold
+    owner = None
     if not hero["base"]:
-        first = next((w for w in works + sold if w["images"]), None)
-        if first:
-            hero["base"] = first["images"][0]["base"]
+        owner = next((w for w in pool if w["images"]), None)
+        if owner:
+            hero["base"] = owner["images"][0]["base"]
+            hero["shots"] = [im["base"] for im in owner["images"]]
+    else:
+        owner = next((w for w in pool
+                      if any(im["base"] == hero["base"] for im in w["images"])), None)
+        if owner:
+            rest = [im["base"] for im in owner["images"] if im["base"] != hero["base"]]
+            hero["shots"] = [hero["base"]] + rest
+    hero.setdefault("shots", [hero["base"]] if hero["base"] else [])
+    # Which painting this actually is. The headline above it is hero_title, a
+    # line she writes -- live it reads "The Sri Lanka Collection", which names
+    # the body of work and not the piece on screen. Only set when the hero is
+    # one of her paintings; a standalone uploaded photograph has no name to give.
+    hero["piece"] = owner["title"] if owner else ""
+    hero["piece_slug"] = owner["slug"] if owner else ""
     # The wall is one body of work at the moment, so it says which one, in her
     # words: the opening of that collection's own About box, with the rest a
     # click away. Her subtitle stands in until the box is written.

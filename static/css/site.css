@@ -1941,6 +1941,52 @@ body.home{
   /* The frame's own shadow is in the photograph. This one seats it on the page. */
   filter:drop-shadow(0 30px 70px rgba(0,0,0,.55));
 }
+
+/* The hero's photographs, stacked so they can cross-dissolve.
+   The first <picture> is left in flow and is what gives the stack its size --
+   so the hero measures exactly as it did when there was only ever one image.
+   The others are laid over it at that size and fade in turn.
+   The drop-shadow moves up to the stack: left on each image it would be drawn
+   twice mid-fade, and the seam shows on a dark ground. */
+/* The photographs and the painting's name, as one column. .hero-art stays a
+   row with a single child, so its existing right-align on a laptop and centre
+   on a phone keep working untouched. */
+.hero-figure{
+  display:flex; flex-direction:column; align-items:center;
+  gap:16px; margin:0; min-width:0;
+}
+.hero-piece{
+  margin:0; line-height:1.4; text-align:center;
+  font-size:.95rem; letter-spacing:.01em;
+}
+.hero-piece a{
+  color:rgba(237,241,240,.82); text-decoration:none;
+  border-bottom:1px solid rgba(237,241,240,.28); padding-bottom:2px;
+  transition:color .2s ease, border-color .2s ease;
+}
+.hero-piece a:hover{color:var(--turq); border-bottom-color:var(--turq)}
+
+.hero-art .hero-stack{
+  position:relative; display:inline-block; line-height:0;
+  filter:drop-shadow(0 30px 70px rgba(0,0,0,.55));
+}
+.hero-art .hero-stack img{filter:none}
+.hero-shot{display:block; margin:0}
+.hero-shot + .hero-shot{position:absolute; inset:0}
+.hero-shot + .hero-shot img{width:100%; height:100%; object-fit:contain}
+
+/* Only a stack that is actually rotating hides anything. A single-photograph
+   hero never gets `.rotating`, so it cannot be left invisible by a script that
+   failed to run -- and neither can a rotating one, because `.on` is printed
+   into the markup rather than added on load. */
+.hero-stack.rotating .hero-shot{opacity:0; transition:opacity 1100ms ease-in-out}
+.hero-stack.rotating .hero-shot.on{opacity:1}
+
+/* Asked not to animate: no dissolve, no rotation. The script checks the same
+   query and stops scheduling, so the hero simply stays on the first. */
+@media (prefers-reduced-motion:reduce){
+  .hero-stack.rotating .hero-shot{transition:none}
+}
 .hero-say{max-width:34rem}
 .eyebrow{
   margin:0 0 14px; font-size:11.5px; letter-spacing:.22em; text-transform:uppercase;

@@ -12,12 +12,43 @@
    a black frame, so a dark page lets the frame fall away and the work float.
    Nothing is cropped and nothing is laid over the art itself. #}
 <section class="hero">
+  {# Every photograph of the hero painting, stacked and cross-dissolving. The
+     FIRST one stays in normal flow, so it alone sets the size of the box and
+     the layout is exactly what it was when this was a single image; the rest
+     are laid over it and fade in turn. With no JavaScript, or with reduced
+     motion asked for, the first is simply the hero and nothing moves -- the
+     `on` class is in the markup, not added by script. #}
   <div class="hero-art">
     {% if hero.base %}
-    <picture>
-      <source type="image/webp" srcset="{{ img_url(hero.base,'m') }} 1400w, {{ img_url(hero.base,'l') }} 2400w" sizes="(max-width: 900px) 94vw, 46vw">
-      <img src="{{ img_url(hero.base,'m','jpg') }}" alt="{{ hero.caption or hero.title }}" fetchpriority="high" width="1400" height="1400">
-    </picture>
+    {#- One column: the photographs, and the painting's name under them. It is
+        a single flex child so .hero-art keeps aligning it right on a laptop and
+        centring it on a phone exactly as it did with a bare <picture>. -#}
+    <figure class="hero-figure">
+    <div class="hero-stack{% if hero.shots|length > 1 %} rotating{% endif %}"
+         {% if hero.shots|length > 1 %}data-hero-rotate="6000"{% endif %}>
+      {% for shot in hero.shots %}
+      <picture class="hero-shot{% if loop.first %} on{% endif %}"{% if not loop.first %} aria-hidden="true"{% endif %}>
+        <source type="image/webp" srcset="{{ img_url(shot,'m') }} 1400w, {{ img_url(shot,'l') }} 2400w" sizes="(max-width: 900px) 94vw, 46vw">
+        {#- Only the first carries the alt: they are the same painting, and a
+            screen reader should hear it once, not three times. The others are
+            fetched eagerly but at low priority, so they are ready before their
+            turn without racing the one that is actually on screen. -#}
+        <img src="{{ img_url(shot,'m','jpg') }}"
+             alt="{% if loop.first %}{{ hero.caption or hero.title }}{% endif %}"
+             {% if loop.first %}fetchpriority="high"{% else %}fetchpriority="low" decoding="async"{% endif %}
+             width="1400" height="1400">
+      </picture>
+      {% endfor %}
+    </div>
+    {#- The name of the painting on screen. The h1 beside it is her own headline
+        and on the live site names the collection, so without this the hero is
+        the one place a visitor sees a piece and cannot find out what it is. -#}
+    {% if hero.piece %}
+    <figcaption class="hero-piece">
+      <a href="{{ url_for('site.work', slug=hero.piece_slug) }}">{{ hero.piece }}</a>
+    </figcaption>
+    {% endif %}
+    </figure>
     {% else %}
     <div class="noimg tall">no photograph yet</div>
     {% endif %}
@@ -93,4 +124,60 @@
   <p class="empty">No work listed yet.</p>
   {% endif %}
 </section>
+{# ---- the hero's dissolve ------------------------------------------------
+   Small enough to live with the page it belongs to. Three rules it keeps:
+   it does nothing at all if the reader asked for reduced motion, it stops
+   while the tab is in the background rather than cycling at a page nobody is
+   looking at, and it waits for a photograph to have actually decoded before
+   dissolving to it -- fading to a half-loaded image is worse than staying. #}
+<script>
+(function () {
+  var stack = document.querySelector('[data-hero-rotate]');
+  if (!stack) return;
+
+  var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var shots = Array.prototype.slice.call(stack.querySelectorAll('.hero-shot'));
+  if (shots.length < 2) return;
+
+  var every = parseInt(stack.getAttribute('data-hero-rotate'), 10) || 6000;
+  var at = 0, timer = null;
+
+  function ready(pic) {
+    var img = pic.querySelector('img');
+    return !img || img.complete;
+  }
+
+  function step() {
+    var next = (at + 1) % shots.length;
+    // Skip a photograph that has not arrived yet and try the one after it;
+    // if none is ready, leave the hero where it is and come back later.
+    for (var i = 0; i < shots.length && !ready(shots[next]); i++) {
+      next = (next + 1) % shots.length;
+    }
+    if (next === at) return;
+    shots[at].classList.remove('on');
+    shots[at].setAttribute('aria-hidden', 'true');
+    shots[next].classList.add('on');
+    shots[next].removeAttribute('aria-hidden');
+    at = next;
+  }
+
+  function start() {
+    if (timer || motion.matches || document.hidden) return;
+    timer = setInterval(step, every);
+  }
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    document.hidden ? stop() : start();
+  });
+  // Someone can turn reduced motion on while the page is open.
+  if (motion.addEventListener) {
+    motion.addEventListener('change', function () { motion.matches ? stop() : start(); });
+  }
+  start();
+})();
+</script>
 {% endblock %}
