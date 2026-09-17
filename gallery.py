@@ -1219,13 +1219,26 @@ def store_photo(data):
     im = Image.open(io.BytesIO(data))
     # EXIF holds the orientation AND, on a phone, the GPS of the studio.
     # exif_transpose applies the first; converting drops the rest.
-    im = ImageOps.exif_transpose(im).convert("RGB")
+    im = ImageOps.exif_transpose(im)
+    # A photograph with the wall cut out from behind it keeps its transparency,
+    # so the page shows through and the same file suits the light theme and the
+    # dark one. Everything else converts to RGB exactly as before.
+    alpha = im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info)
+    im = im.convert("RGBA" if alpha else "RGB")
     base = secrets.token_hex(8)
     for suffix, width in SIZES:
         out = im.copy()
         if out.width > width:
             out.thumbnail((width, width * 4), Image.LANCZOS)
         out.save(os.path.join(PHOTO_DIR, f"{base}-{suffix}.webp"), "WEBP", quality=86, method=5)
+        if alpha:
+            # JPEG cannot hold transparency, and this file is only ever reached
+            # by a browser too old for the WebP <source>. Flattening onto white
+            # gives it the photograph as it was before the wall was cut out --
+            # the gentlest thing to degrade to.
+            flat = Image.new("RGB", out.size, (255, 255, 255))
+            flat.paste(out, mask=out.getchannel("A"))
+            out = flat
         out.save(os.path.join(PHOTO_DIR, f"{base}-{suffix}.jpg"), "JPEG", quality=88, optimize=True)
     return base
 
