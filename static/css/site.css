@@ -1991,17 +1991,29 @@ body.home{
 .eyebrow{
   margin:0 0 14px; font-size:11.5px; letter-spacing:.22em; text-transform:uppercase;
   color:var(--turq); font-weight:700;
-  /* the depth the spinning 3 turns in; without it rotateY is a flat squash */
-  perspective:300px;
 }
 /* A slow horizontal turn, linear so it never appears to pause, and 12s so it
-   reads as a drift rather than a spinner. The glyph thins to an edge twice a
-   turn, which is the point -- it is the only 3D thing on a flat headline. */
+   reads as a drift rather than a spinner -- the only 3D thing on a flat
+   headline.
+
+   IT TURNS LIKE A COIN, NOT A SHEET OF PAPER. The letter carries a second,
+   mirrored copy on its back, each face hidden when it points away, so the
+   half of the turn that shows the reverse still reads as a D. The first
+   version rotated one flat glyph and was a backwards D half the time.
+
+   The perspective belongs on the glyph, not on .eyebrow: as a property of the
+   line its vanishing point is the middle of "3D MIXED MEDIA", and the letter
+   swings toward that point instead of pivoting on its own centre. */
 .spin-d{
-  display:inline-block; transform-style:preserve-3d;
+  position:relative; display:inline-block; transform-style:preserve-3d;
   animation:spin-d 12s linear infinite;
 }
-@keyframes spin-d{ from{transform:rotateY(0deg)} to{transform:rotateY(360deg)} }
+.spin-d .f,.spin-d .b{display:inline-block; backface-visibility:hidden;}
+.spin-d .b{position:absolute; left:0; top:0; transform:rotateY(180deg);}
+@keyframes spin-d{
+  from{transform:perspective(340px) rotateY(0deg)}
+  to{transform:perspective(340px) rotateY(360deg)}
+}
 @media (prefers-reduced-motion:reduce){
   .spin-d{animation:none}
 }
