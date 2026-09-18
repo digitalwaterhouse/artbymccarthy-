@@ -1992,31 +1992,6 @@ body.home{
   margin:0 0 14px; font-size:11.5px; letter-spacing:.22em; text-transform:uppercase;
   color:var(--turq); font-weight:700;
 }
-/* IT ROCKS, IT DOES NOT SPIN. The D turns to about 68 degrees each way and
-   comes back, eased, over 8 seconds -- the only 3D thing on a flat headline.
-
-   Two full-turn versions were tried and both read wrong. One flat glyph on
-   rotateY is a backwards D for half of every turn; giving it a mirrored back
-   face fixed that but a letter has no thickness, so it still vanished at
-   exactly 90 degrees. Stopping short of edge-on avoids both, and the cycle
-   starts at 0 so the letter is square to the reader on load.
-
-   The perspective belongs on the glyph, not on .eyebrow: as a property of the
-   line its vanishing point is the middle of "3D MIXED MEDIA", and the letter
-   swings toward that point instead of pivoting on its own centre. */
-.spin-d{
-  display:inline-block;
-  animation:spin-d 8s ease-in-out infinite;
-}
-@keyframes spin-d{
-  0%  {transform:perspective(320px) rotateY(0deg)}
-  25% {transform:perspective(320px) rotateY(68deg)}
-  75% {transform:perspective(320px) rotateY(-68deg)}
-  100%{transform:perspective(320px) rotateY(0deg)}
-}
-@media (prefers-reduced-motion:reduce){
-  .spin-d{animation:none}
-}
 .hero-say h1{
   font-family:"Newsreader",Georgia,serif; font-weight:400;
   font-size:clamp(2.1rem,5vw,3.4rem); line-height:1.06; letter-spacing:-.015em;
