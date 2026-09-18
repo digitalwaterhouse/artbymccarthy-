@@ -55,14 +55,14 @@
   </div>
 
   <div class="hero-say">
-    {# The 3 of "3-D" turns on its own axis, slowly, because the work it
-       introduces stands off the wall. Only the first digit is wrapped, and
-       only when the line actually starts with one -- change the copy to
-       something without a 3 and this quietly does nothing. #}
+    {# The D of "3D" turns on its own axis, slowly, because the work it
+       introduces stands off the wall. Only the first CAPITAL D is wrapped --
+       the lowercase d's in "Mixed Media" are left alone -- and only when the
+       line has one, so copy without a D quietly turns the effect off. #}
     {% if cfg.hero_eyebrow %}<p class="eyebrow">
       {%- set eb = cfg.hero_eyebrow -%}
-      {%- if '3' in eb -%}
-        {{- eb.split('3', 1)[0] -}}<span class="spin3">3</span>{{- eb.split('3', 1)[1] -}}
+      {%- if 'D' in eb -%}
+        {{- eb.split('D', 1)[0] -}}<span class="spin-d">D</span>{{- eb.split('D', 1)[1] -}}
       {%- else -%}
         {{- eb -}}
       {%- endif -%}
