@@ -62,10 +62,7 @@
     {% if cfg.hero_eyebrow %}<p class="eyebrow">
       {%- set eb = cfg.hero_eyebrow -%}
       {%- if 'D' in eb -%}
-        {#- two faces: the back one is a mirrored copy, so the half of every
-            turn that shows the reverse still reads as a D rather than as a
-            backwards one. It is aria-hidden or the line says "DD". -#}
-        {{- eb.split('D', 1)[0] -}}<span class="spin-d"><span class="f">D</span><span class="b" aria-hidden="true">D</span></span>{{- eb.split('D', 1)[1] -}}
+        {{- eb.split('D', 1)[0] -}}<span class="spin-d">D</span>{{- eb.split('D', 1)[1] -}}
       {%- else -%}
         {{- eb -}}
       {%- endif -%}

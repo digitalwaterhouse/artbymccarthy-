@@ -1992,27 +1992,27 @@ body.home{
   margin:0 0 14px; font-size:11.5px; letter-spacing:.22em; text-transform:uppercase;
   color:var(--turq); font-weight:700;
 }
-/* A slow horizontal turn, linear so it never appears to pause, and 12s so it
-   reads as a drift rather than a spinner -- the only 3D thing on a flat
-   headline.
+/* IT ROCKS, IT DOES NOT SPIN. The D turns to about 68 degrees each way and
+   comes back, eased, over 8 seconds -- the only 3D thing on a flat headline.
 
-   IT TURNS LIKE A COIN, NOT A SHEET OF PAPER. The letter carries a second,
-   mirrored copy on its back, each face hidden when it points away, so the
-   half of the turn that shows the reverse still reads as a D. The first
-   version rotated one flat glyph and was a backwards D half the time.
+   Two full-turn versions were tried and both read wrong. One flat glyph on
+   rotateY is a backwards D for half of every turn; giving it a mirrored back
+   face fixed that but a letter has no thickness, so it still vanished at
+   exactly 90 degrees. Stopping short of edge-on avoids both, and the cycle
+   starts at 0 so the letter is square to the reader on load.
 
    The perspective belongs on the glyph, not on .eyebrow: as a property of the
    line its vanishing point is the middle of "3D MIXED MEDIA", and the letter
    swings toward that point instead of pivoting on its own centre. */
 .spin-d{
-  position:relative; display:inline-block; transform-style:preserve-3d;
-  animation:spin-d 12s linear infinite;
+  display:inline-block;
+  animation:spin-d 8s ease-in-out infinite;
 }
-.spin-d .f,.spin-d .b{display:inline-block; backface-visibility:hidden;}
-.spin-d .b{position:absolute; left:0; top:0; transform:rotateY(180deg);}
 @keyframes spin-d{
-  from{transform:perspective(340px) rotateY(0deg)}
-  to{transform:perspective(340px) rotateY(360deg)}
+  0%  {transform:perspective(320px) rotateY(0deg)}
+  25% {transform:perspective(320px) rotateY(68deg)}
+  75% {transform:perspective(320px) rotateY(-68deg)}
+  100%{transform:perspective(320px) rotateY(0deg)}
 }
 @media (prefers-reduced-motion:reduce){
   .spin-d{animation:none}
