@@ -1991,6 +1991,19 @@ body.home{
 .eyebrow{
   margin:0 0 14px; font-size:11.5px; letter-spacing:.22em; text-transform:uppercase;
   color:var(--turq); font-weight:700;
+  /* the depth the spinning 3 turns in; without it rotateY is a flat squash */
+  perspective:300px;
+}
+/* A slow horizontal turn, linear so it never appears to pause, and 12s so it
+   reads as a drift rather than a spinner. The glyph thins to an edge twice a
+   turn, which is the point -- it is the only 3-D thing on a flat headline. */
+.spin3{
+  display:inline-block; transform-style:preserve-3d;
+  animation:spin3 12s linear infinite;
+}
+@keyframes spin3{ from{transform:rotateY(0deg)} to{transform:rotateY(360deg)} }
+@media (prefers-reduced-motion:reduce){
+  .spin3{animation:none}
 }
 .hero-say h1{
   font-family:"Newsreader",Georgia,serif; font-weight:400;

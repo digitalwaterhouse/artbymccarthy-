@@ -55,7 +55,18 @@
   </div>
 
   <div class="hero-say">
-    {% if cfg.hero_eyebrow %}<p class="eyebrow">{{ cfg.hero_eyebrow }}</p>{% endif %}
+    {# The 3 of "3-D" turns on its own axis, slowly, because the work it
+       introduces stands off the wall. Only the first digit is wrapped, and
+       only when the line actually starts with one -- change the copy to
+       something without a 3 and this quietly does nothing. #}
+    {% if cfg.hero_eyebrow %}<p class="eyebrow">
+      {%- set eb = cfg.hero_eyebrow -%}
+      {%- if '3' in eb -%}
+        {{- eb.split('3', 1)[0] -}}<span class="spin3">3</span>{{- eb.split('3', 1)[1] -}}
+      {%- else -%}
+        {{- eb -}}
+      {%- endif -%}
+    </p>{% endif %}
     <h1>{{ hero.title }}</h1>
     {% if hero.sub %}<p class="lede">{{ hero.sub }}</p>
     {% elif cfg.about %}<p class="lede">{{ cfg.about.split("\n")[0] }}</p>{% endif %}
