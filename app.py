@@ -1783,6 +1783,12 @@ def admin_opportunities():
     # Kick the drain on the way past. Cheap when there is nothing to do: one
     # indexed query that returns no rows.
     start_distance_worker()
+    # Same idea for calls that have closed since she last looked. list_found
+    # already hides them, so this is housekeeping rather than the fix -- but it
+    # keeps the pen from growing forever, keeps found_counts honest, and stops
+    # the geocoder spending a second a town on calls nobody can enter. Pressing
+    # Get the latest does the same sweep and says how many it cleared.
+    gallery.drop_closed_found()
     live, done = gallery.list_opportunities(within=within, order=order)
     return render_template("admin/opportunities.html", live=live, done=done,
                            within=within, order=order,
@@ -1814,7 +1820,7 @@ def admin_opportunities():
 @admin_required
 def admin_opportunities_refresh():
     today_ = gallery.today()
-    gone = gallery.drop_closed_found(today_)
+    gone = gallery.drop_closed_found()
     calls, note = listings.open_calls(cfg(), today=today_)
     fresh = gallery.record_found(calls) if calls else 0
     bits = [note]

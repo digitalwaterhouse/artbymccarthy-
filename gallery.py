@@ -2028,14 +2028,21 @@ def record_found(calls):
     return added
 
 
-def drop_closed_found(today_):
+def drop_closed_found(before=None):
     """A deadline that has passed is no longer a suggestion. Cleared rather
     than left to clutter the pen -- and DELETED, not dismissed, so next year's
-    cycle of the same show is still allowed to appear."""
+    cycle of the same show is still allowed to appear.
+
+    The default cutoff is _past_cutoff(), a full day behind UTC, and NOT today:
+    this runs on every page load now, the delete cannot be undone, and UTC turns
+    over at 8pm in New York -- so a strict cutoff would throw away a call she
+    could still enter that evening. list_found stops showing it at midnight UTC
+    either way; this only decides when the row goes for good, and a day late is
+    the harmless direction."""
     with connect() as conn:
         return conn.execute(
             "DELETE FROM found_calls WHERE status='new' AND deadline IS NOT NULL"
-            " AND deadline < ?", (today_,)).rowcount
+            " AND deadline < ?", (before or _past_cutoff(),)).rowcount
 
 
 def list_found(status="new", within_days=None):
@@ -2049,6 +2056,12 @@ def list_found(status="new", within_days=None):
     A call with NO deadline survives the filter, the same way an unplaced call
     survives the radius filter: it has nothing to fail on, and dropping those
     would quietly hide the rolling calls.
+
+    A call whose deadline has GONE BY is dropped here and not shown at all. It
+    is a suggestion she can no longer act on, and it was reading as one more
+    thing to get to. The route sweeps those rows out of the table on the way
+    past, but the filter is what the screen trusts: the pen must never show a
+    closed call because a delete did not run.
     """
     here = studio_point()
     with connect() as conn:
@@ -2059,6 +2072,7 @@ def list_found(status="new", within_days=None):
     for r in rows:
         r["days"] = _days_until(r.get("deadline"))
         _decorate_distance(r, here)
+    rows = [r for r in rows if r["days"] is None or r["days"] >= 0]
     if within_days:
         rows = [r for r in rows if r["days"] is None or r["days"] <= within_days]
     return rows
