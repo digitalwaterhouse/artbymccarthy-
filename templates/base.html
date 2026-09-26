@@ -36,7 +36,11 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
 <a class="skip" href="#main">Skip to content</a>
 
 <header class="masthead">
-  <a class="wordmark" href="{{ url_for('site.index') }}" aria-label="{{ cfg.site_title }}">
+  {#- `signing` is PRINTED, so the name draws itself on every page load
+      (Paul, 2026-09-26) from the first frame -- added by script after paint,
+      the finished name would flash up and then vanish before drawing.
+      Reduced motion is handled in the stylesheet: the name is simply there. -#}
+  <a class="wordmark signing" href="{{ url_for('site.index') }}" aria-label="{{ cfg.site_title }}">
     <picture>
       <source type="image/webp" srcset="{{ url_for('static', filename='img/mark-128.webp') }} 128w, {{ url_for('static', filename='img/mark-256.webp') }} 256w" sizes="56px">
       <img class="mark" src="{{ url_for('static', filename='img/mark-128.jpg') }}" alt="" width="56" height="56">
@@ -95,10 +99,10 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
   <p class="fine">&copy; {{ cfg.site_title }}. All images and paintings remain the property of the artist.</p>
 </footer>
 <script>
-/* The name signs itself when you click the logo, and only then. Clicking the
-   wordmark while already on the home page has nowhere to navigate to, so the
-   click is spent on the signature instead; from any other page the click still
-   goes home and the signature is replayed once it lands. */
+/* The name signs itself on every page load (the class is in the markup).
+   Clicking the wordmark while already on the home page has nowhere to
+   navigate to, so that click replays the signature instead. From any other
+   page the click goes home, where it signs on arrival like everywhere else. */
 (function(){
   var a = document.querySelector('.wordmark');
   if (!a || !a.querySelector('.wordmark-sig')) return;
@@ -109,22 +113,13 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
     a.classList.add('signing');
   }
 
-  try{
-    if (sessionStorage.getItem('abm-replay')){
-      sessionStorage.removeItem('abm-replay');
-      sign();
-    }
-  }catch(e){}
-
   a.addEventListener('click', function(e){
     var here = location.pathname.replace(/\/$/, '');
     var there = a.pathname.replace(/\/$/, '');
     if (here === there && !location.hash){
       e.preventDefault();          // already home: nothing to load, so just sign
       sign();
-      return;
     }
-    try{ sessionStorage.setItem('abm-replay','1'); }catch(e2){}
   });
 })();
 </script>
