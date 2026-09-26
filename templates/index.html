@@ -40,27 +40,33 @@
       </picture>
       {% endfor %}
     </div>
-    {#- One small button per photograph, under the photographs, flush with their
-        right edge (Paul, 2026-09-26; first tried under the headline). They drive the same stack the timer does; the
-        script below keeps `on` in step. Rendered only when there is more
-        than one photograph to choose between. -#}
-    {% if hero.shots|length > 1 %}
-    <div class="hero-thumbs" role="group" aria-label="Photographs of this piece">
-      {% for shot in hero.shots %}
-      <button type="button" class="hero-thumb{% if loop.first %} on{% endif %}" data-shot="{{ loop.index0 }}"
-              aria-label="Photograph {{ loop.index }} of {{ hero.shots|length }}"
-              aria-pressed="{{ 'true' if loop.first else 'false' }}">
-        <img src="{{ img_url(shot,'s','jpg') }}" alt="" loading="lazy" decoding="async" width="96" height="96">
-      </button>
-      {% endfor %}
-    </div>
-    {% endif %}
     {#- The name of the painting on screen. The h1 beside it is her own headline
         and on the live site names the collection, so without this the hero is
         the one place a visitor sees a piece and cannot find out what it is. -#}
-    {% if hero.piece %}
-    <figcaption class="hero-piece">
-      <a href="{{ url_for('site.work', slug=hero.piece_slug) }}">{{ hero.piece }}</a>
+    {% set many = hero.shots|length > 1 %}
+    {% if hero.piece or many %}
+    {#- ONE ROW under the photographs: the name left, the thumbnails right. The
+        figcaption is the row itself, so the figure keeps its caption. -#}
+    <figcaption class="hero-foot{% if not many %} solo{% endif %}">
+      {% if hero.piece %}
+      <span class="hero-piece"><a href="{{ url_for('site.work', slug=hero.piece_slug) }}">{{ hero.piece }}</a></span>
+      {% endif %}
+      {#- One small button per photograph, on the same row as the painting's
+          name, under the photographs (Paul, 2026-09-26; tried under the headline
+          and then on a row of their own first). They drive the same stack the timer does; the
+          script below keeps `on` in step. Rendered only when there is more
+          than one photograph to choose between. -#}
+      {% if hero.shots|length > 1 %}
+      <div class="hero-thumbs" role="group" aria-label="Photographs of this piece">
+        {% for shot in hero.shots %}
+        <button type="button" class="hero-thumb{% if loop.first %} on{% endif %}" data-shot="{{ loop.index0 }}"
+                aria-label="Photograph {{ loop.index }} of {{ hero.shots|length }}"
+                aria-pressed="{{ 'true' if loop.first else 'false' }}">
+          <img src="{{ img_url(shot,'s','jpg') }}" alt="" loading="lazy" decoding="async" width="96" height="96">
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
     </figcaption>
     {% endif %}
     </figure>

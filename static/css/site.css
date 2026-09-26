@@ -450,6 +450,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   .masthead .tsw{order:1}
   .masthead nav{order:2; width:100%}
 }
+/* The narrowest phones: Gallery's icon made the four buttons one hair too
+   wide for a single row at 360px. Tighter padding keeps them on one line. */
+@media (max-width:389px){
+  .masthead nav{gap:6px}
+  .masthead nav a{padding:8px 8px; letter-spacing:.05em}
+  .masthead nav a.gal{gap:5px}
+}
 
 main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 
@@ -2047,7 +2054,25 @@ body.home{
    figure's gap, so they read as belonging to it. */
 .hero-thumbs{
   display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px;
-  align-self:flex-end; max-width:100%; margin:-4px 0 0;
+  flex:0 1 auto; margin-left:auto;
+}
+/* The row under the photograph: name left, thumbnails right, stretched to
+   the photograph's width (the stack is the widest thing in the figure). On a
+   phone the name wraps to two lines before the thumbnails leave the row. A
+   hero with one photograph has only the name, centred as it always was. */
+.hero-foot{
+  display:flex; align-items:center; gap:14px; align-self:stretch;
+  margin:-4px 0 0;
+}
+.hero-foot .hero-piece{flex:0 1 auto; min-width:0; text-align:left}
+.hero-foot.solo{justify-content:center; margin-top:0}
+.hero-foot.solo .hero-piece{text-align:center}
+/* Phones: smaller thumbnails that never wrap -- the name gives way instead.
+   Scoped under .hero-foot so it outranks the base .hero-thumb rule below. */
+@media (max-width:560px){
+  .hero-foot{gap:10px}
+  .hero-foot .hero-thumbs{gap:5px; flex-wrap:nowrap}
+  .hero-foot .hero-thumb{width:34px; height:34px; padding:2px; flex:0 0 auto}
 }
 .hero-thumb{
   width:48px; height:48px; padding:3px; border:1.5px solid rgba(237,241,240,.22);

@@ -53,8 +53,7 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
   <nav>
     {% for key, label, href in [
          ("work",    "Home",    url_for('site.index')),
-         ("about",   "About",   url_for('site.about')),
-         ("contact", "Contact", url_for('site.contact'))] %}
+         ("about",   "About",   url_for('site.about'))] %}
     <a href="{{ href }}"{% if nav == key %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
     {% endfor %}
     {# The way into the viewer from ANYWHERE, which is the job the floating
@@ -69,6 +68,9 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
        onclick="if(window.openGallery){openGallery(0);return false}"
        aria-haspopup="dialog"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"
        focusable="false"><rect x="1" y="4" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 1.8h9.2V11" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Gallery</a>{% endif %}
+    {# Contact sits AFTER Gallery (Paul, 2026-09-26), so it is written out
+       here rather than in the loop above. #}
+    <a href="{{ url_for('site.contact') }}"{% if nav == "contact" %} class="on" aria-current="page"{% endif %}>Contact</a>
   </nav>
   {# A SIBLING of the nav, not one of its links -- it is a preference, not a
      page. Which also means it can ride up beside the wordmark when the nav
