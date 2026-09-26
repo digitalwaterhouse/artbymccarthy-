@@ -40,6 +40,21 @@
       </picture>
       {% endfor %}
     </div>
+    {#- One small button per photograph, under the photographs, flush with their
+        right edge (Paul, 2026-09-26; first tried under the headline). They drive the same stack the timer does; the
+        script below keeps `on` in step. Rendered only when there is more
+        than one photograph to choose between. -#}
+    {% if hero.shots|length > 1 %}
+    <div class="hero-thumbs" role="group" aria-label="Photographs of this piece">
+      {% for shot in hero.shots %}
+      <button type="button" class="hero-thumb{% if loop.first %} on{% endif %}" data-shot="{{ loop.index0 }}"
+              aria-label="Photograph {{ loop.index }} of {{ hero.shots|length }}"
+              aria-pressed="{{ 'true' if loop.first else 'false' }}">
+        <img src="{{ img_url(shot,'s','jpg') }}" alt="" loading="lazy" decoding="async" width="96" height="96">
+      </button>
+      {% endfor %}
+    </div>
+    {% endif %}
     {#- The name of the painting on screen. The h1 beside it is her own headline
         and on the live site names the collection, so without this the hero is
         the one place a visitor sees a piece and cannot find out what it is. -#}
@@ -57,21 +72,6 @@
   <div class="hero-say">
     {% if cfg.hero_eyebrow %}<p class="eyebrow">{{ cfg.hero_eyebrow }}</p>{% endif %}
     <h1>{{ hero.title }}</h1>
-    {#- One small button per photograph, under the headline and to the right
-        (Paul, 2026-09-26). They drive the same stack the timer does; the
-        script below keeps `on` in step. Rendered only when there is more
-        than one photograph to choose between. -#}
-    {% if hero.shots|length > 1 %}
-    <div class="hero-thumbs" role="group" aria-label="Photographs of this piece">
-      {% for shot in hero.shots %}
-      <button type="button" class="hero-thumb{% if loop.first %} on{% endif %}" data-shot="{{ loop.index0 }}"
-              aria-label="Photograph {{ loop.index }} of {{ hero.shots|length }}"
-              aria-pressed="{{ 'true' if loop.first else 'false' }}">
-        <img src="{{ img_url(shot,'s','jpg') }}" alt="" loading="lazy" decoding="async" width="96" height="96">
-      </button>
-      {% endfor %}
-    </div>
-    {% endif %}
     {% if hero.sub %}<p class="lede">{{ hero.sub }}</p>
     {% elif cfg.about %}<p class="lede">{{ cfg.about.split("\n")[0] }}</p>{% endif %}
     <div class="hero-do">
