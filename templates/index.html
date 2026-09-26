@@ -57,6 +57,21 @@
   <div class="hero-say">
     {% if cfg.hero_eyebrow %}<p class="eyebrow">{{ cfg.hero_eyebrow }}</p>{% endif %}
     <h1>{{ hero.title }}</h1>
+    {#- One small button per photograph, under the headline and to the right
+        (Paul, 2026-09-26). They drive the same stack the timer does; the
+        script below keeps `on` in step. Rendered only when there is more
+        than one photograph to choose between. -#}
+    {% if hero.shots|length > 1 %}
+    <div class="hero-thumbs" role="group" aria-label="Photographs of this piece">
+      {% for shot in hero.shots %}
+      <button type="button" class="hero-thumb{% if loop.first %} on{% endif %}" data-shot="{{ loop.index0 }}"
+              aria-label="Photograph {{ loop.index }} of {{ hero.shots|length }}"
+              aria-pressed="{{ 'true' if loop.first else 'false' }}">
+        <img src="{{ img_url(shot,'s','jpg') }}" alt="" loading="lazy" decoding="async" width="96" height="96">
+      </button>
+      {% endfor %}
+    </div>
+    {% endif %}
     {% if hero.sub %}<p class="lede">{{ hero.sub }}</p>
     {% elif cfg.about %}<p class="lede">{{ cfg.about.split("\n")[0] }}</p>{% endif %}
     <div class="hero-do">
@@ -147,6 +162,21 @@
     return !img || img.complete;
   }
 
+  var thumbs = Array.prototype.slice.call(document.querySelectorAll('.hero-thumb'));
+
+  function show(next) {
+    if (next === at) return;
+    shots[at].classList.remove('on');
+    shots[at].setAttribute('aria-hidden', 'true');
+    shots[next].classList.add('on');
+    shots[next].removeAttribute('aria-hidden');
+    thumbs.forEach(function (t, i) {
+      t.classList.toggle('on', i === next);
+      t.setAttribute('aria-pressed', i === next ? 'true' : 'false');
+    });
+    at = next;
+  }
+
   function step() {
     var next = (at + 1) % shots.length;
     // Skip a photograph that has not arrived yet and try the one after it;
@@ -154,13 +184,17 @@
     for (var i = 0; i < shots.length && !ready(shots[next]); i++) {
       next = (next + 1) % shots.length;
     }
-    if (next === at) return;
-    shots[at].classList.remove('on');
-    shots[at].setAttribute('aria-hidden', 'true');
-    shots[next].classList.add('on');
-    shots[next].removeAttribute('aria-hidden');
-    at = next;
+    show(next);
   }
+
+  // A pick is a pick: show it even if it is still arriving, and give it a
+  // full turn on screen before the timer moves on.
+  thumbs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      show(parseInt(t.getAttribute('data-shot'), 10) || 0);
+      stop(); start();
+    });
+  });
 
   function start() {
     if (timer || motion.matches || document.hidden) return;
