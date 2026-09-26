@@ -26,11 +26,35 @@
     });
   }
 
+  /* THE HOME PAGE NEEDS A WORD. Its top is dark in both modes on purpose (the
+     black boxes are built to sink into it), so a press there changed nothing
+     anyone could see -- the pages that did change were below the fold. On the
+     home page only, say what happened, briefly. aria-live so a screen reader
+     hears it too. Elsewhere the whole page changing is its own answer. */
+  var noteTimer;
+  function say(mode) {
+    if (!document.body || !document.body.classList.contains("home")) return;
+    var n = document.querySelector(".tsw-note");
+    if (!n) {
+      n = document.createElement("p");
+      n.className = "tsw-note";
+      n.setAttribute("role", "status");
+      n.setAttribute("aria-live", "polite");
+      document.body.appendChild(n);
+    }
+    n.textContent = (mode === "dark" ? "Dark mode" : "Light mode") +
+                    " \u2014 the pages below are " + mode;
+    n.classList.add("show");
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(function () { n.classList.remove("show"); }, 2600);
+  }
+
   window.abmTheme = function () {
     var next = effective() === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
     try { localStorage.setItem(KEY, next); } catch (e) {}
     paint();
+    say(next);
   };
 
   /* If they have not chosen, the machine is still in charge -- so a laptop

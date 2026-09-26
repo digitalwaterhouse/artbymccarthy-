@@ -137,6 +137,20 @@
 /* In the studio rail it shares the top row with the logo; on the dark entry it
    takes the same soft white as the nav links beside it. */
 .home .masthead .tsw{color:rgba(244,246,245,.7)}
+/* The home page's "Light mode -- the pages below are light" note; see
+   theme.js. Hangs just under the sticky header (--navh is published by the
+   inline script in base.html), on the dark entry, in the entry's own type. */
+.tsw-note{
+  position:fixed; z-index:40; right:clamp(16px,5vw,56px); top:calc(var(--navh,80px) + 6px);
+  margin:0; padding:8px 12px; border:1px solid rgba(9,187,213,.55); border-radius:2px;
+  background:rgba(10,18,26,.92); color:#F4F6F5;
+  font:600 12px/1.2 "Karla",sans-serif; letter-spacing:.05em;
+  opacity:0; transform:translateY(-4px); pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease;
+}
+.tsw-note.show{opacity:1; transform:none}
+@media (prefers-reduced-motion:reduce){.tsw-note{transition:none; transform:none}}
+@media (max-width:560px){.tsw-note{left:16px; right:16px; text-align:center}}
 .home .masthead .tsw:hover{color:var(--turq-lo)}
 
 /* ---------- dark ----------
