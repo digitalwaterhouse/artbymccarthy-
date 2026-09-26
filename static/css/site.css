@@ -550,9 +550,20 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
    edge rather than out at the end of the column. Every photograph keeps its
    whole frame: contain, never cropped, same rule as the wall. */
 .plates{display:flex; align-items:flex-start; gap:14px}
-.plate-stage{flex:0 1 auto; min-width:0; display:flex; flex-direction:column; gap:clamp(18px,2.5vw,30px)}
+/* ONE FRAME SIZE FOR EVERY PHOTOGRAPH (Paul, 2026-09-26). Photographs of
+   different proportions used to resize the stage as you clicked through,
+   which slid the thumbnails and the whole details column sideways. The
+   stage is now a fixed square -- --plate, sized to fit the screen -- and each
+   photograph is fitted inside it (contain: nothing cropped), centred. */
+.plates{--plate:min(640px, calc(100vh - var(--navh,90px) - 80px)); min-width:0}
+.plate-stage{
+  flex:0 1 auto; width:var(--plate); min-width:0;
+  display:flex; flex-direction:column; gap:clamp(18px,2.5vw,30px);
+}
 .plates figure{margin:0}
-.plate-stage img{width:auto; max-width:100%; max-height:min(640px, calc(100vh - var(--navh,90px) - 80px))}
+.plate-stage .plate-img{width:100%; aspect-ratio:1}
+.plate-stage picture{display:block; width:100%; height:100%}
+.plate-stage img{width:100%; height:100%; object-fit:contain}
 .plates.picking .plate{display:none}
 .plates.picking .plate.on{display:block; animation:plate-in .25s ease both}
 @keyframes plate-in{from{opacity:0}}
