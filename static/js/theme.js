@@ -49,11 +49,38 @@
     noteTimer = setTimeout(function () { n.classList.remove("show"); }, 2600);
   }
 
+  /* SMOOTH, NOT SNAPPED (2026-09-26). Where the browser has View Transitions
+     the whole page cross-dissolves from the old palette to the new one --
+     one GPU fade over a snapshot, so nothing re-lays out mid-change. The
+     html.theme-vt class swaps the page-to-page animation (which slides) for a
+     plain dissolve. Without View Transitions, html.theme-ease turns on colour
+     transitions everywhere for just long enough to cover the change. Reduced
+     motion gets the instant switch it asked for. */
+  var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
+  function apply(next) {
+    document.documentElement.setAttribute("data-theme", next);
+    paint();
+  }
+
   window.abmTheme = function () {
     var next = effective() === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", next);
     try { localStorage.setItem(KEY, next); } catch (e) {}
-    paint();
+    var root = document.documentElement;
+    if (calm && calm.matches) {
+      apply(next);
+    } else if (document.startViewTransition) {
+      root.classList.add("theme-vt");
+      var vt = document.startViewTransition(function () { apply(next); });
+      /* A second press mid-fade skips the first transition, which rejects
+         .ready -- swallow it, the newer press is already handling things. */
+      var done = function () { root.classList.remove("theme-vt"); };
+      vt.ready.catch(function () {});
+      vt.finished.then(done, done);
+    } else {
+      root.classList.add("theme-ease");
+      apply(next);
+      setTimeout(function () { root.classList.remove("theme-ease"); }, 500);
+    }
     say(next);
   };
 

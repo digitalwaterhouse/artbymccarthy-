@@ -103,6 +103,13 @@ DEFAULT_SETTINGS = {
     "box_eyebrow": "What these are",
     "box_spec": "Each one is 10.5\u2033 \u00d7 10.5\u2033 and 2.5\u2033 deep \u2014 "
                 "a box you look into, not a picture you look at.",
+    # THE NEW-WORK SIGNUP (templates/_signup.html): high on the home page,
+    # at the foot of every other page. Typed into the template until
+    # 2026-09-26, when Paul asked for it to be editable. Empty heading or line
+    # takes it off; an empty button label falls back, a button needs a word.
+    "signup_head": "Hear when there\u2019s new work",
+    "signup_sub": "About once a month. Nothing else, and you can stop any time.",
+    "signup_button": "Keep me posted",
     # quiet | rosette | rose | none -- the backdrop on about/commissions/contact
     "page_bg": "quiet",
     # Printed on wall labels and checklists. A setting, not a constant: she

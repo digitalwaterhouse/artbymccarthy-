@@ -146,7 +146,7 @@
   background:rgba(10,18,26,.92); color:#F4F6F5;
   font:600 12px/1.2 "Karla",sans-serif; letter-spacing:.05em;
   opacity:0; transform:translateY(-4px); pointer-events:none;
-  transition:opacity .2s ease, transform .2s ease;
+  transition:opacity .35s ease, transform .35s ease;
 }
 .tsw-note.show{opacity:1; transform:none}
 @media (prefers-reduced-motion:reduce){.tsw-note{transition:none; transform:none}}
@@ -282,6 +282,15 @@ html{-webkit-text-size-adjust:100%; scroll-padding-top:calc(var(--navh, 113px) +
 @keyframes vt-out{to{opacity:0}}
 @keyframes vt-in{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
 .no-vt main{animation:vt-in .3s ease both}
+/* The light/dark switch borrows the same machinery for a plain dissolve --
+   no slide, the page is not going anywhere. See abmTheme() in theme.js. */
+html.theme-vt::view-transition-old(root){animation:none}
+html.theme-vt::view-transition-new(root){animation:theme-in .5s ease both}
+@keyframes theme-in{from{opacity:0}}
+html.theme-ease *,html.theme-ease *::before,html.theme-ease *::after{
+  transition:background-color .45s ease, color .45s ease, border-color .45s ease,
+             fill .45s ease, stroke .45s ease !important;
+}
 body{
   margin:0; background:var(--wall); color:var(--ink);
   font:400 17px/1.6 "Karla","Helvetica Neue",Arial,sans-serif;

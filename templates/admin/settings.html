@@ -165,6 +165,41 @@
   </form>
 </section>
 
+{# ------------------------------------------------------- the signup band -#}
+<section class="setcard" id="signup">
+  <div class="setcard-head">
+    <h2>New-work signup</h2>
+    <a class="link" href="{{ url_for('site.index') }}" target="_blank" rel="noopener">See it &nearr;</a>
+  </div>
+  <p class="setsay">Where visitors leave an email to hear about new work. High on the
+    front page, and at the foot of every other page.</p>
+
+  <div class="setprev dark">
+    <div>
+      {% if cfg.signup_head %}<p class="pv-head">{{ cfg.signup_head }}</p>{% endif %}
+      {% if cfg.signup_sub %}<p class="pv-sub">{{ cfg.signup_sub }}</p>{% endif %}
+      <p class="pv-eyebrow" style="margin-top:10px">{{ cfg.signup_button or "Keep me posted" }} &rarr;</p>
+    </div>
+  </div>
+
+  <form class="setform" method="post">
+    <input type="hidden" name="section" value="signup">
+    <label class="wide">Heading
+      <input name="signup_head" value="{{ cfg.signup_head }}" placeholder="Hear when there&rsquo;s new work">
+      <span class="sub">Empty takes the line off the page.</span>
+    </label>
+    <label class="wide">The line under it
+      <textarea name="signup_sub" rows="2">{{ cfg.signup_sub }}</textarea>
+      <span class="sub">Empty takes the line off the page.</span>
+    </label>
+    <label class="wide">Button
+      <input name="signup_button" value="{{ cfg.signup_button }}" placeholder="Keep me posted">
+      <span class="sub">Empty reads &ldquo;Keep me posted&rdquo;.</span>
+    </label>
+    <div class="setsave">{{ savedpill('signup') }}<button class="cta" type="submit">Save this band</button></div>
+  </form>
+</section>
+
 {# ------------------------------------------------------------ about page -#}
 <section class="setcard" id="about">
   <div class="setcard-head">

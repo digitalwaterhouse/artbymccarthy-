@@ -6,8 +6,10 @@
    alternative was the same form written twice and drifting apart. #}
 <form class="signup" method="post" action="{{ url_for('site.subscribe') }}">
   <div class="signup-say">
-    <strong>Hear when there&rsquo;s new work</strong>
-    <span>About once a month. Nothing else, and you can stop any time.</span>
+    {# Words are settings (signup_head / signup_sub / signup_button), edited
+       on the studio's "New-work signup" card. #}
+    {% if cfg.signup_head %}<strong>{{ cfg.signup_head }}</strong>{% endif %}
+    {% if cfg.signup_sub %}<span>{{ cfg.signup_sub }}</span>{% endif %}
   </div>
   <div class="signup-do">
     <label class="hp" for="hp-sub">Website</label>
@@ -15,6 +17,6 @@
     <label class="hp" for="sub-email">Your email</label>
     <input id="sub-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
     <input type="hidden" name="source" value="{{ signup_source }}">
-    <button class="btn-ghost" type="submit">Keep me posted</button>
+    <button class="btn-ghost" type="submit">{{ cfg.signup_button or "Keep me posted" }}</button>
   </div>
 </form>
