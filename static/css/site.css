@@ -395,6 +395,24 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   background:rgba(255,255,255,.09); border-color:var(--turq); color:#fff;
   box-shadow:4px 4px 0 0 rgba(9,187,213,.5);
 }
+/* GALLERY is an action, not a page, so it is the one filled button in the
+   row: collage turquoise with dark type, lifting off an ink block instead of
+   a mat colour. Same square shape and offset trick as its neighbours, so it
+   still belongs to the set. margin-left:auto only bites on a phone, where
+   the nav is full-width and it drifts to the right edge on its own. The
+   extra .home in the selectors outranks the dark-entry overrides below. */
+.masthead nav a.gal,.home .masthead nav a.gal{
+  display:inline-flex; align-items:center; gap:7px; margin-left:auto;
+  background:var(--turq); border-color:var(--turq); color:#07161C;
+  box-shadow:3px 3px 0 0 var(--ink);
+}
+.home .masthead nav a.gal{box-shadow:3px 3px 0 0 rgba(0,0,0,.55)}
+.masthead nav a.gal:hover,.home .masthead nav a.gal:hover{
+  background:var(--turq-lo); border-color:var(--turq-lo); color:#07161C;
+  box-shadow:4px 4px 0 0 var(--ink); transform:translate(-1px,-1px);
+}
+.home .masthead nav a.gal:hover{box-shadow:4px 4px 0 0 rgba(0,0,0,.6)}
+.masthead nav a.gal svg{flex:0 0 auto; margin-top:-1px}
 @media (prefers-reduced-motion:reduce){
   .masthead nav a,.gm-tab{transition:none}
   .masthead nav a:hover,.gm-tab:hover{transform:none}

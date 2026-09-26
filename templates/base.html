@@ -62,9 +62,13 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
        every nav rule untouched -- and because it has a real destination: with
        no JavaScript the viewer does not exist at all, so the honest fallback
        is the wall itself. Never marked current; it is an action, not a page. #}
-    {% if slides %}<a href="{{ url_for('site.index') }}#available"
+    {# Dressed differently from the page links on purpose (Lisa, 2026-09-26):
+       it opens the viewer rather than going somewhere, so it reads as the one
+       button in the row. The icon is decoration; the word carries the name. #}
+    {% if slides %}<a class="gal" href="{{ url_for('site.index') }}#available"
        onclick="if(window.openGallery){openGallery(0);return false}"
-       aria-haspopup="dialog">Gallery</a>{% endif %}
+       aria-haspopup="dialog"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"
+       focusable="false"><rect x="1" y="4" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 1.8h9.2V11" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Gallery</a>{% endif %}
   </nav>
   {# A SIBLING of the nav, not one of its links -- it is a preference, not a
      page. Which also means it can ride up beside the wordmark when the nav
