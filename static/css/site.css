@@ -2327,6 +2327,7 @@ body.home{
    home page uses -- capsules were a second, competing shape for what is the
    same kind of control. Kept in sync with `.home .masthead nav a`. */
 .gm-tabs{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; flex:0 0 auto}
+.gm-tabs[hidden]{display:none}  /* piece mode swaps the tabs for "Whole gallery" */
 .gm-tab{
   position:relative; display:inline-block;
   font:600 12.5px/1 "Karla",sans-serif; letter-spacing:.09em; text-transform:uppercase;

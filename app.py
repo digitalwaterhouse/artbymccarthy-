@@ -322,6 +322,9 @@ def slide_index(slug):
 
 
 app.jinja_env.globals["slide_index"] = slide_index
+# One photograph's three sizes, as the viewer wants them (work.html -> PIECE_SHOTS).
+app.jinja_env.filters["abm_shot"] = lambda base: {
+    "l": img_url(base, "l", "jpg"), "m": img_url(base, "m", "jpg"), "s": img_url(base, "s", "jpg")}
 
 
 def notify(kind, name, email, body, work_title=None):

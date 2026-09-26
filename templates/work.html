@@ -14,6 +14,12 @@
       the photograph shown; the thumbnails are what need the script. A piece
       with one photograph gets no column and no `picking` class at all. -#}
   {% set many = w.images|length > 1 %}
+  {#- This piece's photographs for the viewer's piece mode (openPiece in
+      _gallery.html): clicking a photograph opens it there, and the filmstrip
+      and arrows then walk this piece's photographs, not every painting. -#}
+  {% if gidx is not none %}
+  <script>window.PIECE_SHOTS = {{ w.images|map(attribute='base')|map('abm_shot')|list|tojson }};</script>
+  {% endif %}
   <div class="plates{% if many %} picking{% endif %}">
     <div class="plate-stage">
     {% for im in w.images %}
@@ -27,7 +33,7 @@
           {# On every photograph now that only one shows at a time -- the one on
              screen is the one a visitor wants larger. #}
           {% if gidx is not none %}
-          <button class="plate-zoom" type="button" onclick="openGallery({{ gidx }})"
+          <button class="plate-zoom" type="button" onclick="openPiece({{ gidx }}, {{ loop.index0 }})"
                   aria-haspopup="dialog" aria-label="View {{ w.title }} in the gallery">
             <span class="zoomchip">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"

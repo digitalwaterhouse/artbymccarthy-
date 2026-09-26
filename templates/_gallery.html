@@ -24,6 +24,12 @@
       <button type="button" class="gm-tab" onclick="gmTab('archive')">Sold</button>
     </div>
     {% endif %}
+    {#- PIECE MODE (2026-09-26): opened from a work page's photograph, the
+        viewer shows THAT piece's photographs only. This is the way back out
+        to every painting, landing on this one. -#}
+    <div class="gm-tabs" id="gmPieceBar" hidden>
+      <button type="button" class="gm-tab" onclick="gmWhole()">&larr; Whole gallery</button>
+    </div>
     <div class="gm-frame">
       <div class="gm-stagewrap" id="gmWrap">
         <img class="gm-photo" id="gmMain" alt="">
@@ -40,6 +46,7 @@
 (function(){
   var ALL = {{ slides|tojson }};
   var list = ALL, idx = 0, tab = 'all';
+  var pieceAt = null;              // slide index of the piece in piece mode, else null
   function $(id){ return document.getElementById(id); }
 
   function label(w){
@@ -50,10 +57,12 @@
               : w.status === 'nfs' ? 'Not for sale'
               : w.status === 'reserved' ? 'Reserved'
               : (w.price || '');
+    if (w.of > 1) line.push('Photograph ' + w.n + ' of ' + w.of);
     return '<span class="gm-t">' + w.title + '</span>'
          + (line.length ? '<span class="gm-m">' + line.join(' &middot; ') + '</span>' : '')
          + '<span class="gm-p">' + price
-         + ' <a class="gm-link" href="' + w.url + '">See this work &rarr;</a></span>';
+         // In piece mode the visitor is already on this work's page.
+         + (w.of ? '' : ' <a class="gm-link" href="' + w.url + '">See this work &rarr;</a>') + '</span>';
   }
 
   var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -129,14 +138,51 @@
     show((idx + n + list.length) % list.length);
   };
 
-  window.openGallery = function(start){
-    idx = Math.min(start || 0, Math.max(list.length - 1, 0));
-    strip(); paint();
+  function chrome(){
+    var piece = pieceAt !== null;
+    if ($('gmTabs')) $('gmTabs').hidden = piece;
+    $('gmPieceBar').hidden = !piece;
+  }
+
+  function reveal(){
+    strip(); paint(); chrome();
     var m = $('galleryModal');
+    if (!m.hidden) return;
     m.hidden = false;
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(function(){ m.classList.add('is-open'); });
+  }
+
+  /* The whole gallery. `start` is an index into ALL, so leaving piece mode
+     (or any earlier tab) puts the list back to All work first -- otherwise
+     the index would land on the wrong painting. */
+  window.openGallery = function(start){
+    if (pieceAt !== null || tab !== 'all'){
+      pieceAt = null;
+      if ($('gmTabs')) gmTab('all'); else list = ALL;
+    }
+    idx = Math.min(start || 0, Math.max(list.length - 1, 0));
+    reveal();
   };
+
+  /* One piece's photographs, opened on the one that was clicked. The work
+     page supplies the photographs (window.PIECE_SHOTS); the caption fields
+     come from the piece's own slide, so the label matches the gallery's. */
+  window.openPiece = function(at, start){
+    var shots = window.PIECE_SHOTS || [];
+    var base = ALL[at];
+    if (!base || shots.length < 2){ openGallery(at); return; }
+    pieceAt = at;
+    list = shots.map(function(s, i){
+      var w = {}; for (var k in base) w[k] = base[k];
+      w.l = s.l; w.m = s.m; w.s = s.s; w.n = i + 1; w.of = shots.length;
+      return w;
+    });
+    idx = Math.min(start || 0, list.length - 1);
+    reveal();
+  };
+
+  window.gmWhole = function(){ openGallery(pieceAt || 0); };
 
   window.closeGallery = function(){
     var m = $('galleryModal');
