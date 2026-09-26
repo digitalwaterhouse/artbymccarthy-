@@ -52,7 +52,7 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
   </a>
   <nav>
     {% for key, label, href in [
-         ("work",    "Work",    url_for('site.index')),
+         ("work",    "Home",    url_for('site.index')),
          ("about",   "About",   url_for('site.about')),
          ("contact", "Contact", url_for('site.contact'))] %}
     <a href="{{ href }}"{% if nav == key %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
