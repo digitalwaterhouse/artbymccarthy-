@@ -8,18 +8,25 @@
      gallery ON ITSELF rather than at slide zero. None for a draft or a piece
      with no photograph, and then no control is drawn at all. #}
   {% set gidx = slide_index(w.slug) %}
-  <div class="plates">
+  {#- ONE PHOTOGRAPH AT A TIME, thumbnails in a column to its right (Paul,
+      2026-09-26 -- they used to stack full-width, 830px each on a laptop).
+      `on` is printed on the first, so with no JavaScript the lead is still
+      the photograph shown; the thumbnails are what need the script. A piece
+      with one photograph gets no column and no `picking` class at all. -#}
+  {% set many = w.images|length > 1 %}
+  <div class="plates{% if many %} picking{% endif %}">
+    <div class="plate-stage">
     {% for im in w.images %}
-      <figure>
-        {# The span is the positioning context for the zoom control. It wraps
-           the picture on every plate, not just the lead, so the two paths do
-           not drift into two different pieces of markup. #}
+      <figure class="plate{% if loop.first %} on{% endif %}" data-plate="{{ loop.index0 }}">
+        {# The span is the positioning context for the zoom control. #}
         <span class="plate-img">
           <picture>
-            <source type="image/webp" srcset="{{ img_url(im.base,'m') }} 1400w, {{ img_url(im.base,'l') }} 2400w" sizes="(max-width: 900px) 94vw, 62vw">
+            <source type="image/webp" srcset="{{ img_url(im.base,'m') }} 1400w, {{ img_url(im.base,'l') }} 2400w" sizes="(max-width: 900px) 80vw, 640px">
             <img src="{{ img_url(im.base,'l','jpg') }}" alt="{{ im.alt or w.title }}"{% if not loop.first %} loading="lazy"{% endif %}>
           </picture>
-          {% if loop.first and gidx is not none %}
+          {# On every photograph now that only one shows at a time -- the one on
+             screen is the one a visitor wants larger. #}
+          {% if gidx is not none %}
           <button class="plate-zoom" type="button" onclick="openGallery({{ gidx }})"
                   aria-haspopup="dialog" aria-label="View {{ w.title }} in the gallery">
             <span class="zoomchip">
@@ -36,6 +43,37 @@
     {% else %}
       <div class="noimg tall">no photograph yet</div>
     {% endfor %}
+    </div>
+    {% if many %}
+    <div class="plate-thumbs" role="group" aria-label="Photographs of {{ w.title }}">
+      {% for im in w.images %}
+      <button type="button" class="plate-thumb{% if loop.first %} on{% endif %}" data-plate="{{ loop.index0 }}"
+              aria-label="Photograph {{ loop.index }} of {{ w.images|length }}"
+              aria-pressed="{{ 'true' if loop.first else 'false' }}">
+        <img src="{{ img_url(im.base,'s','jpg') }}" alt="" loading="lazy" decoding="async" width="96" height="96">
+      </button>
+      {% endfor %}
+    </div>
+    <script>
+    (function () {
+      var plates = document.querySelectorAll('.plate-stage .plate');
+      var thumbs = document.querySelectorAll('.plate-thumb');
+      Array.prototype.forEach.call(thumbs, function (t) {
+        t.addEventListener('click', function () {
+          var n = t.getAttribute('data-plate');
+          Array.prototype.forEach.call(plates, function (p) {
+            p.classList.toggle('on', p.getAttribute('data-plate') === n);
+          });
+          Array.prototype.forEach.call(thumbs, function (b) {
+            var on = b === t;
+            b.classList.toggle('on', on);
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          });
+        });
+      });
+    })();
+    </script>
+    {% endif %}
   </div>
 
   <aside class="facts">
