@@ -129,21 +129,26 @@
       </figure>
       {% endif %}
       <div>
-        <p class="pv-eyebrow">What these are</p>
-        {% if cfg.box_note %}
-        <p class="pv-quote">{{ cfg.box_note }}</p>
-        {% if cfg.artist_name %}<p class="pv-cite">{{ cfg.artist_name }}</p>{% endif %}
-        {% endif %}
-        <p class="pv-sub">Each one is 10.5&Prime; &times; 10.5&Prime; and 2.5&Prime; deep &mdash; a box you look into, not a picture you look at.</p>
+        {% if cfg.box_eyebrow %}<p class="pv-eyebrow">{{ cfg.box_eyebrow }}</p>{% endif %}
+        {% if cfg.box_note %}<p class="pv-quote">{{ cfg.box_note }}</p>{% endif %}
+        {% if cfg.box_spec %}<p class="pv-sub">{{ cfg.box_spec }}</p>{% endif %}
       </div>
     </div>
   </div>
 
   <form class="setform" method="post" enctype="multipart/form-data">
     <input type="hidden" name="section" value="boxes">
-    <label class="wide">The sentence beside it
+    <label class="wide">The small heading
+      <input name="box_eyebrow" value="{{ cfg.box_eyebrow }}" placeholder="What these are">
+      <span class="sub">Empty takes the line off the page altogether.</span>
+    </label>
+    <label class="wide">The sentence
       <textarea name="box_note" rows="3">{{ cfg.box_note }}</textarea>
-      <span class="sub">Shown as a quotation, with your name under it.</span>
+      <span class="sub">Shown large, as a quotation.</span>
+    </label>
+    <label class="wide">The line under it
+      <textarea name="box_spec" rows="2">{{ cfg.box_spec }}</textarea>
+      <span class="sub">The sizes, in smaller type. Empty takes it off the page.</span>
     </label>
     <label class="wide">Caption under the photograph
       <input name="box_caption" value="{{ cfg.box_caption }}">

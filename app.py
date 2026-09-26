@@ -1530,7 +1530,7 @@ def admin_settings():
         keys = ["site_title", "tagline", "about", "artist_email", "commission_note",
                 "umami_website_id",
                 "hero_eyebrow", "hero_title", "hero_sub", "hero_caption", "about_caption",
-                "box_caption", "box_note", "page_bg",
+                "box_eyebrow", "box_caption", "box_note", "box_spec", "page_bg",
                 "artist_name", "artist_statement", "artist_bio",
                 "studio_location"]
         # PRESENT, not "every key with a default". The page is now a stack of

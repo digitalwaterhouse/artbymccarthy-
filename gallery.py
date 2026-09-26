@@ -95,6 +95,14 @@ DEFAULT_SETTINGS = {
     # About note. The live database holds a row for this key, so the value
     # here only ever applies to a fresh install.
     "box_note": "Nuggets of hope and humor- lovingly collected",
+    # The band's small heading and the measurements line under her words.
+    # Both were typed into _boxband.html until 2026-09-26, when Paul asked for
+    # every word in the band to be editable. Empty takes the line off the page,
+    # same as hero_eyebrow. No live row exists for either yet, so these
+    # defaults are what the site shows until she saves the card.
+    "box_eyebrow": "What these are",
+    "box_spec": "Each one is 10.5\u2033 \u00d7 10.5\u2033 and 2.5\u2033 deep \u2014 "
+                "a box you look into, not a picture you look at.",
     # quiet | rosette | rose | none -- the backdrop on about/commissions/contact
     "page_bg": "quiet",
     # Printed on wall labels and checklists. A setting, not a constant: she

@@ -8,8 +8,9 @@
    Two halves, and each stands alone. The photograph is a box shot from an
    angle so the depth reads; until she takes one, the band renders as her
    sentence and the measurements, which is worth having on its own. The
-   sentence is hers, verbatim, and is attributed so it reads as a painter
-   talking about her work rather than as shop copy. #}
+   sentence is hers, verbatim. Her name used to sit under it as a <cite>;
+   Paul took it off 2026-09-26. Every line here is a setting (box_eyebrow,
+   box_note, box_spec) edited on the studio's "What these are" card. #}
 <section class="boxband{% if not cfg.box_image %} nophoto{% endif %}">
   {% if cfg.box_image %}
   <figure class="boxband-shot">
@@ -22,16 +23,12 @@
   {% endif %}
 
   <div class="boxband-say">
-    <p class="eyebrow">What these are</p>
+    {% if cfg.box_eyebrow %}<p class="eyebrow">{{ cfg.box_eyebrow }}</p>{% endif %}
     {% if cfg.box_note %}
     <blockquote>
       <p>{{ cfg.box_note }}</p>
-      {% if cfg.artist_name %}<cite>{{ cfg.artist_name }}</cite>{% endif %}
     </blockquote>
     {% endif %}
-    <p class="boxband-spec">
-      Each one is 10.5&Prime; &times; 10.5&Prime; and 2.5&Prime; deep &mdash; a box you
-      look into, not a picture you look at.
-    </p>
+    {% if cfg.box_spec %}<p class="boxband-spec">{{ cfg.box_spec }}</p>{% endif %}
   </div>
 </section>
