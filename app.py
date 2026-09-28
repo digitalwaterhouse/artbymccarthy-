@@ -1782,7 +1782,11 @@ def admin_opportunities():
         return redirect(url_for("site.admin_opportunity", opportunity_id=oid))
     # Plain GET so a filtered view is bookmarkable -- "everything inside 75
     # miles" is a view she comes back to, not a mode she sets each visit.
-    within = _int(request.args.get("within"))
+    # No `within` in the URL = the 35-mile default (Paul, 2026-09-28: light the
+    # 35 mi button "so you know the area"); within=0 = any distance.
+    within = _int(request.args.get("within"), gallery.FOUND_RADIUS_MILES) \
+        if "within" in request.args else gallery.FOUND_RADIUS_MILES
+    within = within or None
     order = "distance" if request.args.get("sort") == "distance" else "deadline"
     # Kick the drain on the way past. Cheap when there is nothing to do: one
     # indexed query that returns no rows.

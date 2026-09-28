@@ -20,14 +20,19 @@
 {% if here %}
 <form class="oppfilter" method="get">
   <span class="oppfilter-t">Within</span>
+  {# RADIO, NOT TOGGLES (2026-09-28). 35 mi is the DEFAULT and shows lit, so the
+     area the list covers is always visible -- the same 35 miles "Calls near
+     you" uses. "any" is within=0; a bare URL means the default. #}
   {% for m in [35, 75, 200] %}
   <a class="chip{% if within == m %} on{% endif %}"
-     href="{{ url_for('site.admin_opportunities', within=(none if within == m else m), sort=(order if order == 'distance' else none)) }}">{{ m }} mi</a>
+     href="{{ url_for('site.admin_opportunities', within=m, sort=(order if order == 'distance' else none)) }}">{{ m }} mi</a>
   {% endfor %}
+  <a class="chip{% if not within %} on{% endif %}"
+     href="{{ url_for('site.admin_opportunities', within=0, sort=(order if order == 'distance' else none)) }}">any distance</a>
   <a class="chip{% if order == 'distance' %} on{% endif %}"
-     href="{{ url_for('site.admin_opportunities', within=within or none, sort=(none if order == 'distance' else 'distance')) }}">nearest first</a>
-  {% if within or order == 'distance' %}
-  <a class="chip clear" href="{{ url_for('site.admin_opportunities') }}">clear</a>
+     href="{{ url_for('site.admin_opportunities', within=within or 0, sort=(none if order == 'distance' else 'distance')) }}">nearest first</a>
+  {% if within != radius or order == 'distance' %}
+  <a class="chip clear" href="{{ url_for('site.admin_opportunities') }}">reset</a>
   {% endif %}
   {# What she typed, not what Nominatim matched: "Town of Bedford, Westchester
      County, New York, United States" is four lines of chrome in a filter bar.
