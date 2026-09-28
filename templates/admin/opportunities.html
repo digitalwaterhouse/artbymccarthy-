@@ -20,7 +20,7 @@
 {% if here %}
 <form class="oppfilter" method="get">
   <span class="oppfilter-t">Within</span>
-  {% for m in [25, 75, 200] %}
+  {% for m in [35, 75, 200] %}
   <a class="chip{% if within == m %} on{% endif %}"
      href="{{ url_for('site.admin_opportunities', within=(none if within == m else m), sort=(order if order == 'distance' else none)) }}">{{ m }} mi</a>
   {% endfor %}
@@ -127,7 +127,7 @@
   {% if states %}
   <form class="finder-go" method="post" action="{{ url_for('site.admin_opportunities_refresh') }}">
     <button class="cta" type="submit">Get the latest</button>
-    <span class="sub">Open calls in {{ states|join(' and ') }} closing within
+    <span class="sub">Open calls within {{ radius }} miles, in {{ states|join(' and ') }}, closing within
       {{ horizon }} days &mdash; free to read, and nothing joins your list until you
       press Add. One further out appears here by itself once it comes inside.</span>
   </form>
@@ -181,7 +181,7 @@
     {% endfor %}
   </ul>
   {% elif states %}
-  <p class="empty">{% if last_found %}Nothing closing in the next {{ horizon }} days.
+  <p class="empty">{% if last_found %}Nothing within {{ radius }} miles closing in the next {{ horizon }} days.
     {% if found_counts.get('added') %}{{ found_counts['added'] }} added to your list,
     {% endif %}{% if found_counts.get('dismissed') %}{{ found_counts['dismissed'] }} put aside.
     {% endif %}Press Get the latest for new ones.

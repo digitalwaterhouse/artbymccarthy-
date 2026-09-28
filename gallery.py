@@ -2060,7 +2060,7 @@ def drop_closed_found(before=None):
             " AND deadline < ?", (before or _past_cutoff(),)).rowcount
 
 
-def list_found(status="new", within_days=None):
+def list_found(status="new", within_days=None, within_miles=None):
     """The pen, optionally narrowed to what closes soon.
 
     NARROWED IN THE VIEW, NOT AT THE DOOR. Everything the refresh found is
@@ -2090,6 +2090,10 @@ def list_found(status="new", within_days=None):
     rows = [r for r in rows if r["days"] is None or r["days"] >= 0]
     if within_days:
         rows = [r for r in rows if r["days"] is None or r["days"] <= within_days]
+    # Same survival rule as the deadline: a call not placed yet (the distance
+    # worker is still on it) or with no place at all stays visible.
+    if within_miles:
+        rows = [r for r in rows if r["miles"] is None or r["miles"] <= within_miles]
     return rows
 
 
@@ -2097,13 +2101,20 @@ def found_horizon(status="new"):
     """(showing_within_30, total) -- so the screen can say what it is holding
     back rather than simply not showing it."""
     all_ = list_found(status)
-    return len(list_found(status, FOUND_DEFAULT_DAYS)), len(all_)
+    return len(list_found(status, FOUND_DEFAULT_DAYS, FOUND_RADIUS_MILES)), len(all_)
 
 
 # How far ahead the panel looks by default. A deadline six months out is not a
 # thing to act on today, and 61 calls sorted by date buries the three she could
 # actually enter this month under fifty she cannot yet.
-FOUND_DEFAULT_DAYS = 30
+FOUND_DEFAULT_DAYS = 90
+# 2026-09-28, Paul: "can this be scaled down to a 35mi radius". Two states of
+# listings is ~50 calls, most of them 35-200 miles off. Tightened to what she
+# would actually drive to, and the window widened 30 -> 90 days in the same
+# change, because at 35 miles and 30 days the panel was EMPTY (the nearest six
+# all closed 33+ days out). Measured on the live pen that day: 47 open, 6
+# inside 35 miles, 4 of those inside 90 days.
+FOUND_RADIUS_MILES = 35
 
 
 def get_found(found_id):

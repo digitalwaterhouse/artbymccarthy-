@@ -1808,8 +1808,10 @@ def admin_opportunities():
                            # whole job is to say what she can act on now. A call
                            # further out is not lost -- it appears by itself on
                            # the day it comes inside the window.
-                           found=gallery.list_found("new", gallery.FOUND_DEFAULT_DAYS),
+                           found=gallery.list_found("new", gallery.FOUND_DEFAULT_DAYS,
+                                                   gallery.FOUND_RADIUS_MILES),
                            horizon=gallery.FOUND_DEFAULT_DAYS,
+                           radius=gallery.FOUND_RADIUS_MILES,
                            found_counts=gallery.found_counts(),
                            last_found=gallery.last_found_at(),
                            states=listings.states_for(cfg()),
