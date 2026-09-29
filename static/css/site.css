@@ -711,7 +711,11 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 .co-pay.is-busy{opacity:.7; cursor:progress}
 .co-secure{display:flex; gap:8px; align-items:flex-start}
 .co-secure svg{flex:0 0 auto; margin-top:3px}
-.co-summary{position:sticky; top:24px; background:var(--paper); border:1px solid var(--line);
+/* Sticks BELOW the masthead (which is itself sticky), the same offset the
+   work page's details use; a long cart scrolls inside the box rather than
+   running off the bottom of the screen. */
+.co-summary{position:sticky; top:calc(var(--navh, 113px) + 22px);
+  max-height:calc(100vh - var(--navh, 113px) - 44px); overflow-y:auto; background:var(--paper); border:1px solid var(--line);
   padding:24px; box-shadow:4px 4px 0 0 var(--panel-soft)}
 .co-summary h2{margin:0 0 14px; font:500 1.2rem/1.2 "Newsreader",Georgia,serif}
 .co-items{list-style:none; margin:0; padding:0; border-top:1px solid var(--line)}
@@ -738,7 +742,7 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 @media (max-width:860px){
   .checkout{grid-template-columns:1fr; gap:28px; padding-top:24px}
   .checkout .co-title{margin:0; order:-2}
-  .co-summary{position:static; order:-1}
+  .co-summary{position:static; order:-1; max-height:none; overflow:visible}
 }
 .cartn{position:absolute; top:-6px; right:-6px; min-width:18px; padding:3px 5px; border-radius:9px;
   background:var(--turq); color:#07161C; font:700 11px/1 "Karla",sans-serif; letter-spacing:0;
