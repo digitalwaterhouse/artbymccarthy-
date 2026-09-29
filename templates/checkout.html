@@ -102,7 +102,8 @@
       '.Tab': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none' },
       '.Tab:hover': { borderColor: v('--ink', '#171A18') },
       '.Tab--selected, .Tab--selected:hover': { borderColor: v('--ink', '#171A18'), boxShadow: '3px 3px 0 0 ' + v('--mat-teal', '#8FB3B0') },
-      '.Block': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none' }
+      '.Block': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none' },
+      '.AccordionItem': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none' }
     }
   };
 
@@ -123,7 +124,11 @@
 
   checkout.createContactDetailsElement().mount('#coContact');
   checkout.createShippingAddressElement().mount('#coShip');
-  checkout.createPaymentElement().mount('#coPay');
+  /* Card open from the start: a list of collapsed payment methods reads as
+     a menu to choose from, and almost everyone buying a painting pays by card. */
+  checkout.createPaymentElement({
+    layout: { type: 'accordion', defaultCollapsed: false, radios: 'always', spacedAccordionItems: false }
+  }).mount('#coPay');
 
   var busy = false;
   form.addEventListener('submit', function(e){
