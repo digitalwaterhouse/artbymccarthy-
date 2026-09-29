@@ -660,11 +660,25 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 .carttotals dd{text-align:right; font-variant-numeric:tabular-nums}
 .carttotals .tot{border-top:1px solid var(--line); padding-top:10px;
   font-family:"Newsreader",Georgia,serif; font-size:1.25rem}
-/* The cart is an icon, not a word: a bag, with the count as a badge on its
-   shoulder. Same square frame as the nav buttons so it sits in the row. */
-.masthead nav a.cartlink{display:inline-flex; align-items:center; justify-content:center;
-  position:relative; padding-left:12px; padding-right:12px; overflow:visible}
-.masthead nav a.cartlink svg{display:block}
+/* The cart is a drawing, not a button: no frame, no fill, no offset block --
+   just the inked tote with its swipe of turquoise, which tips on hover the
+   way a hung picture does when you brush past it. The count rides on its
+   shoulder. */
+.masthead nav a.cartlink,.home .masthead nav a.cartlink,
+.masthead nav a.cartlink.on,.home .masthead nav a.cartlink.on{
+  position:relative; display:inline-flex; align-items:center; justify-content:center;
+  padding:2px 6px; border:0; background:none; box-shadow:none; color:var(--ink);
+  transform-origin:50% 10%}
+.home .masthead nav a.cartlink,.home .masthead nav a.cartlink.on{color:#F4F6F5}
+.masthead nav a.cartlink:hover,.home .masthead nav a.cartlink:hover,
+.masthead nav a.cartlink.on:hover{
+  border:0; background:none; box-shadow:none; color:var(--ink); transform:rotate(-7deg)}
+.home .masthead nav a.cartlink:hover{color:#fff}
+.carticon{display:block; overflow:visible}
+.carticon .ink{fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+.carticon .ink.thin{stroke-width:.9; opacity:.55}
+.carticon .swatch{fill:var(--turq); opacity:.9}
+.masthead nav a.cartlink.on .carticon .swatch{opacity:1}
 /* The photograph flying into the cart: square like every frame on the site,
    lifted by a soft shadow, arcing slightly on the way (the overshooting
    curve). Then the Cart button bumps to say it landed. */
@@ -673,7 +687,7 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
   transition:transform .8s cubic-bezier(.5,-0.25,.3,1.15), opacity .8s ease;
   will-change:transform, opacity}
 .cart-bump{animation:cartBump .5s ease}
-@keyframes cartBump{0%{transform:scale(1)} 35%{transform:scale(1.18)} 100%{transform:scale(1)}}
+@keyframes cartBump{0%{transform:rotate(0)} 30%{transform:rotate(-12deg) scale(1.15)} 65%{transform:rotate(6deg)} 100%{transform:rotate(0)}}
 
 /* ---------- checkout ----------
    Her page around Stripe's fields: the form on the left in numbered steps,
@@ -716,10 +730,11 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
   .checkout .co-title{margin:0; order:-2}
   .co-summary{position:static; order:-1}
 }
-.cartn{position:absolute; top:-8px; right:-8px; min-width:18px; padding:3px 5px; border-radius:9px;
+.cartn{position:absolute; top:-6px; right:-6px; min-width:18px; padding:3px 5px; border-radius:9px;
   background:var(--turq); color:#07161C; font:700 11px/1 "Karla",sans-serif; letter-spacing:0;
   text-align:center; box-shadow:0 0 0 2px var(--wall)}
 .cartn:empty{display:none}
+.home .cartn{box-shadow:none}
 @media (max-width:560px){
   .cartrow{grid-template-columns:56px 1fr auto; column-gap:12px}
   .cartimg{width:56px; height:56px}
