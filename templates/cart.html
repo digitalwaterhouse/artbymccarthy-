@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Your cart &mdash; {{ cfg.site_title }}{% endblock %}
+{% block body %}
+<section class="prose cart">
+  <h1>Your cart</h1>
+  {% if works %}
+    {# Every piece is an original, so holding it in a cart takes it off the
+       wall for everyone else. The clock says so plainly rather than letting a
+       piece vanish from under the buyer. #}
+    <p class="fine cartnote">Each piece is one of a kind, so it is held for you for
+      {{ hold_minutes }} minutes and then goes back on the wall. Once you check out
+      you have half an hour to finish paying.</p>
+    <ul class="cartlist">
+    {% for w in works %}
+      <li class="cartrow">
+        <a class="cartimg" href="{{ url_for('site.work', slug=w.slug) }}">
+          {% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="{{ w.title }}">{% endif %}
+        </a>
+        <div class="cartwhat">
+          <a class="carttitle" href="{{ url_for('site.work', slug=w.slug) }}">{{ w.title }}</a>
+          <span class="sub">{{ w.medium }}{% if w.dims %}, {{ w.dims }}{% endif %}</span>
+          {% if w.checkout_session %}
+            <span class="hold">Checking out</span>
+          {% else %}
+            <span class="hold" data-until="{{ w.reserved_until }}">Held for you</span>
+          {% endif %}
+        </div>
+        <div class="cartprice">{{ w.price }}</div>
+        {% if not w.checkout_session %}
+        <form method="post" action="{{ url_for('site.cart_remove', work_id=w.id) }}" class="cartrm">
+          <button class="link" type="submit" aria-label="Remove {{ w.title }}">Remove</button>
+        </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+    </ul>
+    <dl class="carttotals">
+      <dt>{{ works|length }} work{{ '' if works|length == 1 else 's' }}</dt><dd>{{ totals.sub }}</dd>
+      <dt>Shipping, insured{% if works|length > 1 %} <span class="sub">each packed separately</span>{% endif %}</dt>
+      <dd>{{ totals.ship if totals.ship_cents else 'Free' }}</dd>
+      <dt class="tot">Total</dt><dd class="tot">{{ totals.total }}</dd>
+    </dl>
+    <form method="post" action="{{ url_for('site.checkout') }}">
+      <button class="cta" type="submit">Check out</button>
+    </form>
+    <p class="fine">Payment is taken securely by Stripe. Every piece includes a signed
+      certificate of authenticity.</p>
+    <p><a href="{{ url_for('site.index') }}#available">Keep looking</a></p>
+  {% else %}
+    <p>Nothing is in your cart. Pieces are held for {{ hold_minutes }} minutes after
+      you add them, then go back on the wall.</p>
+    <p><a href="{{ url_for('site.index') }}#available">Back to the work</a></p>
+  {% endif %}
+</section>
+{% if works %}
+<script>
+/* Count each hold down to the second. The server is the judge -- when a clock
+   runs out the page reloads and the server has already let the piece go. */
+(function(){
+  var holds = document.querySelectorAll('.hold[data-until]');
+  if (!holds.length) return;
+  var gone = false;
+  function tick(){
+    var now = Date.now();
+    holds.forEach(function(el){
+      var left = Math.floor((Date.parse(el.dataset.until) - now) / 1000);
+      if (left <= 0) {
+        el.textContent = 'Time is up';
+        if (!gone) { gone = true; setTimeout(function(){ location.reload(); }, 1200); }
+        return;
+      }
+      var m = Math.floor(left / 60), s = left % 60;
+      el.textContent = 'Held for you · ' + m + ':' + (s < 10 ? '0' : '') + s;
+      el.classList.toggle('low', left < 120);
+    });
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+{% endif %}
+{% endblock %}

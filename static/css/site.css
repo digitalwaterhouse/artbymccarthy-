@@ -632,6 +632,42 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 .cta:hover{background:var(--accent-hi)}
 .cta{transition:background .2s ease, border-color .2s ease, color .2s ease}
 
+/* ---------- cart ----------
+   One row per original: the picture, what it is, how long it is held, the
+   price. The hold reads in the muted voice until the last two minutes, then
+   takes the accent -- never the sold red, which means something else here. */
+.cart .cartnote{margin:0 0 22px}
+.cart form + .fine{margin-top:16px}
+.cartlist{list-style:none; margin:0 0 8px; padding:0; border-top:1px solid var(--line)}
+.cartrow{
+  display:grid; grid-template-columns:72px 1fr auto; grid-template-rows:auto auto;
+  column-gap:16px; align-items:start; padding:16px 0; border-bottom:1px solid var(--line);
+}
+.cartimg{grid-row:1 / span 2; display:block; width:72px; height:72px; background:var(--panel-soft)}
+.cartimg img{width:100%; height:100%; object-fit:contain; display:block}
+.cartwhat{grid-row:1 / span 2; min-width:0}
+.carttitle{font-family:"Newsreader",Georgia,serif; font-size:1.15rem; color:var(--ink); text-decoration:none}
+.carttitle:hover{text-decoration:underline}
+.cartwhat .hold{display:inline-block; margin-top:6px; font-size:12.5px; color:var(--muted);
+  font-variant-numeric:tabular-nums; letter-spacing:.02em}
+.cartwhat .hold.low{color:var(--accent); font-weight:600}
+.cartprice{font-family:"Newsreader",Georgia,serif; font-size:1.1rem; white-space:nowrap; text-align:right}
+.cartrm{grid-column:3; justify-self:end; margin:0}
+.cartrm .link{font-size:12.5px}
+.carttotals{display:grid; grid-template-columns:1fr auto; row-gap:8px; margin:18px 0 22px}
+.carttotals dd{padding-left:16px}
+.carttotals dt,.carttotals dd{margin:0}
+.carttotals dd{text-align:right; font-variant-numeric:tabular-nums}
+.carttotals .tot{border-top:1px solid var(--line); padding-top:10px;
+  font-family:"Newsreader",Georgia,serif; font-size:1.25rem}
+.masthead nav a.cartlink{display:inline-flex; align-items:center; gap:7px}
+.cartn{display:inline-block; min-width:18px; padding:3px 5px; border-radius:9px;
+  background:var(--accent); color:var(--on-accent); font-size:11px; line-height:1; text-align:center}
+@media (max-width:560px){
+  .cartrow{grid-template-columns:56px 1fr auto; column-gap:12px}
+  .cartimg{width:56px; height:56px}
+}
+
 /* ---------- about ----------
    Copy left, portrait right. The portrait column is capped well below the
    width a painting gets: on a gallery's About page the artist is the caption,

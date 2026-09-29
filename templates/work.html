@@ -114,13 +114,18 @@
         <p class="fine">Similar work may be available &mdash; <a href="{{ url_for('site.commissions') }}">ask about a commission</a>.</p>
       {% elif w.status == 'nfs' %}
         <p class="soldline">Not for sale</p>
+      {% elif w.status == 'reserved' and cart_token and w.reserved_by == cart_token %}
+        <p class="price">{{ w.price }}</p>
+        <p class="soldline">In your cart</p>
+        <a class="cta" href="{{ url_for('site.cart') }}">View cart &amp; check out</a>
       {% elif w.status == 'reserved' %}
-        <p class="soldline">Reserved &mdash; a sale is in progress.</p>
+        <p class="soldline">Reserved &mdash; someone is checking out.</p>
+        <p class="fine">If they don't finish, it comes back on the wall within a few minutes.</p>
       {% elif w.price_cents %}
         <p class="price">{{ w.price }}</p>
         <form method="post" action="{{ url_for('site.buy', slug=w.slug) }}">
           <button class="cta" type="submit">
-            {% if stripe_on and w.ship_band != 'quote' %}Purchase{% else %}Enquire to purchase{% endif %}
+            {% if stripe_on and w.ship_band != 'quote' %}Add to cart{% else %}Enquire to purchase{% endif %}
           </button>
         </form>
         <p class="fine">

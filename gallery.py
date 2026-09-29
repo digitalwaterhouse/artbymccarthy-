@@ -175,6 +175,13 @@ NEW_COLUMNS = {
     "subscribers": [
         ("unsubscribed_at", "TEXT"),
     ],
+    # One Stripe checkout can now pay for several paintings, and each painting
+    # is still its own order row (the invoice, the COA and "mark shipped" are
+    # all per piece). checkout_id is the Stripe session they were paid in
+    # together; stripe_session_id stays UNIQUE by carrying "<session>#<work>".
+    "orders": [
+        ("checkout_id", "TEXT"),
+    ],
     # The packing record lives on the join row: which pieces have physically
     # left for this show, and which have come back. Two stamps rather than two
     # flags, because "when did it go" is the question asked next.
@@ -211,6 +218,11 @@ NEW_COLUMNS = {
         ("geo_query", "TEXT"),
     ],
     "works": [
+        # Whose cart a reserved piece is in (a random token in the buyer's
+        # session cookie), and the Stripe session it is being paid through once
+        # they press Checkout. Both are cleared whenever the status changes.
+        ("reserved_by",      "TEXT"),
+        ("checkout_session", "TEXT"),
         ("location",       "TEXT"),
         ("collection_id",  "INTEGER REFERENCES collections(id) ON DELETE SET NULL"),
         ("edition_size",   "INTEGER"),
@@ -1188,28 +1200,127 @@ def set_status(work_id, status):
     with connect() as conn:
         conn.execute(
             "UPDATE works SET status=?, sold_at=CASE WHEN ?='sold' THEN ? ELSE NULL END,"
-            " reserved_until=NULL, updated_at=? WHERE id=?",
+            " reserved_until=NULL, reserved_by=NULL, checkout_session=NULL,"
+            " updated_at=? WHERE id=?",
             (status, status, now(), now(), work_id))
 
 
-def reserve(work_id, minutes=30):
-    """Hold a work while a checkout is open. Returns False if it is not free."""
-    until = (datetime.now(timezone.utc) + timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
+# THE CART IS THE RESERVATION. There is no cart table: a piece is in a buyer's
+# cart when it is reserved with their token, so two people can never hold the
+# same original, and nothing can sit in a cart that is not also held.
+#
+# Two clocks. A piece in a cart is held CART_HOLD_MINUTES, then goes back on
+# the wall. Pressing Checkout stretches the hold to CHECKOUT_HOLD_MINUTES,
+# because Stripe will not let a checkout session expire in under 30 minutes --
+# a hold shorter than the session would let a second buyer take a piece the
+# first one can still pay for. The hold outlasts the session, so the session
+# always dies first.
+CART_HOLD_MINUTES = 10
+CHECKOUT_SESSION_MINUTES = 31
+CHECKOUT_HOLD_MINUTES = 36
+
+
+def _in(minutes):
+    return (datetime.now(timezone.utc) + timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def reserve(work_id, minutes=CART_HOLD_MINUTES, by=None):
+    """Hold a work for one buyer. Returns False if it is not free."""
     with connect() as conn:
         cur = conn.execute(
-            "UPDATE works SET status='reserved', reserved_until=?, updated_at=? "
-            "WHERE id=? AND status='available'", (until, now(), work_id))
+            "UPDATE works SET status='reserved', reserved_until=?, reserved_by=?,"
+            " checkout_session=NULL, updated_at=? "
+            "WHERE id=? AND status='available'", (_in(minutes), by, now(), work_id))
         return cur.rowcount == 1
 
 
 def release_expired():
-    """An abandoned checkout must not retire a painting for good."""
+    """An abandoned cart or checkout must not retire a painting for good."""
     with connect() as conn:
         cur = conn.execute(
-            "UPDATE works SET status='available', reserved_until=NULL "
+            "UPDATE works SET status='available', reserved_until=NULL, reserved_by=NULL,"
+            " checkout_session=NULL "
             "WHERE status='reserved' AND reserved_until IS NOT NULL AND reserved_until < ?",
             (now(),))
         return cur.rowcount
+
+
+def cart_works(token):
+    """The pieces this buyer is holding, oldest hold first."""
+    if not token:
+        return []
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM works WHERE status='reserved' AND reserved_by=?"
+            " ORDER BY reserved_until, id", (token,)).fetchall()
+        return _hydrate(conn, rows) if rows else []
+
+
+def cart_count(token):
+    if not token:
+        return 0
+    with connect() as conn:
+        return conn.execute(
+            "SELECT COUNT(*) n FROM works WHERE status='reserved' AND reserved_by=?"
+            " AND reserved_until >= ?", (token, now())).fetchone()["n"]
+
+
+def release_hold(work_id, token):
+    """Take one piece out of a cart. Not while it is being paid for: that
+    checkout has to be cancelled first (reopen_cart does it), or a buyer could
+    remove a piece here and still pay for it in the other tab."""
+    with connect() as conn:
+        return conn.execute(
+            "UPDATE works SET status='available', reserved_until=NULL, reserved_by=NULL,"
+            " updated_at=? WHERE id=? AND status='reserved' AND reserved_by=?"
+            " AND checkout_session IS NULL", (now(), work_id, token)).rowcount == 1
+
+
+def extend_holds(token, work_ids, minutes):
+    """Push the hold on these pieces out; returns how many were still held."""
+    if not work_ids:
+        return 0
+    marks = ",".join("?" * len(work_ids))
+    with connect() as conn:
+        return conn.execute(
+            f"UPDATE works SET reserved_until=? WHERE status='reserved' AND reserved_by=?"
+            f" AND id IN ({marks})", (_in(minutes), token, *work_ids)).rowcount
+
+
+def mark_checkout(token, work_ids, session_id):
+    marks = ",".join("?" * len(work_ids))
+    with connect() as conn:
+        conn.execute(
+            f"UPDATE works SET checkout_session=? WHERE status='reserved' AND reserved_by=?"
+            f" AND id IN ({marks})", (session_id, token, *work_ids))
+
+
+def open_checkouts(token):
+    """Stripe sessions this buyer has started and not finished or abandoned."""
+    if not token:
+        return []
+    with connect() as conn:
+        return [r["checkout_session"] for r in conn.execute(
+            "SELECT DISTINCT checkout_session FROM works WHERE status='reserved'"
+            " AND reserved_by=? AND checkout_session IS NOT NULL", (token,)).fetchall()]
+
+
+def reopen_cart(token, session_id):
+    """Back from Stripe without paying: the pieces return to the cart with a
+    fresh cart hold, and are no longer tied to that (now cancelled) session."""
+    with connect() as conn:
+        conn.execute(
+            "UPDATE works SET checkout_session=NULL, reserved_until=? WHERE status='reserved'"
+            " AND reserved_by=? AND checkout_session=?", (_in(CART_HOLD_MINUTES), token, session_id))
+
+
+def release_checkout(session_id):
+    """Stripe says this session expired unpaid: everything in it goes back."""
+    with connect() as conn:
+        return conn.execute(
+            "UPDATE works SET status='available', reserved_until=NULL, reserved_by=NULL,"
+            " checkout_session=NULL, updated_at=? WHERE status='reserved' AND checkout_session=?",
+            (now(), session_id)).rowcount
 
 
 # -------------------------------------------------------------------- images
@@ -1329,16 +1440,16 @@ def delete_image(image_id):
 
 
 # -------------------------------------------------------- orders & messages
-def record_order(work_id, session_id, amount_cents, buyer, ship):
+def record_order(work_id, session_id, amount_cents, buyer, ship, checkout_id=None):
     with connect() as conn:
         conn.execute(
             "INSERT OR IGNORE INTO orders (work_id, stripe_session_id, amount_cents,"
             " buyer_name, buyer_email, ship_line1, ship_line2, ship_city, ship_state,"
-            " ship_zip, ship_country, created_at)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            " ship_zip, ship_country, checkout_id, created_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (work_id, session_id, amount_cents, buyer.get("name"), buyer.get("email"),
              ship.get("line1"), ship.get("line2"), ship.get("city"), ship.get("state"),
-             ship.get("postal_code"), ship.get("country"), now()))
+             ship.get("postal_code"), ship.get("country"), checkout_id or session_id, now()))
 
 
 def list_orders():

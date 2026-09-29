@@ -194,6 +194,8 @@ def inject():
     ep = (request.endpoint or "").rsplit(".", 1)[-1] if has_request_context() else ""
     ep = PAGE_ALIAS.get(ep, ep)
     key = ep if ep in QUIET_PAGES else ""
+    # Mail and other off-request renders have no session, hence no cart.
+    cart_tok = session.get("cart") if has_request_context() else None
     # Which nav item to light up. A single work and the archive still belong
     # under Work, and /commissions is the Contact page wearing another URL.
     nav = {"index": "work", "work": "work", "archive": "work",
@@ -203,6 +205,8 @@ def inject():
     # from base.html now rather than from the landing page alone.
     slides = viewer_slides()
     return {"cfg": c, "prefix": PREFIX, "stripe_on": payments.enabled(),
+            "cart_token": cart_tok,
+            "cart_n": gallery.cart_count(cart_tok) if cart_tok else 0,
             "asset_version": ASSET_VERSION,
             "noindex": NOINDEX, "wordmark": wordmark(c["site_title"]),
             "slides": slides, "has_archive": getattr(g, "_has_archive", False),
@@ -570,11 +574,51 @@ def photo(name):
     return resp
 
 
+# ---------------------------------------------------------------------- cart
+# A buyer's cart is the set of pieces reserved with their token -- see the
+# note above gallery.reserve(). The token is random and lives in the session
+# cookie; it identifies a cart, never a person.
+def _cart_token(create=False):
+    tok = session.get("cart")
+    if not tok and create:
+        tok = session["cart"] = secrets.token_urlsafe(16)
+    return tok
+
+
+def _cart_totals(works):
+    c = cfg()
+    sub = sum(int(w["price_cents"] or 0) for w in works)
+    ship = sum(payments.ship_cents(w, c) or 0 for w in works)
+    return {"sub": gallery.money(sub), "ship": gallery.money(ship),
+            "total": gallery.money(sub + ship), "ship_cents": ship}
+
+
+def _settle_checkouts(tok):
+    """Back on the site with a checkout still open (Stripe's Back link, the
+    browser's back button, a second tab): cancel it at Stripe so it can no
+    longer be paid, and return its pieces to the cart. A session that turns
+    out to be PAID is left alone -- the webhook marks those pieces sold."""
+    for sid in gallery.open_checkouts(tok):
+        try:
+            status = payments.expire_if_open(sid)
+        except Exception:
+            app.logger.exception("cart: could not check checkout %s", sid)
+            continue
+        if status != "complete":
+            gallery.reopen_cart(tok, sid)
+
+
 @site.route("/buy/<slug>", methods=["POST"])
 def buy(slug):
+    """Add to cart. (The URL predates the cart and is kept so a work page
+    already open in someone's browser still posts somewhere sensible.)"""
+    gallery.release_expired()
     w = gallery.get_work(slug=slug)
     if not w:
         abort(404)
+    tok = _cart_token()
+    if w["status"] == "reserved" and tok and w.get("reserved_by") == tok:
+        return redirect(url_for("site.cart"))
     if w["status"] != "available":
         return redirect(url_for("site.work", slug=slug))
     if not payments.enabled() or w["ship_band"] == "quote" or not w["price_cents"]:
@@ -583,16 +627,61 @@ def buy(slug):
         # last case the Enquire button on an unpriced work posted here and was
         # bounced straight back to the page it came from, doing nothing.
         return render_template("enquire.html", w=w)
-    if not gallery.reserve(w["id"]):
+    if not gallery.reserve(w["id"], by=_cart_token(create=True)):
+        flash("Someone else is buying this piece right now. If they don't finish, "
+              "it comes back within a few minutes.")
         return redirect(url_for("site.work", slug=slug))
+    return redirect(url_for("site.cart"))
+
+
+@site.route("/cart")
+def cart():
+    gallery.release_expired()
+    tok = _cart_token()
+    if tok and payments.enabled():
+        _settle_checkouts(tok)
+    works = gallery.cart_works(tok)
+    return render_template("cart.html", works=works, totals=_cart_totals(works),
+                           hold_minutes=gallery.CART_HOLD_MINUTES)
+
+
+@site.route("/cart/remove/<int:work_id>", methods=["POST"])
+def cart_remove(work_id):
+    tok = _cart_token()
+    if tok:
+        gallery.release_hold(work_id, tok)
+    return redirect(url_for("site.cart"))
+
+
+@site.route("/checkout", methods=["POST"])
+def checkout():
+    gallery.release_expired()
+    tok = _cart_token()
+    if not tok or not payments.enabled():
+        return redirect(url_for("site.cart"))
+    _settle_checkouts(tok)
+    works = gallery.cart_works(tok)
+    if not works:
+        flash("Your cart is empty. Pieces are held for %d minutes, then go back "
+              "on the wall." % gallery.CART_HOLD_MINUTES)
+        return redirect(url_for("site.cart"))
+    ids = [w["id"] for w in works]
+    # Stretch the hold BEFORE Stripe opens the session, so there is no moment
+    # at which the buyer can pay for a piece that is no longer held for them.
+    gallery.extend_holds(tok, ids, gallery.CHECKOUT_HOLD_MINUTES)
     try:
         s = payments.create_session(
-            w,
+            works,
             success_url=url_for("site.thanks", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=url_for("site.work", slug=slug, _external=True))
+            cancel_url=url_for("site.cart", _external=True))
     except Exception:
-        gallery.set_status(w["id"], "available")
-        raise
+        app.logger.exception("checkout: Stripe session failed")
+        gallery.extend_holds(tok, ids, gallery.CART_HOLD_MINUTES)
+        flash("Checkout could not be opened just now. Your pieces are still held; "
+              "please try again in a moment.")
+        return redirect(url_for("site.cart"))
+    gallery.mark_checkout(tok, ids, s.id)
+    session["checkout_n"] = len(works)
     return redirect(s.url, code=303)
 
 
@@ -612,9 +701,11 @@ def enquire(slug):
 
 @site.route("/thanks")
 def thanks():
+    n = session.pop("checkout_n", 1)
+    what = "The painting" if n == 1 else "Your %d paintings" % n
     return render_template("thanks.html", heading="Thank you",
-                           msg="Your receipt is on its way by email. The painting will be "
-                               "packed and shipped within a few days, and you'll get tracking.")
+                           msg="Your receipt is on its way by email. %s will be "
+                               "packed and shipped within a few days, and you'll get tracking." % what)
 
 
 @site.route("/stripe/webhook", methods=["POST"])
@@ -634,17 +725,31 @@ def webhook():
     event = json.loads(request.data or b"{}")
     kind = event.get("type")
     obj = (event.get("data") or {}).get("object") or {}
-    work_id = _int((obj.get("metadata") or {}).get("work_id"))
+    meta = obj.get("metadata") or {}
+    sid = obj.get("id")
+    items = payments.parse_items(meta)
+    # A session opened before the cart existed names one piece as work_id.
+    work_id = _int(meta.get("work_id"))
     if kind == "checkout.session.completed":
-        if work_id:
+        details = obj.get("customer_details") or {}
+        ship = ((obj.get("shipping_details") or {}).get("address")
+                or (details.get("address") or {}))
+        buyer = {"name": details.get("name"), "email": details.get("email")}
+        if items:
+            # One order row per painting, each carrying its own price and its
+            # own shipping band, so the per-piece invoice still splits cleanly.
+            # "<session>#<work>" keeps stripe_session_id unique per row, which
+            # is what makes a retried webhook a no-op (INSERT OR IGNORE).
+            for wid, price, ship_c in items:
+                gallery.set_status(wid, "sold")
+                gallery.record_order(wid, "%s#%d" % (sid, wid), price + ship_c,
+                                     buyer, ship or {}, checkout_id=sid)
+        elif work_id:
             gallery.set_status(work_id, "sold")
-            details = obj.get("customer_details") or {}
-            ship = ((obj.get("shipping_details") or {}).get("address")
-                    or (details.get("address") or {}))
-            gallery.record_order(work_id, obj.get("id"), obj.get("amount_total"),
-                                 {"name": details.get("name"), "email": details.get("email")},
-                                 ship or {})
+            gallery.record_order(work_id, sid, obj.get("amount_total"), buyer, ship or {})
     elif kind == "checkout.session.expired":
+        if sid:
+            gallery.release_checkout(sid)
         if work_id:
             w = gallery.get_work(work_id=work_id)
             if w and w["status"] == "reserved":

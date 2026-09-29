@@ -73,6 +73,10 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
        onclick="if(window.openGallery){openGallery(0);return false}"
        aria-haspopup="dialog"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"
        focusable="false"><rect x="1" y="4" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 1.8h9.2V11" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Gallery</a>{% endif %}
+    {# Only while something is held: an empty cart link on a gallery of
+       originals would be noise. The count is what is held right now. #}
+    {% if cart_n %}<a class="cartlink{% if endpoint == 'cart' %} on{% endif %}" href="{{ url_for('site.cart') }}"
+       {% if endpoint == 'cart' %}aria-current="page"{% endif %}>Cart <span class="cartn">{{ cart_n }}</span></a>{% endif %}
   </nav>
   {# A SIBLING of the nav, not one of its links -- it is a preference, not a
      page. Which also means it can ride up beside the wordmark when the nav
