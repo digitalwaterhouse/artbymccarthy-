@@ -723,6 +723,16 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 .co-what .sub{font-family:"Karla",sans-serif; margin-top:2px}
 .co-price{font-family:"Newsreader",Georgia,serif; white-space:nowrap}
 .co-summary .carttotals{margin:14px 0 16px}
+.co-promo{margin:0 0 14px; font-size:14px}
+.co-promo summary{cursor:pointer; color:var(--accent); font-weight:600; list-style:none;
+  text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; width:max-content}
+.co-promo summary::-webkit-details-marker{display:none}
+.co-promo summary:hover{color:var(--ink)}
+.co-promo-row{display:flex; gap:8px; align-items:center; margin-top:10px}
+.co-promo-row input{flex:1; min-width:0; text-transform:uppercase; letter-spacing:.04em}
+.co-promo-row input::placeholder{text-transform:none; letter-spacing:0}
+.co-promo-msg{margin:8px 0 0; color:var(--danger); font-size:13px}
+.co-promo-rm{font-size:12.5px; min-height:0; padding:0 0 0 6px; font-weight:500}
 .co-hold{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; margin:0 0 8px}
 .co-hold.low{color:var(--accent); font-weight:600}
 @media (max-width:860px){

@@ -118,6 +118,9 @@ def create_session(works, success_url=None, cancel_url=None, return_url=None):
         expires_at=int(time.time()) + gallery.CHECKOUT_SESSION_MINUTES * 60,
         metadata={"items": items},
         payment_intent_data={"metadata": {"items": items}},
+        # Codes are made in her Stripe dashboard (a coupon, then a promotion
+        # code on it); Stripe checks them, so nothing is stored here.
+        allow_promotion_codes=True,
     )
     if return_url:
         # On-site: Stripe.js draws the fields in her page, and return_url is
@@ -157,23 +160,47 @@ def parse_items(metadata):
     return out
 
 
-def split_tax(tax_cents, items):
-    """Share a checkout's one tax figure across its paintings, in proportion
-    to what each was charged (price + its shipping). One address means one
-    rate, so the shares are exact but for rounding; the leftover cents go to
-    the largest remainders so the rows always add back up to what Stripe
-    charged. Returns one figure per item, in order."""
-    tax_cents = int(tax_cents or 0)
-    bases = [p + s for _, p, s in items]
-    whole = sum(bases)
-    if tax_cents <= 0 or whole <= 0:
-        return [0] * len(items)
-    exact = [tax_cents * b / whole for b in bases]
+def split_cents(cents, weights):
+    """Share one checkout-wide figure across its paintings in proportion to
+    `weights`. The leftover cents go to the largest remainders, so the shares
+    always add back up to exactly what Stripe charged."""
+    cents = int(cents or 0)
+    whole = sum(weights)
+    if cents <= 0 or whole <= 0:
+        return [0] * len(weights)
+    exact = [cents * w / whole for w in weights]
     out = [int(x) for x in exact]
-    order = sorted(range(len(items)), key=lambda i: exact[i] - out[i], reverse=True)
-    for i in order[:tax_cents - sum(out)]:
+    order = sorted(range(len(weights)), key=lambda i: exact[i] - out[i], reverse=True)
+    for i in order[:cents - sum(out)]:
         out[i] += 1
     return out
+
+
+def split_checkout(items, discount_cents=0, tax_cents=0):
+    """Per painting, (discount, tax) out of the checkout's totals. A promo
+    code comes off the works, not the shipping, so it is shared by price;
+    tax is then shared by what each piece cost after it (price - discount +
+    its shipping). One address means one rate, so both are exact but for
+    rounding. Returns one (discount, tax) pair per item, in order."""
+    disc = split_cents(discount_cents, [p for _, p, _ in items])
+    tax = split_cents(tax_cents, [p - d + s for (_, p, s), d in zip(items, disc)])
+    return list(zip(disc, tax))
+
+
+def promo_code_text(session):
+    """The code the buyer typed (SPRING10), for the order and the invoice.
+    The session only carries the promotion code's id, so it is looked up;
+    a failed lookup costs the label, never the order."""
+    for d in session.get("discounts") or []:
+        pid = d.get("promotion_code")
+        if isinstance(pid, dict):
+            return pid.get("code")
+        if pid:
+            try:
+                return stripe.PromotionCode.retrieve(pid).code
+            except Exception:
+                return None
+    return None
 
 
 def parse_webhook(payload, sig_header):

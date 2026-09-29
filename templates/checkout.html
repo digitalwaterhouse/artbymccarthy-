@@ -50,9 +50,22 @@
     <dl class="carttotals">
       <dt>{{ works|length }} work{{ '' if works|length == 1 else 's' }}</dt><dd>{{ totals.sub }}</dd>
       <dt>Shipping, insured</dt><dd>{{ totals.ship if totals.ship_cents else 'Free' }}</dd>
+      <dt id="coDiscLbl" hidden>Code <span id="coDiscName"></span>
+        <button type="button" class="link co-promo-rm" id="coPromoRm">remove</button></dt>
+      <dd id="coDisc" hidden></dd>
       {% if totals.tax_on %}<dt>Sales tax <span class="sub" id="coTaxNote">New York addresses only</span></dt><dd id="coTax">With your address</dd>{% endif %}
       <dt class="tot">Total</dt><dd class="tot" id="coTotal">{{ totals.total }}</dd>
     </dl>
+    {# Stripe checks the code and reprices the session; the page only asks. #}
+    <details class="co-promo" id="coPromo">
+      <summary>Have a code?</summary>
+      <div class="co-promo-row">
+        <input id="coPromoIn" aria-label="Promo code" placeholder="Code" autocomplete="off"
+               autocapitalize="characters" spellcheck="false">
+        <button type="button" class="link" id="coPromoApply">Apply</button>
+      </div>
+      <p class="co-promo-msg" id="coPromoMsg" role="status" hidden></p>
+    </details>
     <p class="co-hold" id="coHold" data-until="{{ expires_at }}">Held for you while you check out</p>
     <p class="fine">Includes a signed certificate of authenticity for each piece.</p>
     <p><a href="{{ url_for('site.cart') }}">Back to cart</a></p>
@@ -70,6 +83,12 @@
   var totalCell = document.getElementById('coTotal');
   var taxCell = document.getElementById('coTax');
   var taxNote = document.getElementById('coTaxNote');
+  var discLbl = document.getElementById('coDiscLbl');
+  var discCell = document.getElementById('coDisc');
+  var discName = document.getElementById('coDiscName');
+  var promo = document.getElementById('coPromo');
+  var promoIn = document.getElementById('coPromoIn');
+  var promoMsg = document.getElementById('coPromoMsg');
   var msg = document.getElementById('coMsg');
   function say(text){ msg.textContent = text; msg.hidden = !text; }
 
@@ -125,6 +144,15 @@
     var t = s.total && s.total.total && s.total.total.amount;
     if (t) label.textContent = 'Pay ' + t;
     if (t && totalCell) totalCell.textContent = t;
+    /* A code applied (here, or still on the session after a reload) shows as
+       its own line; the code box folds away while one is in use. */
+    var d = s.discountAmounts && s.discountAmounts[0];
+    discLbl.hidden = discCell.hidden = !d;
+    promo.hidden = !!d;
+    if (d) {
+      discName.textContent = d.promotionCode || d.displayName || '';
+      discCell.textContent = '\u2212' + ((s.total && s.total.discount && s.total.discount.amount) || d.amount);
+    }
     /* taxAmounts stays null until Stripe has an address to price. After
        that, taxExclusive is the tax added on top: New York only. */
     if (taxCell && s.taxAmounts) {
@@ -141,6 +169,31 @@
   checkout.createPaymentElement({
     layout: { type: 'accordion', defaultCollapsed: false, radios: 'always', spacedAccordionItems: false }
   }).mount('#coPay');
+
+  function promoSay(text){ promoMsg.textContent = text; promoMsg.hidden = !text; }
+  function applyPromo(){
+    var code = promoIn.value.trim();
+    if (!code) { promoIn.focus(); return; }
+    promoSay('');
+    checkout.loadActions().then(function(r){
+      if (r.type !== 'success') throw (r.error || {});
+      return r.actions.applyPromotionCode(code);
+    }).then(function(res){
+      if (res && res.type === 'error') throw res.error;
+      promoIn.value = '';
+    }).catch(function(err){
+      promoSay((err && err.message) || 'That code could not be applied.');
+    });
+  }
+  document.getElementById('coPromoApply').addEventListener('click', applyPromo);
+  promoIn.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') { e.preventDefault(); applyPromo(); }
+  });
+  document.getElementById('coPromoRm').addEventListener('click', function(){
+    checkout.loadActions().then(function(r){
+      if (r.type === 'success') return r.actions.removePromotionCode();
+    });
+  });
 
   var busy = false;
   form.addEventListener('submit', function(e){
