@@ -46,7 +46,7 @@
         {% endif %}
       </td>
       <td class="right" data-label="Invoice">
-        <a class="link" href="{{ url_for('site.admin_invoice', order_id=o.id) }}">invoice &nearr;</a>
+        <a class="link" href="{{ url_for('site.admin_invoice', order_id=o.id) }}" target="_blank" rel="noopener">invoice &nearr;</a>
       </td>
     </tr>
   {% else %}
