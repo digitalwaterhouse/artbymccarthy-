@@ -125,8 +125,11 @@
       '.Tab': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none' },
       '.Tab:hover': { borderColor: v('--ink', '#171A18') },
       '.Tab--selected, .Tab--selected:hover': { borderColor: v('--ink', '#171A18'), boxShadow: '3px 3px 0 0 ' + v('--mat-teal', '#8FB3B0') },
-      '.Block': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none' },
-      '.AccordionItem': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none' }
+      '.Block': { border: 'none', boxShadow: 'none', backgroundColor: 'transparent' },
+      /* No frame or fill behind the payment panel: the card fields sit flush with
+         the email and address fields above, each carrying its own border. */
+      '.AccordionItem': { border: 'none', boxShadow: 'none', backgroundColor: 'transparent', paddingLeft: '0', paddingRight: '0' },
+      '.AccordionItem--selected': { backgroundColor: 'transparent' }
     }
   };
 
