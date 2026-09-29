@@ -39,6 +39,9 @@
           <form method="post" action="{{ url_for('site.admin_shipped', order_id=o.id) }}" class="inline">
             <input name="tracking" placeholder="tracking no." size="14">
             <button class="link" type="submit">mark shipped</button>
+            {% if not is_sample(o) and o.buyer_email %}
+            <label class="shipmail"><input type="checkbox" name="email_buyer" value="1" checked> email the buyer</label>
+            {% endif %}
           </form>
         {% endif %}
       </td>

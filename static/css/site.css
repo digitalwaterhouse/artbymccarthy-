@@ -1469,6 +1469,8 @@ body.admin{background:var(--admin-bg); font-size:15px}
 .sub{display:block; color:var(--muted); font-size:12.5px}
 .addr{max-width:15rem}
 .inline{display:inline-flex; gap:6px; align-items:center}
+.shipmail{flex-direction:row; align-items:center; gap:5px; font-size:12.5px; white-space:nowrap}
+.shipmail input{width:auto; margin:0; padding:0}
 /* 16px minimum on every control that can be focused. Below it, iOS zooms the
    whole page in on focus and leaves it there -- which is most of what "renders
    badly on mobile" turned out to mean. */

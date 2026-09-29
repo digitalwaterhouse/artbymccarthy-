@@ -830,6 +830,7 @@ def webhook():
         tax = int(totals.get("amount_tax") or 0)
         disc = int(totals.get("amount_discount") or 0)
         code = payments.promo_code_text(obj) if disc else None
+        new = False
         if items:
             # One order row per painting, each carrying its own price and its
             # own shipping band, so the per-piece invoice still splits cleanly.
@@ -838,16 +839,19 @@ def webhook():
             shares = payments.split_checkout(items, disc, tax)
             for (wid, price, ship_c), (disc_c, tax_c) in zip(items, shares):
                 gallery.set_status(wid, "sold")
-                gallery.record_order(wid, "%s#%d" % (sid, wid),
+                new |= gallery.record_order(wid, "%s#%d" % (sid, wid),
                                      price - disc_c + ship_c + tax_c,
                                      buyer, ship or {}, checkout_id=sid, tax_cents=tax_c,
                                      discount_cents=disc_c or None,
                                      promo_code=code if disc_c else None)
         elif work_id:
             gallery.set_status(work_id, "sold")
-            gallery.record_order(work_id, sid, obj.get("amount_total"), buyer, ship or {},
-                                 tax_cents=tax, discount_cents=disc or None,
-                                 promo_code=code)
+            new = gallery.record_order(work_id, sid, obj.get("amount_total"), buyer,
+                                       ship or {}, tax_cents=tax,
+                                       discount_cents=disc or None, promo_code=code)
+            items = [(work_id, None, None)]
+        if new:
+            notify_sale(items, obj.get("amount_total"), buyer, ship or {}, disc, code, tax)
     elif kind == "checkout.session.expired":
         if sid:
             gallery.release_checkout(sid)
@@ -1412,8 +1416,127 @@ def admin_orders():
 @site.route("/admin/order/<int:order_id>/shipped", methods=["POST"])
 @admin_required
 def admin_shipped(order_id):
-    gallery.mark_shipped(order_id, request.form.get("tracking"))
+    tracking = (request.form.get("tracking") or "").strip()
+    first_time = gallery.mark_shipped(order_id, tracking)
+    o = gallery.get_order(order_id)
+    if not (first_time and o and request.form.get("email_buyer")):
+        return redirect(url_for("site.admin_orders"))
+    if gallery.is_sample(o) or "@" not in (o.get("buyer_email") or ""):
+        flash("Marked shipped. No email sent (%s)." % (
+            "sample order" if gallery.is_sample(o) else "no buyer email on the order"))
+        return redirect(url_for("site.admin_orders"))
+    # The email is filed through Messages, so it shows in her Sent folder like
+    # anything else she has written -- or stays in Drafts, with the reason, if
+    # the mail server would not take it, so she can press send again.
+    subject, body = shipped_email(o, tracking)
+    rid = gallery.save_reply(None, None, o["buyer_email"], o.get("buyer_name"), subject, body)
+    if mailer.send(o["buyer_email"], subject, body):
+        gallery.mark_reply_sent(rid)
+        flash("Marked shipped and emailed %s the tracking." % o["buyer_email"])
+    else:
+        gallery.mark_reply_failed(rid, "the mail server would not accept it")
+        flash("Marked shipped, but the email to the buyer would not send. "
+              "It is in Messages > Drafts, ready to send again.")
     return redirect(url_for("site.admin_orders"))
+
+
+# ------------------------------------------------------ sale & shipped emails
+# Plain text, like every other message this site sends. The sale notice goes
+# to her; the shipped notice goes to the buyer in her name.
+def tracking_link(number):
+    """(carrier, url) for the formats the big three print on a label, or
+    (None, None) -- then the email gives the number alone, never a guess."""
+    n = re.sub(r"\s+", "", number or "").upper()
+    if re.fullmatch(r"1Z[0-9A-Z]{16}", n):
+        return "UPS", "https://www.ups.com/track?tracknum=" + n
+    if re.fullmatch(r"(9[1-5]\d{18,24}|82\d{8}|[A-Z]{2}\d{9}US)", n):
+        return "USPS", "https://tools.usps.com/go/TrackConfirmAction?tLabels=" + n
+    if re.fullmatch(r"\d{12}|\d{15}", n):
+        return "FedEx", "https://www.fedex.com/fedextrack/?trknbr=" + n
+    return None, None
+
+
+def _addr_lines(a):
+    lines = [a.get("line1"), a.get("line2"),
+             " ".join(x for x in (a.get("city"), a.get("state"), a.get("postal_code")) if x),
+             a.get("country") if a.get("country") not in (None, "US") else None]
+    return [x for x in lines if x]
+
+
+def notify_sale(items, paid_cents, buyer, ship, disc, code, tax):
+    """Tell her something sold, once per checkout. Best effort, like notify():
+    the order is already recorded, and a mail hiccup must never 500 the
+    webhook (Stripe would retry, and the retry finds nothing new to say)."""
+    to = (cfg().get("artist_email") or "").strip()
+    if not to:
+        return False
+    try:
+        rows, ship_total = [], 0
+        for wid, price, ship_c in items:
+            w = gallery.get_work(work_id=wid) or {}
+            title = w.get("title") or "Work #%s" % wid
+            rows.append((title, price if price is not None else w.get("price_cents")))
+            ship_total += ship_c or 0
+        n = len(rows)
+        subject = ("Sold: %s" % rows[0][0]) if n == 1 else "Sold: %d paintings" % n
+        if paid_cents:
+            subject += " (%s)" % gallery.money(paid_cents)
+        # (label, cents, minus) first, then laid out once the widest is known.
+        money_rows = [(t, p, False) for t, p in rows]
+        if ship_total:
+            money_rows.append(("Shipping", ship_total, False))
+        if disc:
+            money_rows.append(("Promo code %s" % (code or ""), disc, True))
+        if tax:
+            money_rows.append(("Sales tax (%s)" % (ship.get("state") or ""), tax, False))
+        if paid_cents:
+            money_rows.append(("Paid", paid_cents, False))
+        width = max(len(t) for t, _, _ in money_rows) + 3
+        def line(label, cents, minus):
+            amt = ("-" if minus else "") + (gallery.money(cents) or "")
+            return "  %s%10s" % (label.ljust(width), amt)
+        body = ["%s on the website." % ("A painting sold" if n == 1
+                                        else "%d paintings sold together" % n), ""]
+        for r in money_rows:
+            if r[0] == "Paid" and r is money_rows[-1]:
+                body.append("  " + "-" * (width + 10))
+            body.append(line(*r))
+        body += ["", "Buyer: %s" % (buyer.get("name") or "(no name given)"),
+                 "Email: %s" % (buyer.get("email") or "(none)"), "", "Ship to:"]
+        body += ["  " + x for x in ([buyer.get("name")] if buyer.get("name") else [])
+                 + _addr_lines(ship)] or ["  (no address)"]
+        body += ["", "Next: print the invoice and certificate from Orders, pack and ship"
+                 + (" each piece" if n > 1 else "") + ",",
+                 "then enter the tracking number and press \"mark shipped\" -- the buyer",
+                 "gets an email with the tracking.", "",
+                 "Orders: %s" % url_for("site.admin_orders", _external=True), "",
+                 "Reply to this email to write to the buyer."]
+        return mailer.send(to, subject, "\n".join(body), reply_to=buyer.get("email"))
+    except Exception:
+        app.logger.exception("sale email failed")
+        return False
+
+
+def shipped_email(o, tracking):
+    """(subject, body) for the buyer, in her name."""
+    c = cfg()
+    title = o.get("title") or "your painting"
+    first = ((o.get("buyer_name") or "").split() or [""])[0]
+    carrier, url = tracking_link(tracking)
+    body = ["Hi %s," % first if first else "Hello,", "",
+            "\"%s\" is on its way to you." % title, ""]
+    if tracking:
+        body.append("Tracking%s: %s" % (" (%s)" % carrier if carrier else "", tracking))
+        if url:
+            body.append(url)
+        body.append("")
+    body += ["It is insured and packed with corner protection, and the signed",
+             "certificate of authenticity travels with it. If anything arrives",
+             "less than right, just reply to this email.", "",
+             "Thank you for giving it a home.", "",
+             (c.get("artist_name") or c.get("site_title") or "").strip(),
+             url_for("site.index", _external=True).rstrip("/")]
+    return "Your painting has shipped: %s" % title, "\n".join(body)
 
 
 # ---------------------------------------------------------------- the invoice

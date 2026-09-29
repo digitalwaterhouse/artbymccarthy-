@@ -1449,8 +1449,10 @@ def delete_image(image_id):
 # -------------------------------------------------------- orders & messages
 def record_order(work_id, session_id, amount_cents, buyer, ship, checkout_id=None,
                  tax_cents=None, discount_cents=None, promo_code=None):
+    """True if this call created the row; False when it already existed (a
+    webhook Stripe delivered twice), which is how the sale email goes once."""
     with connect() as conn:
-        conn.execute(
+        cur = conn.execute(
             "INSERT OR IGNORE INTO orders (work_id, stripe_session_id, amount_cents,"
             " buyer_name, buyer_email, ship_line1, ship_line2, ship_city, ship_state,"
             " ship_zip, ship_country, checkout_id, tax_cents, discount_cents, promo_code,"
@@ -1459,6 +1461,7 @@ def record_order(work_id, session_id, amount_cents, buyer, ship, checkout_id=Non
              ship.get("line1"), ship.get("line2"), ship.get("city"), ship.get("state"),
              ship.get("postal_code"), ship.get("country"), checkout_id or session_id,
              tax_cents, discount_cents, promo_code, now()))
+        return cur.rowcount == 1
 
 
 def list_orders():
@@ -1528,9 +1531,13 @@ def count_sample_orders():
 
 
 def mark_shipped(order_id, tracking=None):
+    """True if this is the moment it shipped (it was not already marked), so
+    the buyer's email goes once even if she comes back to fix the number."""
     with connect() as conn:
+        row = conn.execute("SELECT status FROM orders WHERE id=?", (order_id,)).fetchone()
         conn.execute("UPDATE orders SET status='shipped', tracking=? WHERE id=?",
                      (tracking or None, order_id))
+    return bool(row) and row["status"] != "shipped"
 
 
 def add_inquiry(kind, name, email, body, work_id=None):
