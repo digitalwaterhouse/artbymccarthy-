@@ -132,9 +132,7 @@
   {% if states %}
   <form class="finder-go" method="post" action="{{ url_for('site.admin_opportunities_refresh') }}">
     <button class="cta" type="submit">Get the latest</button>
-    <span class="sub">Open calls within {{ radius }} miles, in {{ states|join(' and ') }}, closing within
-      {{ horizon }} days &mdash; free to read, and nothing joins your list until you
-      press Add. One further out appears here by itself once it comes inside.</span>
+    <span class="sub">Within {{ radius }} mi from {{ (cfg.studio_location or 'your studio')|replace(',', '') }}</span>
   </form>
   {% else %}
   <p class="sub finder-note">Put your town in
