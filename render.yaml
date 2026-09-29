@@ -65,8 +65,11 @@ services:
       # site instead of on Stripe's hosted page.
       - key: STRIPE_PUBLISHABLE_KEY
         sync: false
+      # Stripe Tax: NY sales tax added at checkout for New York addresses.
+      # Needs the Tax settings + NY registration in her Stripe dashboard
+      # (done 2026-09-29); with "1" and no setup, Stripe refuses checkouts.
       - key: STRIPE_TAX
-        value: "0"
+        value: "1"
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
