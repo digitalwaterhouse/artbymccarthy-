@@ -38,6 +38,7 @@
       <dt>{{ works|length }} work{{ '' if works|length == 1 else 's' }}</dt><dd>{{ totals.sub }}</dd>
       <dt>Shipping, insured{% if works|length > 1 %} <span class="sub">each packed separately</span>{% endif %}</dt>
       <dd>{{ totals.ship if totals.ship_cents else 'Free' }}</dd>
+      {% if totals.tax_on %}<dt>Sales tax <span class="sub">New York addresses only</span></dt><dd>At checkout</dd>{% endif %}
       <dt class="tot">Total</dt><dd class="tot">{{ totals.total }}</dd>
     </dl>
     <form method="post" action="{{ url_for('site.checkout') }}">

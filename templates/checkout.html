@@ -50,7 +50,8 @@
     <dl class="carttotals">
       <dt>{{ works|length }} work{{ '' if works|length == 1 else 's' }}</dt><dd>{{ totals.sub }}</dd>
       <dt>Shipping, insured</dt><dd>{{ totals.ship if totals.ship_cents else 'Free' }}</dd>
-      <dt class="tot">Total</dt><dd class="tot">{{ totals.total }}</dd>
+      {% if totals.tax_on %}<dt>Sales tax <span class="sub" id="coTaxNote">New York addresses only</span></dt><dd id="coTax">With your address</dd>{% endif %}
+      <dt class="tot">Total</dt><dd class="tot" id="coTotal">{{ totals.total }}</dd>
     </dl>
     <p class="co-hold" id="coHold" data-until="{{ expires_at }}">Held for you while you check out</p>
     <p class="fine">Includes a signed certificate of authenticity for each piece.</p>
@@ -66,6 +67,9 @@
   var form = document.getElementById('coForm');
   var btn = document.getElementById('coPayBtn');
   var label = document.getElementById('coPayLabel');
+  var totalCell = document.getElementById('coTotal');
+  var taxCell = document.getElementById('coTax');
+  var taxNote = document.getElementById('coTaxNote');
   var msg = document.getElementById('coMsg');
   function say(text){ msg.textContent = text; msg.hidden = !text; }
 
@@ -120,6 +124,14 @@
     btn.disabled = !s.canConfirm;
     var t = s.total && s.total.total && s.total.total.amount;
     if (t) label.textContent = 'Pay ' + t;
+    if (t && totalCell) totalCell.textContent = t;
+    /* taxAmounts stays null until Stripe has an address to price. After
+       that, taxExclusive is the tax added on top: New York only. */
+    if (taxCell && s.taxAmounts) {
+      var tx = s.total && s.total.taxExclusive;
+      taxCell.textContent = (tx && tx.minorUnitsAmount) ? tx.amount : 'None';
+      if (taxNote) taxNote.textContent = (tx && tx.minorUnitsAmount) ? '' : 'not charged outside New York';
+    }
   });
 
   checkout.createContactDetailsElement().mount('#coContact');

@@ -181,6 +181,9 @@ NEW_COLUMNS = {
     # together; stripe_session_id stays UNIQUE by carrying "<session>#<work>".
     "orders": [
         ("checkout_id", "TEXT"),
+        # Sales tax the buyer paid on this piece, already INSIDE amount_cents.
+        # NULL on orders from before tax existed; the invoice reads it as 0.
+        ("tax_cents", "INTEGER"),
     ],
     # The packing record lives on the join row: which pieces have physically
     # left for this show, and which have come back. Two stamps rather than two
@@ -1440,16 +1443,18 @@ def delete_image(image_id):
 
 
 # -------------------------------------------------------- orders & messages
-def record_order(work_id, session_id, amount_cents, buyer, ship, checkout_id=None):
+def record_order(work_id, session_id, amount_cents, buyer, ship, checkout_id=None,
+                 tax_cents=None):
     with connect() as conn:
         conn.execute(
             "INSERT OR IGNORE INTO orders (work_id, stripe_session_id, amount_cents,"
             " buyer_name, buyer_email, ship_line1, ship_line2, ship_city, ship_state,"
-            " ship_zip, ship_country, checkout_id, created_at)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " ship_zip, ship_country, checkout_id, tax_cents, created_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (work_id, session_id, amount_cents, buyer.get("name"), buyer.get("email"),
              ship.get("line1"), ship.get("line2"), ship.get("city"), ship.get("state"),
-             ship.get("postal_code"), ship.get("country"), checkout_id or session_id, now()))
+             ship.get("postal_code"), ship.get("country"), checkout_id or session_id,
+             tax_cents, now()))
 
 
 def list_orders():

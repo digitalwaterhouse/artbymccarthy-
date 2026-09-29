@@ -590,7 +590,8 @@ def _cart_totals(works):
     sub = sum(int(w["price_cents"] or 0) for w in works)
     ship = sum(payments.ship_cents(w, c) or 0 for w in works)
     return {"sub": gallery.money(sub), "ship": gallery.money(ship),
-            "total": gallery.money(sub + ship), "ship_cents": ship}
+            "total": gallery.money(sub + ship), "ship_cents": ship,
+            "tax_on": payments.TAX_ENABLED}
 
 
 def _settle_checkouts(tok):
@@ -823,18 +824,22 @@ def webhook():
         ship = ((obj.get("shipping_details") or {}).get("address")
                 or (details.get("address") or {}))
         buyer = {"name": details.get("name"), "email": details.get("email")}
+        # Sales tax is one figure for the whole checkout (0 unless Stripe Tax
+        # is on and the address is somewhere she is registered).
+        tax = int((obj.get("total_details") or {}).get("amount_tax") or 0)
         if items:
             # One order row per painting, each carrying its own price and its
             # own shipping band, so the per-piece invoice still splits cleanly.
             # "<session>#<work>" keeps stripe_session_id unique per row, which
             # is what makes a retried webhook a no-op (INSERT OR IGNORE).
-            for wid, price, ship_c in items:
+            for (wid, price, ship_c), tax_c in zip(items, payments.split_tax(tax, items)):
                 gallery.set_status(wid, "sold")
-                gallery.record_order(wid, "%s#%d" % (sid, wid), price + ship_c,
-                                     buyer, ship or {}, checkout_id=sid)
+                gallery.record_order(wid, "%s#%d" % (sid, wid), price + ship_c + tax_c,
+                                     buyer, ship or {}, checkout_id=sid, tax_cents=tax_c)
         elif work_id:
             gallery.set_status(work_id, "sold")
-            gallery.record_order(work_id, sid, obj.get("amount_total"), buyer, ship or {})
+            gallery.record_order(work_id, sid, obj.get("amount_total"), buyer, ship or {},
+                                 tax_cents=tax)
     elif kind == "checkout.session.expired":
         if sid:
             gallery.release_checkout(sid)
@@ -1417,11 +1422,13 @@ def admin_invoice(order_id):
     c = cfg()
     price = o.get("price_cents")
     total = o.get("amount_cents")
-    # The order stores one total. The piece's own price splits it, and whatever
-    # is left over is the shipping -- shown as a derived line, never invented:
-    # if the arithmetic does not work the sheet shows the total alone.
-    ship = (total - price) if (price is not None and total is not None
-                               and total >= price) else None
+    tax = o.get("tax_cents") or 0
+    # The order stores one total and the tax inside it. The piece's own price
+    # splits the rest, and whatever is left over is the shipping -- shown as a
+    # derived line, never invented: if the arithmetic does not work the sheet
+    # shows the total alone.
+    ship = (total - tax - price) if (price is not None and total is not None
+                                     and total - tax >= price) else None
     return render_template(
         "admin/print_invoice.html", o=o, sample=gallery.is_sample(o),
         artist=_print_ctx(), site_title=c.get("site_title") or "",
@@ -1429,6 +1436,8 @@ def admin_invoice(order_id):
         studio=c.get("studio_location") or "",
         number=("SAMPLE" if gallery.is_sample(o) else "ABM-%04d" % o["id"]),
         price=gallery.money(price), ship=gallery.money(ship),
+        tax=gallery.money(tax) if tax else None,
+        tax_place=o.get("ship_state") or "",
         total=gallery.money(total), dims=gallery.dims(o),
         printed_on=day(gallery.today()))
 

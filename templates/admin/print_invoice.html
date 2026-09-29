@@ -127,6 +127,7 @@
   <div class="money">
     {% if price %}<div><span class="lbl">The work</span><span>{{ price }}</span></div>{% endif %}
     {% if ship %}<div><span class="lbl">Shipping, insured</span><span>{{ ship }}</span></div>{% endif %}
+    {% if tax %}<div><span class="lbl">Sales tax{% if tax_place %} ({{ tax_place }}){% endif %}</span><span>{{ tax }}</span></div>{% endif %}
     <div class="tot"><span class="lbl">Total</span><span>{{ total or '&mdash;'|safe }}</span></div>
   </div>
 

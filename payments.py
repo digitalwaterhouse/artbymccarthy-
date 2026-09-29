@@ -21,7 +21,12 @@ WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
 # it set, checkout happens ON the site (Stripe's card fields inside her page);
 # without it, the buyer is sent to Stripe's hosted page as before.
 PUBLISHABLE = os.environ.get("STRIPE_PUBLISHABLE_KEY", "").strip()
+# Sales tax through Stripe Tax. Stripe adds it only where the account has a
+# tax registration (for her, New York), so an out-of-state buyer sees none.
+# Turn it on only AFTER the registration is entered in the Stripe dashboard.
 TAX_ENABLED = os.environ.get("STRIPE_TAX", "0") == "1"
+TAX_CODE_WORK = "txcd_99999999"   # General - Tangible Goods
+TAX_CODE_SHIPPING = "txcd_92010001"
 
 if stripe and SECRET:
     stripe.api_key = SECRET
@@ -70,6 +75,8 @@ def _shipping_options(works, cfg):
             "type": "fixed_amount",
             "fixed_amount": {"amount": cents, "currency": cfg.get("currency", "usd")},
             "display_name": label,
+            **({"tax_behavior": "exclusive", "tax_code": TAX_CODE_SHIPPING}
+               if TAX_ENABLED else {}),
         }
     }]
 
@@ -92,7 +99,10 @@ def create_session(works, success_url=None, cancel_url=None, return_url=None):
             "price_data": {
                 "currency": currency,
                 "unit_amount": int(w["price_cents"]),
+                # Exclusive: tax goes ON TOP of her price, never out of it.
+                **({"tax_behavior": "exclusive"} if TAX_ENABLED else {}),
                 "product_data": {
+                    **({"tax_code": TAX_CODE_WORK} if TAX_ENABLED else {}),
                     "name": w["title"],
                     "description": ", ".join(
                         [x for x in (w.get("medium"), w.get("dims"),
@@ -144,6 +154,25 @@ def parse_items(metadata):
         bits = part.split(":")
         if len(bits) == 3 and all(b.isdigit() for b in bits):
             out.append(tuple(int(b) for b in bits))
+    return out
+
+
+def split_tax(tax_cents, items):
+    """Share a checkout's one tax figure across its paintings, in proportion
+    to what each was charged (price + its shipping). One address means one
+    rate, so the shares are exact but for rounding; the leftover cents go to
+    the largest remainders so the rows always add back up to what Stripe
+    charged. Returns one figure per item, in order."""
+    tax_cents = int(tax_cents or 0)
+    bases = [p + s for _, p, s in items]
+    whole = sum(bases)
+    if tax_cents <= 0 or whole <= 0:
+        return [0] * len(items)
+    exact = [tax_cents * b / whole for b in bases]
+    out = [int(x) for x in exact]
+    order = sorted(range(len(items)), key=lambda i: exact[i] - out[i], reverse=True)
+    for i in order[:tax_cents - sum(out)]:
+        out[i] += 1
     return out
 
 
