@@ -60,6 +60,11 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      # pk_live_... from the same Stripe account. Public by design (it is
+      # printed into the checkout page); with it set, checkout happens on the
+      # site instead of on Stripe's hosted page.
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
       - key: STRIPE_TAX
         value: "0"
       - key: SMTP_HOST

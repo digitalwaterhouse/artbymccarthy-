@@ -462,7 +462,7 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 
 /* ---------- intro ---------- */
 .intro{max-width:60ch; margin:0 0 clamp(28px,5vw,48px)}
-.intro h1,.prose h1,.facts h1{
+.intro h1,.prose h1,.facts h1,.co-title{
   font-family:"Newsreader",Georgia,serif; font-weight:400;
   font-size:clamp(2rem,4.5vw,2.9rem); line-height:1.1; margin:0 0 .5rem;
   letter-spacing:-.01em;
@@ -660,9 +660,66 @@ main{padding:clamp(28px,5vw,56px) clamp(18px,5vw,56px) 72px}
 .carttotals dd{text-align:right; font-variant-numeric:tabular-nums}
 .carttotals .tot{border-top:1px solid var(--line); padding-top:10px;
   font-family:"Newsreader",Georgia,serif; font-size:1.25rem}
-.masthead nav a.cartlink{display:inline-flex; align-items:center; gap:7px}
-.cartn{display:inline-block; min-width:18px; padding:3px 5px; border-radius:9px;
-  background:var(--accent); color:var(--on-accent); font-size:11px; line-height:1; text-align:center}
+/* The cart is an icon, not a word: a bag, with the count as a badge on its
+   shoulder. Same square frame as the nav buttons so it sits in the row. */
+.masthead nav a.cartlink{display:inline-flex; align-items:center; justify-content:center;
+  position:relative; padding-left:12px; padding-right:12px; overflow:visible}
+.masthead nav a.cartlink svg{display:block}
+/* The photograph flying into the cart: square like every frame on the site,
+   lifted by a soft shadow, arcing slightly on the way (the overshooting
+   curve). Then the Cart button bumps to say it landed. */
+.cart-tracer{position:fixed; z-index:3000; object-fit:cover; pointer-events:none;
+  box-shadow:0 12px 32px rgba(0,0,0,.28);
+  transition:transform .8s cubic-bezier(.5,-0.25,.3,1.15), opacity .8s ease;
+  will-change:transform, opacity}
+.cart-bump{animation:cartBump .5s ease}
+@keyframes cartBump{0%{transform:scale(1)} 35%{transform:scale(1.18)} 100%{transform:scale(1)}}
+
+/* ---------- checkout ----------
+   Her page around Stripe's fields: the form on the left in numbered steps,
+   the order beside it. The step numbers are small squares in the accent --
+   her buttons are square, so her numbers are too. */
+.checkout{display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:48px; align-items:start;
+  max-width:1060px; margin:0 auto; padding:40px clamp(18px,5vw,56px) 64px}
+.checkout .co-title{grid-column:1 / -1; margin:0 0 -18px}
+.co-step{padding:0 0 26px; margin:0 0 26px; border-bottom:1px solid var(--line)}
+.co-step h2{display:flex; align-items:center; gap:12px; margin:0 0 6px;
+  font:500 1.3rem/1.2 "Newsreader",Georgia,serif}
+.co-n{display:inline-grid; place-items:center; width:26px; height:26px; flex:0 0 26px;
+  background:var(--accent); color:var(--on-accent); font:600 13px/1 "Karla",sans-serif;
+  box-shadow:2px 2px 0 0 var(--mat-teal)}
+.co-step .fine{margin:0 0 16px}
+.co-el{min-height:44px}
+.co-msg{margin:0 0 16px; padding:12px 14px; border:1.5px solid var(--danger); color:var(--danger);
+  background:var(--paper); font-size:14.5px}
+.co-pay{width:100%; text-align:center; font-size:16px; padding:16px 26px}
+.co-pay:disabled{opacity:.45; cursor:not-allowed}
+.co-pay.is-busy{opacity:.7; cursor:progress}
+.co-secure{display:flex; gap:8px; align-items:flex-start}
+.co-secure svg{flex:0 0 auto; margin-top:3px}
+.co-summary{position:sticky; top:24px; background:var(--paper); border:1px solid var(--line);
+  padding:24px; box-shadow:4px 4px 0 0 var(--panel-soft)}
+.co-summary h2{margin:0 0 14px; font:500 1.2rem/1.2 "Newsreader",Georgia,serif}
+.co-items{list-style:none; margin:0; padding:0; border-top:1px solid var(--line)}
+.co-items li{display:grid; grid-template-columns:52px 1fr auto; gap:12px; align-items:center;
+  padding:12px 0; border-bottom:1px solid var(--line)}
+.co-thumb{width:52px; height:52px; background:var(--panel-soft); display:block}
+.co-thumb img{width:100%; height:100%; object-fit:contain; display:block}
+.co-what{font-family:"Newsreader",Georgia,serif; font-size:1rem; min-width:0}
+.co-what .sub{font-family:"Karla",sans-serif; margin-top:2px}
+.co-price{font-family:"Newsreader",Georgia,serif; white-space:nowrap}
+.co-summary .carttotals{margin:14px 0 16px}
+.co-hold{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; margin:0 0 8px}
+.co-hold.low{color:var(--accent); font-weight:600}
+@media (max-width:860px){
+  .checkout{grid-template-columns:1fr; gap:28px; padding-top:24px}
+  .checkout .co-title{margin:0; order:-2}
+  .co-summary{position:static; order:-1}
+}
+.cartn{position:absolute; top:-8px; right:-8px; min-width:18px; padding:3px 5px; border-radius:9px;
+  background:var(--turq); color:#07161C; font:700 11px/1 "Karla",sans-serif; letter-spacing:0;
+  text-align:center; box-shadow:0 0 0 2px var(--wall)}
+.cartn:empty{display:none}
 @media (max-width:560px){
   .cartrow{grid-template-columns:56px 1fr auto; column-gap:12px}
   .cartimg{width:56px; height:56px}

@@ -17,6 +17,10 @@ except ImportError:          # the site must not 500 because a lib is missing
 
 SECRET = os.environ.get("STRIPE_SECRET_KEY", "").strip()
 WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
+# Public by design -- it is printed into the checkout page for Stripe.js. With
+# it set, checkout happens ON the site (Stripe's card fields inside her page);
+# without it, the buyer is sent to Stripe's hosted page as before.
+PUBLISHABLE = os.environ.get("STRIPE_PUBLISHABLE_KEY", "").strip()
 TAX_ENABLED = os.environ.get("STRIPE_TAX", "0") == "1"
 
 if stripe and SECRET:
@@ -29,6 +33,14 @@ def enabled():
 
 def live_mode():
     return SECRET.startswith("sk_live_")
+
+
+def on_site():
+    """Pay on the site rather than on Stripe's page. Needs the publishable key,
+    and one from the SAME mode as the secret -- a pk_test_ beside an sk_live_
+    loads a checkout that can never be paid."""
+    return (enabled() and PUBLISHABLE.startswith(("pk_live_", "pk_test_"))
+            and PUBLISHABLE.startswith("pk_live_") == live_mode())
 
 
 def ship_cents(work, cfg):
@@ -62,7 +74,7 @@ def _shipping_options(works, cfg):
     }]
 
 
-def create_session(works, success_url, cancel_url):
+def create_session(works, success_url=None, cancel_url=None, return_url=None):
     """One hosted checkout for everything in a cart.
 
     metadata["items"] records, per piece, what was CHARGED for it --
@@ -88,8 +100,6 @@ def create_session(works, success_url, cancel_url):
                 },
             },
         } for w in works],
-        success_url=success_url,
-        cancel_url=cancel_url,
         shipping_address_collection={"allowed_countries": ["US", "CA"]},
         shipping_options=_shipping_options(works, cfg),
         # Stripe's floor is 30 minutes; the pieces are held a few minutes
@@ -99,9 +109,19 @@ def create_session(works, success_url, cancel_url):
         metadata={"items": items},
         payment_intent_data={"metadata": {"items": items}},
     )
+    if return_url:
+        # On-site: Stripe.js draws the fields in her page, and return_url is
+        # where the buyer lands after paying (or after a bank redirect).
+        kwargs.update(ui_mode="elements", return_url=return_url)
+    else:
+        kwargs.update(success_url=success_url, cancel_url=cancel_url)
     if TAX_ENABLED:
         kwargs["automatic_tax"] = {"enabled": True}
     return stripe.checkout.Session.create(**kwargs)
+
+
+def retrieve(session_id):
+    return stripe.checkout.Session.retrieve(session_id)
 
 
 def expire_if_open(session_id):

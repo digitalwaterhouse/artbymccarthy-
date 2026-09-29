@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Checkout &mdash; {{ cfg.site_title }}{% endblock %}
+{% block body %}
+{# Payment on her own page. Stripe.js draws the three fields (email, the
+   shipping address, the card) as iframes, so card numbers go straight to
+   Stripe and never touch this server; everything around them is the site's
+   own markup and stylesheet, and the fields themselves are dressed from the
+   same colour tokens at load (see `appearance` below). #}
+<section class="checkout">
+  <h1 class="co-title">Checkout</h1>
+  <form class="co-form" id="coForm" novalidate>
+
+    <div class="co-step">
+      <h2><span class="co-n">1</span> Your email</h2>
+      <p class="fine">Your receipt and shipping updates go here.</p>
+      <div id="coContact" class="co-el"></div>
+    </div>
+
+    <div class="co-step">
+      <h2><span class="co-n">2</span> Ship to</h2>
+      <p class="fine">United States and Canada. Every piece is insured, tracked, and packed with corner protection.</p>
+      <div id="coShip" class="co-el"></div>
+    </div>
+
+    <div class="co-step">
+      <h2><span class="co-n">3</span> Payment</h2>
+      <div id="coPay" class="co-el"></div>
+    </div>
+
+    <div id="coMsg" class="co-msg" role="alert" hidden></div>
+    <button class="cta co-pay" id="coPayBtn" type="submit" disabled>
+      <span id="coPayLabel">Pay {{ totals.total }}</span>
+    </button>
+    <p class="fine co-secure">
+      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><rect x="3" y="7" width="10" height="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      Card details go directly to Stripe, the payment processor, and are never stored by this site.</p>
+  </form>
+
+  <aside class="co-summary" aria-label="Your order">
+    <h2>Your order</h2>
+    <ul class="co-items">
+    {% for w in works %}
+      <li>
+        <span class="co-thumb">{% if w.images %}<img src="{{ img_url(w.images[0].base,'s','jpg') }}" alt="">{% endif %}</span>
+        <span class="co-what">{{ w.title }}<span class="sub">{{ w.medium }}{% if w.dims %}, {{ w.dims }}{% endif %}</span></span>
+        <span class="co-price">{{ w.price }}</span>
+      </li>
+    {% endfor %}
+    </ul>
+    <dl class="carttotals">
+      <dt>{{ works|length }} work{{ '' if works|length == 1 else 's' }}</dt><dd>{{ totals.sub }}</dd>
+      <dt>Shipping, insured</dt><dd>{{ totals.ship if totals.ship_cents else 'Free' }}</dd>
+      <dt class="tot">Total</dt><dd class="tot">{{ totals.total }}</dd>
+    </dl>
+    <p class="co-hold" id="coHold" data-until="{{ expires_at }}">Held for you while you check out</p>
+    <p class="fine">Includes a signed certificate of authenticity for each piece.</p>
+    <p><a href="{{ url_for('site.cart') }}">Back to cart</a></p>
+  </aside>
+</section>
+{% endblock %}
+
+{% block after %}
+<script src="https://js.stripe.com/dahlia/stripe.js"></script>
+<script>
+(function(){
+  var form = document.getElementById('coForm');
+  var btn = document.getElementById('coPayBtn');
+  var label = document.getElementById('coPayLabel');
+  var msg = document.getElementById('coMsg');
+  function say(text){ msg.textContent = text; msg.hidden = !text; }
+
+  if (!window.Stripe) {
+    say('The payment form could not load. Check your connection and reload the page.');
+    return;
+  }
+
+  /* The fields take their look from the page's own tokens, read at load, so
+     they follow the light or dark theme the visitor is in. The focus ring is
+     the site's offset block -- the same one the nav buttons lift onto. */
+  var cs = getComputedStyle(document.documentElement);
+  function v(n, d){ return (cs.getPropertyValue(n) || '').trim() || d; }
+  var appearance = {
+    theme: 'flat',
+    variables: {
+      colorPrimary: v('--accent', '#2F4A57'),
+      colorBackground: v('--paper', '#FFFFFF'),
+      colorText: v('--ink', '#171A18'),
+      colorTextSecondary: v('--muted', '#6E736E'),
+      colorTextPlaceholder: v('--muted', '#6E736E'),
+      colorDanger: v('--danger', '#A3372B'),
+      fontFamily: 'Karla, system-ui, sans-serif',
+      fontSizeBase: '15px',
+      borderRadius: '2px',
+      spacingUnit: '4px',
+      gridRowSpacing: '14px'
+    },
+    rules: {
+      '.Input': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none', padding: '12px' },
+      '.Input:focus': { borderColor: v('--ink', '#171A18'), boxShadow: '3px 3px 0 0 ' + v('--mat-sage', '#B9C4B4'), outline: 'none' },
+      '.Input--invalid': { borderColor: v('--danger', '#A3372B'), boxShadow: 'none' },
+      '.Label': { fontWeight: '500', color: v('--muted', '#6E736E'), fontSize: '13px', marginBottom: '6px' },
+      '.Tab': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none' },
+      '.Tab:hover': { borderColor: v('--ink', '#171A18') },
+      '.Tab--selected, .Tab--selected:hover': { borderColor: v('--ink', '#171A18'), boxShadow: '3px 3px 0 0 ' + v('--mat-teal', '#8FB3B0') },
+      '.Block': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none' }
+    }
+  };
+
+  var stripe = Stripe({{ publishable|tojson }});
+  var checkout = stripe.initCheckoutElementsSdk({
+    clientSecret: {{ client_secret|tojson }},
+    elementsOptions: {
+      appearance: appearance,
+      fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=Karla:wght@400;500;700&display=swap' }]
+    }
+  });
+
+  checkout.on('change', function(s){
+    btn.disabled = !s.canConfirm;
+    var t = s.total && s.total.total && s.total.total.amount;
+    if (t) label.textContent = 'Pay ' + t;
+  });
+
+  checkout.createContactDetailsElement().mount('#coContact');
+  checkout.createShippingAddressElement().mount('#coShip');
+  checkout.createPaymentElement().mount('#coPay');
+
+  var busy = false;
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    if (busy || btn.disabled) return;
+    busy = true; btn.disabled = true; btn.classList.add('is-busy'); say('');
+    checkout.loadActions().then(function(r){
+      if (r.type !== 'success') throw (r.error || { message: 'The payment form is not ready yet.' });
+      return r.actions.confirm();
+    }).then(function(res){
+      /* Success leaves the page for the thank-you page; only an error lands here. */
+      if (res && res.type === 'error') throw res.error;
+    }).catch(function(err){
+      say((err && err.message) || 'The payment did not go through. Nothing was charged.');
+      busy = false; btn.disabled = false; btn.classList.remove('is-busy');
+    });
+  });
+
+  /* The session's own clock. When it runs out the page goes back to the
+     cart, where the server says what is still held. */
+  var hold = document.getElementById('coHold');
+  var until = parseInt(hold.dataset.until, 10) * 1000;
+  function tick(){
+    var left = Math.floor((until - Date.now()) / 1000);
+    if (left <= 0) { location.href = {{ url_for('site.cart')|tojson }}; return; }
+    var m = Math.floor(left / 60), s = left % 60;
+    hold.textContent = 'Held for you · ' + m + ':' + (s < 10 ? '0' : '') + s;
+    hold.classList.toggle('low', left < 180);
+  }
+  tick(); setInterval(tick, 1000);
+})();
+</script>
+{% endblock %}

@@ -617,9 +617,12 @@ def buy(slug):
     if not w:
         abort(404)
     tok = _cart_token()
+    js = request.headers.get("X-Requested-With") == "fetch"
     if w["status"] == "reserved" and tok and w.get("reserved_by") == tok:
-        return redirect(url_for("site.cart"))
+        return _added(js)
     if w["status"] != "available":
+        if js:
+            return jsonify(ok=False, reload=True)
         return redirect(url_for("site.work", slug=slug))
     if not payments.enabled() or w["ship_band"] == "quote" or not w["price_cents"]:
         # No keys yet, a piece too large to price shipping on sight, or a work
@@ -628,10 +631,22 @@ def buy(slug):
         # bounced straight back to the page it came from, doing nothing.
         return render_template("enquire.html", w=w)
     if not gallery.reserve(w["id"], by=_cart_token(create=True)):
-        flash("Someone else is buying this piece right now. If they don't finish, "
-              "it comes back within a few minutes.")
+        msg = ("Someone else is buying this piece right now. If they don't finish, "
+               "it comes back within a few minutes.")
+        if js:
+            return jsonify(ok=False, msg=msg, reload=True)
+        flash(msg)
         return redirect(url_for("site.work", slug=slug))
-    return redirect(url_for("site.cart"))
+    return _added(js)
+
+
+def _added(js):
+    """The work page adds with fetch() so the photograph can fly into the
+    cart and the buyer stays put; without JavaScript it is a plain redirect."""
+    if not js:
+        return redirect(url_for("site.cart"))
+    return jsonify(ok=True, n=gallery.cart_count(_cart_token()), cart=url_for("site.cart"),
+                   minutes=gallery.CART_HOLD_MINUTES)
 
 
 @site.route("/cart")
@@ -653,18 +668,25 @@ def cart_remove(work_id):
     return redirect(url_for("site.cart"))
 
 
-@site.route("/checkout", methods=["POST"])
+@site.route("/checkout", methods=["GET", "POST"])
 def checkout():
     gallery.release_expired()
     tok = _cart_token()
     if not tok or not payments.enabled():
         return redirect(url_for("site.cart"))
-    _settle_checkouts(tok)
+    if request.method == "POST" and payments.on_site():
+        # The cart's button posts; the page itself is a GET so a refresh does
+        # not ask to resubmit a form.
+        return redirect(url_for("site.checkout"))
     works = gallery.cart_works(tok)
     if not works:
         flash("Your cart is empty. Pieces are held for %d minutes, then go back "
               "on the wall." % gallery.CART_HOLD_MINUTES)
         return redirect(url_for("site.cart"))
+    if payments.on_site():
+        return _checkout_on_site(tok, works)
+    _settle_checkouts(tok)
+    works = gallery.cart_works(tok)
     ids = [w["id"] for w in works]
     # Stretch the hold BEFORE Stripe opens the session, so there is no moment
     # at which the buyer can pay for a piece that is no longer held for them.
@@ -685,6 +707,55 @@ def checkout():
     return redirect(s.url, code=303)
 
 
+def _reusable_session(tok, works):
+    """A refresh of the checkout page should not open a second Stripe session.
+    Reuse the open one if it covers exactly this cart and has time left."""
+    sids = {w.get("checkout_session") for w in works}
+    if len(sids) != 1 or None in sids:
+        return None
+    try:
+        s = payments.retrieve(sids.pop())
+    except Exception:
+        return None
+    if getattr(s, "status", None) != "open":
+        return None
+    if int(getattr(s, "expires_at", 0) or 0) < time.time() + 120:
+        return None
+    return s
+
+
+def _checkout_on_site(tok, works):
+    s = _reusable_session(tok, works)
+    if s is None:
+        _settle_checkouts(tok)
+        works = gallery.cart_works(tok)
+        if not works:
+            return redirect(url_for("site.cart"))
+        ids = [w["id"] for w in works]
+        gallery.extend_holds(tok, ids, gallery.CHECKOUT_HOLD_MINUTES)
+        try:
+            s = payments.create_session(
+                works,
+                return_url=url_for("site.thanks", _external=True) + "?session_id={CHECKOUT_SESSION_ID}")
+        except Exception:
+            app.logger.exception("checkout: Stripe session failed")
+            gallery.extend_holds(tok, ids, gallery.CART_HOLD_MINUTES)
+            flash("Checkout could not be opened just now. Your pieces are still held; "
+                  "please try again in a moment.")
+            return redirect(url_for("site.cart"))
+        gallery.mark_checkout(tok, ids, s.id)
+        works = gallery.cart_works(tok)
+    session["checkout_n"] = len(works)
+    resp = app.make_response(render_template(
+        "checkout.html", works=works, totals=_cart_totals(works),
+        client_secret=s.client_secret, publishable=payments.PUBLISHABLE,
+        # The page's clock runs to the SESSION's end, which is before the hold's.
+        expires_at=int(s.expires_at)))
+    # A page carrying a client secret is not one to keep in any cache.
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
 @site.route("/enquire/<slug>", methods=["POST"])
 def enquire(slug):
     w = gallery.get_work(slug=slug)
@@ -701,6 +772,23 @@ def enquire(slug):
 
 @site.route("/thanks")
 def thanks():
+    sid = request.args.get("session_id") or ""
+    if sid.startswith("cs_") and payments.enabled():
+        try:
+            status = getattr(payments.retrieve(sid), "status", None)
+        except Exception:
+            app.logger.exception("thanks: could not look up %s", sid)
+            status = None
+        if status == "open":
+            # Back from a bank or wallet redirect without the payment going
+            # through: the checkout is still open and the pieces still held.
+            flash("The payment didn't go through. Nothing was charged; "
+                  "your pieces are still held, so you can try again.")
+            return redirect(url_for("site.checkout"))
+        if status == "complete":
+            # Paid. The webhook marks the pieces sold; the buyer starts a new
+            # cart from here rather than seeing these ones "still held".
+            session.pop("cart", None)
     n = session.pop("checkout_n", 1)
     what = "The painting" if n == 1 else "Your %d paintings" % n
     return render_template("thanks.html", heading="Thank you",

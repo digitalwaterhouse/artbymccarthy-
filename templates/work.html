@@ -123,11 +123,20 @@
         <p class="fine">If they don't finish, it comes back on the wall within a few minutes.</p>
       {% elif w.price_cents %}
         <p class="price">{{ w.price }}</p>
-        <form method="post" action="{{ url_for('site.buy', slug=w.slug) }}">
+        {% set can_cart = stripe_on and w.ship_band != 'quote' %}
+        <form method="post" action="{{ url_for('site.buy', slug=w.slug) }}"{% if can_cart %} data-addcart{% endif %}>
           <button class="cta" type="submit">
-            {% if stripe_on and w.ship_band != 'quote' %}Add to cart{% else %}Enquire to purchase{% endif %}
+            {% if can_cart %}Add to cart{% else %}Enquire to purchase{% endif %}
           </button>
         </form>
+        {% if can_cart %}
+        {# What the panel becomes once the photograph has flown into the cart. #}
+        <template id="inCart">
+          <p class="soldline">In your cart</p>
+          <a class="cta" href="{{ url_for('site.cart') }}">View cart &amp; check out</a>
+          <p class="fine">Held for you for <span data-mins></span> minutes. <a href="{{ url_for('site.index') }}#available">Keep looking</a></p>
+        </template>
+        {% endif %}
         <p class="fine">
           {% if w.ship_band == 'quote' %}Shipping quoted individually for a piece this size.
           {% elif w.ship_band == 'rolled' %}Ships rolled in a tube, to be stretched on arrival.
@@ -184,6 +193,72 @@ document.addEventListener('keydown', function(e){
 </script>
 {% endif %}
 
+<script>
+/* Add to cart without leaving the painting: the photograph on screen flies to
+   the Cart button in the header and the button bumps, the way bayviewfloral's
+   does. Any failure falls back to the plain form post, which still works. */
+(function(){
+  var form = document.querySelector('form[data-addcart]');
+  if (!form || !window.fetch) return;
+  var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function cartLink(){
+    var a = document.querySelector('.masthead nav a.cartlink');
+    if (a) return a;
+    a = document.createElement('a');
+    a.className = 'cartlink';
+    a.href = {{ url_for('site.cart')|tojson }};
+    a.title = 'Cart';
+    a.innerHTML = '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><path d="M4 6.5h12l-1 11H5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.2 8.5V5.6a2.8 2.8 0 0 1 5.6 0v2.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>' + '<span class="cartn" aria-hidden="true"></span>';
+    document.querySelector('.masthead nav').appendChild(a);
+    return a;
+  }
+  function bump(a, n){
+    var c = a.querySelector('.cartn'); if (c) c.textContent = n;
+    a.setAttribute('aria-label', 'Cart, ' + n + ' piece' + (n == 1 ? '' : 's'));
+    a.classList.remove('cart-bump'); void a.offsetWidth; a.classList.add('cart-bump');
+  }
+  function fly(img, a, done){
+    if (still || !img) return done();
+    var s = img.getBoundingClientRect(), c = a.getBoundingClientRect();
+    if (!s.width || !c.width) return done();
+    var t = document.createElement('img');
+    t.src = img.currentSrc || img.src; t.className = 'cart-tracer'; t.alt = '';
+    t.style.left = s.left + 'px'; t.style.top = s.top + 'px';
+    t.style.width = s.width + 'px'; t.style.height = s.height + 'px';
+    document.body.appendChild(t); t.getBoundingClientRect();
+    var tx = (c.left + c.width / 2) - (s.left + s.width / 2),
+        ty = (c.top + c.height / 2) - (s.top + s.height / 2);
+    t.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(0.08)';
+    t.style.opacity = '0.2';
+    var fin = false;
+    function end(){ if (fin) return; fin = true; t.remove(); done(); }
+    t.addEventListener('transitionend', end, { once: true });
+    setTimeout(end, 1000);
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn = form.querySelector('button');
+    btn.disabled = true;
+    fetch(form.action, { method: 'POST', credentials: 'same-origin',
+                         headers: { 'X-Requested-With': 'fetch' } })
+      .then(function(r){ if (!r.ok) throw 0; return r.json(); })
+      .then(function(d){
+        if (!d.ok) { if (d.msg) alert(d.msg); location.reload(); return; }
+        var a = cartLink();
+        var img = document.querySelector('.plate.on img') || document.querySelector('.plate img');
+        fly(img, a, function(){ bump(a, d.n); });
+        var tpl = document.getElementById('inCart');
+        var panel = document.createElement('div');
+        panel.appendChild(tpl.content.cloneNode(true));
+        panel.querySelector('[data-mins]').textContent = d.minutes;
+        form.replaceWith(panel);
+      })
+      .catch(function(){ form.submit(); });
+  });
+})();
+</script>
 <script type="application/ld+json">
 {{ {
   "@context": "https://schema.org",
