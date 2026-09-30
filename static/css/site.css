@@ -2211,23 +2211,22 @@ body.home{
 .hero-stack.rotating .hero-shot{opacity:0; transition:opacity 1100ms ease-in-out}
 .hero-stack.rotating .hero-shot.on{opacity:1}
 
-/* A very slow Ken Burns: each photograph pushes in 3% over the whole time it
-   is up, straight toward the centre, no pan. `.drifting` arrives with the
-   first change, so the hero is shown still and whole on arrival. `.off` keeps
+/* A slow Ken Burns: each photograph pushes in 8% over the whole time it
+   is up, straight toward the centre, no pan, starting with the first. `.off` keeps
    the outgoing photograph moving through its fade instead of snapping back;
    the script drops it once the fade is done. The stack clips, so the push
    crops the frame's outer edge, never the layout around it. */
 .hero-stack.rotating{overflow:hidden}
-.hero-stack.drifting .hero-shot.on img,
-.hero-stack.drifting .hero-shot.off img{animation:heroDrift 9s linear both}
-@keyframes heroDrift{from{transform:scale(1)} to{transform:scale(1.03)}}
+.hero-stack.rotating .hero-shot.on img,
+.hero-stack.rotating .hero-shot.off img{animation:heroDrift 9s linear both}
+@keyframes heroDrift{from{transform:scale(1)} to{transform:scale(1.08)}}
 
 /* Asked not to animate: no dissolve, no rotation. The script checks the same
    query and stops scheduling, so the hero simply stays on the first. */
 @media (prefers-reduced-motion:reduce){
   .hero-stack.rotating .hero-shot{transition:none}
-  .hero-stack.drifting .hero-shot.on img,
-  .hero-stack.drifting .hero-shot.off img{animation:none}
+  .hero-stack.rotating .hero-shot.on img,
+  .hero-stack.rotating .hero-shot.off img{animation:none}
 }
 .hero-say{max-width:34rem}
 .eyebrow{

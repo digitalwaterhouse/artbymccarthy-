@@ -171,7 +171,6 @@
 
   function show(next) {
     if (next === at) return;
-    stack.classList.add('drifting');
     var out = shots[at];
     out.classList.add('off');
     setTimeout(function () { if (!out.classList.contains('on')) out.classList.remove('off'); }, 1200);
