@@ -100,38 +100,41 @@
   /* The fields take their look from the page's own tokens, read at load, so
      they follow the light or dark theme the visitor is in. The focus ring is
      the site's offset block -- the same one the nav buttons lift onto. */
-  var cs = getComputedStyle(document.documentElement);
-  function v(n, d){ return (cs.getPropertyValue(n) || '').trim() || d; }
-  var appearance = {
-    theme: 'flat',
-    variables: {
-      colorPrimary: v('--accent', '#2F4A57'),
-      colorBackground: v('--paper', '#FFFFFF'),
-      colorText: v('--ink', '#171A18'),
-      colorTextSecondary: v('--muted', '#6E736E'),
-      colorTextPlaceholder: v('--muted', '#6E736E'),
-      colorDanger: v('--danger', '#A3372B'),
-      fontFamily: 'Karla, system-ui, sans-serif',
-      fontSizeBase: '15px',
-      borderRadius: '2px',
-      spacingUnit: '4px',
-      gridRowSpacing: '14px'
-    },
-    rules: {
-      '.Input': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none', padding: '12px' },
-      '.Input:focus': { borderColor: v('--ink', '#171A18'), boxShadow: '3px 3px 0 0 ' + v('--mat-sage', '#B9C4B4'), outline: 'none' },
-      '.Input--invalid': { borderColor: v('--danger', '#A3372B'), boxShadow: 'none' },
-      '.Label': { fontWeight: '500', color: v('--muted', '#6E736E'), fontSize: '13px', marginBottom: '6px' },
-      '.Tab': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none' },
-      '.Tab:hover': { borderColor: v('--ink', '#171A18') },
-      '.Tab--selected, .Tab--selected:hover': { borderColor: v('--ink', '#171A18'), boxShadow: '3px 3px 0 0 ' + v('--mat-teal', '#8FB3B0') },
-      '.Block': { border: 'none', boxShadow: 'none', backgroundColor: 'transparent' },
-      /* No frame or fill behind the payment panel: the card fields sit flush with
-         the email and address fields above, each carrying its own border. */
-      '.AccordionItem': { border: 'none', boxShadow: 'none', backgroundColor: 'transparent', paddingLeft: '0', paddingRight: '0' },
-      '.AccordionItem--selected': { backgroundColor: 'transparent' }
-    }
-  };
+  function makeAppearance(){
+    var cs = getComputedStyle(document.documentElement);
+    function v(n, d){ return (cs.getPropertyValue(n) || '').trim() || d; }
+    return {
+      theme: 'flat',
+      variables: {
+        colorPrimary: v('--accent', '#2F4A57'),
+        colorBackground: v('--paper', '#FFFFFF'),
+        colorText: v('--ink', '#171A18'),
+        colorTextSecondary: v('--muted', '#6E736E'),
+        colorTextPlaceholder: v('--muted', '#6E736E'),
+        colorDanger: v('--danger', '#A3372B'),
+        fontFamily: 'Karla, system-ui, sans-serif',
+        fontSizeBase: '15px',
+        borderRadius: '2px',
+        spacingUnit: '4px',
+        gridRowSpacing: '14px'
+      },
+      rules: {
+        '.Input': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none', padding: '12px' },
+        '.Input:focus': { borderColor: v('--ink', '#171A18'), boxShadow: '3px 3px 0 0 ' + v('--mat-sage', '#B9C4B4'), outline: 'none' },
+        '.Input--invalid': { borderColor: v('--danger', '#A3372B'), boxShadow: 'none' },
+        '.Label': { fontWeight: '500', color: v('--muted', '#6E736E'), fontSize: '13px', marginBottom: '6px' },
+        '.Tab': { border: '1.5px solid ' + v('--rule', '#CFCEC6'), boxShadow: 'none' },
+        '.Tab:hover': { borderColor: v('--ink', '#171A18') },
+        '.Tab--selected, .Tab--selected:hover': { borderColor: v('--ink', '#171A18'), boxShadow: '3px 3px 0 0 ' + v('--mat-teal', '#8FB3B0') },
+        '.Block': { border: 'none', boxShadow: 'none', backgroundColor: 'transparent' },
+        /* No frame or fill behind the payment panel: the card fields sit flush with
+           the email and address fields above, each carrying its own border. */
+        '.AccordionItem': { border: 'none', boxShadow: 'none', backgroundColor: 'transparent', paddingLeft: '0', paddingRight: '0' },
+        '.AccordionItem--selected': { backgroundColor: 'transparent' }
+      }
+    };
+  }
+  var appearance = makeAppearance();
 
   var stripe = Stripe({{ publishable|tojson }});
   var checkout = stripe.initCheckoutElementsSdk({
@@ -153,6 +156,18 @@
     var tx = last.total && last.total.taxExclusive;
     taxCell.textContent = (tx && tx.minorUnitsAmount) ? tx.amount : 'None';
     if (taxNote) taxNote.textContent = (tx && tx.minorUnitsAmount) ? '' : 'not charged outside New York';
+  }
+
+  /* The colours above are read once, so a theme switch after the page has
+     loaded (the lamp button, or the phone going dark at sunset) would leave
+     Stripe's fields in the old theme -- dark text on the now-dark page, since
+     the payment panel is transparent. Re-read them and hand Stripe the new set. */
+  function retheme(){ checkout.changeAppearance(makeAppearance()); }
+  new MutationObserver(retheme).observe(document.documentElement,
+    { attributes: true, attributeFilter: ['data-theme'] });
+  if (window.matchMedia) {
+    var mq = matchMedia('(prefers-color-scheme: dark)');
+    if (mq.addEventListener) mq.addEventListener('change', retheme);
   }
 
   checkout.on('change', function(s){
