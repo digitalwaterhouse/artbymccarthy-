@@ -101,7 +101,9 @@ if(!('startViewTransition' in document)) document.documentElement.className += '
      ready for it. MOVED, not duplicated -- two of the same form on one page is
      two ids, and the second one silently loses the label association. #}
   {% if endpoint != 'index' %}{% include "_signup.html" %}{% endif %}
-  <p class="fine">&copy; {{ cfg.site_title }}. All images and paintings remain the property of the artist.</p>
+  <p class="fine">&copy; {{ cfg.site_title }}. All images and paintings remain the property of the artist.
+    <span class="foot-links"><a href="{{ url_for('site.policies') }}#shipping-returns">Shipping &amp; returns</a> &middot;
+    <a href="{{ url_for('site.policies') }}#privacy">Privacy</a></span></p>
 </footer>
 <script>
 /* The name signs itself on every page load (the class is in the markup).

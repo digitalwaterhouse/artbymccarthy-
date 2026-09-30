@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Policies &mdash; {{ cfg.site_title }}{% endblock %}
+{% block body %}
+{# Two policies on one page, each with its own anchor so the footer and the
+   checkout can link straight to the part they mean. Plain language on
+   purpose: a buyer should be able to read it in a minute. The contact address
+   is the public info@ forward, never the artist's own mailbox. #}
+{% set who = cfg.artist_name or "the artist" %}
+<section class="policies">
+  <div class="prose">
+    <h1>Policies</h1>
+    <h2 id="shipping-returns">Shipping &amp; returns</h2>
+
+    <h3>Shipping</h3>
+    <p>Every painting ships to the United States or Canada, insured and tracked, and
+      packed with corner protection. Shipping is calculated at checkout. You'll get an
+      email with tracking as soon as your piece is on its way.</p>
+
+    <h3>Returns</h3>
+    <p>If a painting isn't right for you, you can return it within 14 days of delivery.
+      Email <a href="mailto:info@artbymccarthy.com">info@artbymccarthy.com</a> first so
+      we know it's coming, then send it back in its original packing, insured. Return
+      shipping is paid by the buyer, and the original shipping charge isn't refunded.
+      Once the piece arrives back in the condition it left, you'll be refunded the
+      price of the painting, including any sales tax, to the card you paid with.</p>
+    <p>Commissioned work is made for you alone, so it can't be returned.</p>
+
+    <h3>Damage in transit</h3>
+    <p>If a piece arrives damaged, please email within 48 hours of delivery with photos
+      of the painting and the packing, and keep the packing. Every shipment is insured,
+      and we'll make it right with a repair or a full refund.</p>
+
+    <h3>Copyright</h3>
+    <p>Buying an original gives you the painting, not the right to reproduce it.
+      Copyright in every work stays with {{ who }}. You're welcome to share photos of
+      it hanging in your home.</p>
+
+    <h2 id="privacy">Privacy</h2>
+
+    <h3>What we collect</h3>
+    <p>Only what you give us: your name and email when you send a message or an
+      enquiry; your email when you sign up to hear about new work; and, when you buy,
+      your name, email and shipping address so the painting can reach you.</p>
+
+    <h3>Payments</h3>
+    <p>Payments are handled by Stripe. Your card details go directly to Stripe and
+      are never seen or stored by this site. Stripe's own privacy policy is at
+      <a href="https://stripe.com/privacy" rel="noopener" target="_blank">stripe.com/privacy</a>.</p>
+
+    <h3>How it's used</h3>
+    <p>To ship your order, answer your messages, and, if you asked, tell you about new
+      work. We never sell or rent your information, and we don't share it with anyone
+      except the services that make the shop work: Stripe for payments, and the
+      companies that host this site and deliver its email.</p>
+
+    <h3>Cookies and analytics</h3>
+    <p>The site sets one cookie, which keeps your cart and checkout working. Visits are
+      counted with a privacy-friendly tool that sets no cookies and doesn't identify
+      you. Stripe's payment form may set its own cookies to help prevent fraud.</p>
+
+    <h3>How long it's kept</h3>
+    <p>Order records are kept for as long as tax law requires. Your sign-up stays until
+      you ask to be removed.</p>
+
+    <h3>Your choices</h3>
+    <p>To stop new-work emails, or to see, correct or delete what we hold about you,
+      email <a href="mailto:info@artbymccarthy.com">info@artbymccarthy.com</a> and it
+      will be done.</p>
+
+    <p class="fine">Last updated {{ updated }}.</p>
+  </div>
+</section>
+{% endblock %}

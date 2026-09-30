@@ -45,7 +45,8 @@
       <button class="cta" type="submit">Check out</button>
     </form>
     <p class="fine">Payment is taken securely by Stripe. Every piece includes a signed
-      certificate of authenticity.</p>
+      certificate of authenticity and can be returned within 14 days &mdash;
+      see <a href="{{ url_for('site.policies') }}#shipping-returns">shipping &amp; returns</a>.</p>
     <p><a href="{{ url_for('site.index') }}#available">Keep looking</a></p>
   {% else %}
     <p>Nothing is in your cart. Pieces are held for {{ hold_minutes }} minutes after

@@ -527,6 +527,15 @@ def _is_bot():
     return bool((request.form.get("website") or "").strip())
 
 
+# Bump when the wording of either policy changes; the page prints it.
+POLICIES_UPDATED = "September 29, 2026"
+
+
+@site.route("/policies")
+def policies():
+    return render_template("policies.html", updated=POLICIES_UPDATED)
+
+
 @site.route("/commissions", methods=["GET", "POST"])
 def commissions():
     """Same page as /contact, opened on the commission pane. The URL is kept so
@@ -902,7 +911,8 @@ def robots():
 @site.route("/sitemap.xml")
 def sitemap():
     urls = [url_for("site.index", _external=True), url_for("site.about", _external=True),
-            url_for("site.archive", _external=True), url_for("site.commissions", _external=True)]
+            url_for("site.archive", _external=True), url_for("site.commissions", _external=True),
+            url_for("site.policies", _external=True)]
     urls += [url_for("site.work", slug=w["slug"], _external=True) for w in gallery.list_works()]
     body = "".join(f"<url><loc>{u}</loc></url>" for u in urls)
     return Response('<?xml version="1.0" encoding="UTF-8"?>'
