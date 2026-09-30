@@ -142,6 +142,19 @@
     }
   });
 
+  /* Stripe prices tax before it knows the state (and finds none), so the
+     line waits until a state has been entered in the address field -- else a
+     New York buyer reads "None" until they type their address. The session
+     does not report the typed address back, so the field's own change event
+     is where the state comes from. taxExclusive is the tax added on top. */
+  var last = null, shipState = '';
+  function showTax(){
+    if (!taxCell || !last || !last.taxAmounts || !shipState) return;
+    var tx = last.total && last.total.taxExclusive;
+    taxCell.textContent = (tx && tx.minorUnitsAmount) ? tx.amount : 'None';
+    if (taxNote) taxNote.textContent = (tx && tx.minorUnitsAmount) ? '' : 'not charged outside New York';
+  }
+
   checkout.on('change', function(s){
     btn.disabled = !s.canConfirm;
     var t = s.total && s.total.total && s.total.total.amount;
@@ -156,17 +169,16 @@
       discName.textContent = d.promotionCode || d.displayName || '';
       discCell.textContent = '\u2212' + ((s.total && s.total.discount && s.total.discount.amount) || d.amount);
     }
-    /* taxAmounts stays null until Stripe has an address to price. After
-       that, taxExclusive is the tax added on top: New York only. */
-    if (taxCell && s.taxAmounts) {
-      var tx = s.total && s.total.taxExclusive;
-      taxCell.textContent = (tx && tx.minorUnitsAmount) ? tx.amount : 'None';
-      if (taxNote) taxNote.textContent = (tx && tx.minorUnitsAmount) ? '' : 'not charged outside New York';
-    }
+    last = s; showTax();
   });
 
   checkout.createContactDetailsElement().mount('#coContact');
-  checkout.createShippingAddressElement().mount('#coShip');
+  var shipEl = checkout.createShippingAddressElement();
+  shipEl.on('change', function(e){
+    shipState = (e && e.value && e.value.address && e.value.address.state) || '';
+    showTax();
+  });
+  shipEl.mount('#coShip');
   /* Card open from the start: a list of collapsed payment methods reads as
      a menu to choose from, and almost everyone buying a painting pays by card. */
   checkout.createPaymentElement({
