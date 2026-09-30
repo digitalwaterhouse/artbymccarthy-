@@ -171,12 +171,8 @@
 
   function show(next) {
     if (next === at) return;
-    var out = shots[at];
-    out.classList.add('off');
-    setTimeout(function () { if (!out.classList.contains('on')) out.classList.remove('off'); }, 1200);
     shots[at].classList.remove('on');
     shots[at].setAttribute('aria-hidden', 'true');
-    shots[next].classList.remove('off');
     shots[next].classList.add('on');
     shots[next].removeAttribute('aria-hidden');
     thumbs.forEach(function (t, i) {
