@@ -116,8 +116,8 @@
         <p class="soldline">Not for sale</p>
       {% elif w.status == 'reserved' and cart_token and w.reserved_by == cart_token %}
         <p class="price">{{ w.price }}</p>
-        <p class="soldline">In your cart</p>
-        <a class="cta" href="{{ url_for('site.cart') }}">View cart &amp; check out</a>
+        <p class="added"><span class="added-tick" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> In your cart</p>
+        <a class="cta" href="{{ url_for('site.cart') }}">View cart &amp; check out &rarr;</a>
       {% elif w.status == 'reserved' %}
         <p class="soldline">Reserved &mdash; someone is checking out.</p>
         <p class="fine">If they don't finish, it comes back on the wall within a few minutes.</p>
@@ -132,8 +132,8 @@
         {% if can_cart %}
         {# What the panel becomes once the photograph has flown into the cart. #}
         <template id="inCart">
-          <p class="soldline">In your cart</p>
-          <a class="cta" href="{{ url_for('site.cart') }}">View cart &amp; check out</a>
+          <p class="added" role="status"><span class="added-tick" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Added to your cart</p>
+          <a class="cta" href="{{ url_for('site.cart') }}">View cart &amp; check out &rarr;</a>
           <p class="fine">Held for you for <span data-mins></span> minutes. <a href="{{ url_for('site.index') }}#available">Keep looking</a></p>
         </template>
         {% endif %}
@@ -253,7 +253,11 @@ document.addEventListener('keydown', function(e){
         var panel = document.createElement('div');
         panel.appendChild(tpl.content.cloneNode(true));
         panel.querySelector('[data-mins]').textContent = d.minutes;
+        /* The swap has to be SEEN: the banner pops in and the button pulses,
+           or a glance back at the page reads as "nothing happened". */
+        panel.querySelector('.added').classList.add('is-new');
         form.replaceWith(panel);
+        panel.querySelector('.cta').focus({ preventScroll: true });
       })
       .catch(function(){ form.submit(); });
   });
