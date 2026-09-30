@@ -14,7 +14,7 @@ import functools
 import hashlib
 import secrets
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import (Flask, Blueprint, render_template, request, redirect,
                    has_request_context, g,
@@ -475,7 +475,18 @@ def work(slug):
     # site is live. Signed in it still renders, which is how she previews one.
     if not w or (w["status"] == "draft" and not session.get("admin")):
         abort(404)
-    return render_template("work.html", w=w, near=gallery.neighbours(w))
+    # Someone else's hold says how long it can last: 10 minutes in a cart, up
+    # to 36 once they are on the payment page -- "a few minutes" was only true
+    # of the first. Rounded up, so it never promises sooner than it will be.
+    hold_left = None
+    if w["status"] == "reserved" and w.get("reserved_until"):
+        try:
+            until = datetime.strptime(w["reserved_until"], "%Y-%m-%dT%H:%M:%SZ").replace(
+                tzinfo=timezone.utc)
+            hold_left = max(1, -(-int((until - datetime.now(timezone.utc)).total_seconds()) // 60))
+        except ValueError:
+            pass
+    return render_template("work.html", w=w, near=gallery.neighbours(w), hold_left=hold_left)
 
 
 @site.route("/collection/<slug>")

@@ -120,7 +120,7 @@
         <a class="cta cta-cart" href="{{ url_for('site.cart') }}">View cart &amp; check out &rarr;</a>
       {% elif w.status == 'reserved' %}
         <p class="soldline">Reserved &mdash; someone is checking out.</p>
-        <p class="fine">If they don't finish, it comes back on the wall within a few minutes.</p>
+        <p class="fine">If they don't finish, it comes back on the wall {% if hold_left %}in {{ hold_left }} minute{{ '' if hold_left == 1 else 's' }}{% else %}within half an hour{% endif %}.</p>
       {% elif w.price_cents %}
         <p class="price">{{ w.price }}</p>
         {% set can_cart = stripe_on and w.ship_band != 'quote' %}
