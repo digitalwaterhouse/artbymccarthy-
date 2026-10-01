@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ w.title }} &mdash; {{ cfg.site_title }}{% endblock %}
-{% block desc %}{{ w.medium }}{% if w.dims %}, {{ w.dims }}{% endif %}{% endblock %}
+{# Her story is what a search can match ("Sri Lanka", "tuk tuk", "menopause");
+   medium and size match nothing anyone types. Google shows ~155 characters,
+   so it is cut at a word there. A piece with no story falls back. #}
+{% set _story = (w.story or "")|striptags %}
+{% block desc %}{% if _story %}{{ _story|truncate(155, False, "…", 0) }}{% else %}{{ w.medium }}{% if w.dims %}, {{ w.dims }}{% endif %}{% endif %}{% endblock %}
 {% block og %}{% if w.images %}<meta property="og:image" content="{{ img_url(w.images[0].base,'m','jpg') }}">{% endif %}{% endblock %}
 {% block body %}
 <article class="work">
@@ -268,7 +272,7 @@ document.addEventListener('keydown', function(e){
   "@context": "https://schema.org",
   "@type": "Product",
   "name": w.title,
-  "description": (w.medium or "") ~ ((", " ~ w.dims) if w.dims else ""),
+  "description": _story or ((w.medium or "") ~ ((", " ~ w.dims) if w.dims else "")),
   "offers": {
     "@type": "Offer",
     "priceCurrency": cfg.currency|upper,
