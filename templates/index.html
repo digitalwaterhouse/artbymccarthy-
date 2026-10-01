@@ -1,4 +1,10 @@
 {% extends "base.html" %}
+{# The home page is the one Google shows for her name, so it says who, what and
+   where in words a search can match. "Art by McCarthy" alone loses to every
+   other McCarthy, and the tagline ("Original Works") names no one. #}
+{% set _artist = cfg.artist_name or "Lisa McCarthy" %}
+{% block title %}{{ _artist }}, Mixed Media Artist in Bedford, NY &mdash; {{ cfg.site_title }}{% endblock %}
+{% block desc %}Original mixed media treasure boxes by {{ _artist }}, a self-taught artist in Bedford, NY. Bright, hopeful one-of-a-kind pieces inspired by life in Sri Lanka.{% endblock %}
 {% block bodyclass %}home{% endblock %}
 
 {% block og %}

@@ -914,6 +914,9 @@ def sitemap():
             url_for("site.archive", _external=True), url_for("site.commissions", _external=True),
             url_for("site.policies", _external=True)]
     urls += [url_for("site.work", slug=w["slug"], _external=True) for w in gallery.list_works()]
+    # Only collections with public pieces: an empty one 404s to visitors.
+    urls += [url_for("site.collection", slug=c["slug"], _external=True)
+             for c in gallery.list_collections() if c["total"]]
     body = "".join(f"<url><loc>{u}</loc></url>" for u in urls)
     return Response('<?xml version="1.0" encoding="UTF-8"?>'
                     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
