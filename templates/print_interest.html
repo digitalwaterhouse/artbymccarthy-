@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}A print of {{ w.title }} &mdash; {{ cfg.site_title }}{% endblock %}
+{% block body %}
+<section class="prose narrow">
+  <h1>A print of {{ w.title }}</h1>
+  <p>Prints aren't available yet. Leave your email and the studio will let you know if prints of this piece are made.</p>
+  <form class="stack" method="post" action="{{ url_for('site.print_interest', slug=w.slug) }}">
+    <label class="hp" for="hp-print">Website</label>
+    <input class="hp" type="text" name="website" id="hp-print" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+    <label>Your name <input name="name" autocomplete="name"></label>
+    <label>Email <input type="email" name="email" required autocomplete="email"></label>
+    <label>What size would you want?
+      <select name="size">
+        {% for s in sizes %}<option{% if loop.last %} selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Anything else? <textarea name="body" rows="3" placeholder="Optional"></textarea></label>
+    <button class="cta" type="submit">Let me know</button>
+  </form>
+  <p class="fine"><a href="{{ url_for('site.work', slug=w.slug) }}">&larr; Back to {{ w.title }}</a></p>
+</section>
+{% endblock %}

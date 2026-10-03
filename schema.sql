@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS orders (
 
 CREATE TABLE IF NOT EXISTS inquiries (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    kind       TEXT NOT NULL DEFAULT 'contact',  -- contact | commission | purchase
+    kind       TEXT NOT NULL DEFAULT 'contact',  -- contact | commission | purchase | print
     name       TEXT,
     email      TEXT,
     body       TEXT,

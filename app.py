@@ -791,6 +791,31 @@ def enquire(slug):
                            msg="The studio will be in touch with shipping and payment.")
 
 
+# Prints aren't for sale (2026-10-03). This only counts who would want one, and of
+# which piece, so the decision to set up print-on-demand rests on real asks
+# rather than a guess. Each ask is an ordinary enquiry of kind "print".
+PRINT_SIZES = ("Small, about 8 x 10", "Medium, about 12 x 16", "Large, 18 x 24 or bigger", "Not sure yet")
+
+
+@site.route("/print-interest/<slug>", methods=["GET", "POST"])
+def print_interest(slug):
+    w = gallery.get_work(slug=slug)
+    if not w:
+        abort(404)
+    if request.method == "GET":
+        return render_template("print_interest.html", w=w, sizes=PRINT_SIZES, noindex=True)
+    done = render_template("thanks.html", heading="Thank you", noindex=True,
+                           msg=f"If prints of {w['title']} become available, you'll be the first to hear.")
+    if _is_bot():
+        return done
+    size = request.form.get("size") or ""
+    note = (request.form.get("body") or "").strip()
+    body = "\n".join(x for x in (f"Size: {size}" if size in PRINT_SIZES else "", note) if x)
+    gallery.add_inquiry("print", request.form.get("name"), request.form.get("email"), body, w["id"])
+    notify("print", request.form.get("name"), request.form.get("email"), body, work_title=w["title"])
+    return done
+
+
 @site.route("/thanks")
 def thanks():
     sid = request.args.get("session_id") or ""

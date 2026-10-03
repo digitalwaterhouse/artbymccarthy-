@@ -34,7 +34,7 @@ SENDMAIL = os.environ.get("SENDMAIL_PATH", "/usr/sbin/sendmail")
 TRANSPORT = os.environ.get("MAIL_TRANSPORT", "")
 
 KIND = {"purchase": "Purchase enquiry", "commission": "Commission enquiry",
-        "contact": "Message"}
+        "contact": "Message", "print": "Print interest"}
 
 
 # A staging copy of the site holds a copy of her contacts and a copy of her
