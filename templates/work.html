@@ -5,7 +5,7 @@
    so it is cut at a word there. A piece with no story falls back. #}
 {% set _story = (w.story or "")|striptags %}
 {% block desc %}{% if _story %}{{ _story|truncate(155, False, "…", 0) }}{% else %}{{ w.medium }}{% if w.dims %}, {{ w.dims }}{% endif %}{% endif %}{% endblock %}
-{% block og %}{% if w.images %}<meta property="og:image" content="{{ img_url(w.images[0].base,'m','jpg') }}">{% endif %}{% endblock %}
+{% block og %}{% if w.images %}<meta property="og:image" content="{{ request.host_url.rstrip('/') ~ img_url(w.images[0].base,'m','jpg') }}">{% endif %}{% endblock %}
 {% block body %}
 <article class="work">
   {# Where this piece sits in the viewer, so the lead photograph can open the
@@ -269,17 +269,56 @@ document.addEventListener('keydown', function(e){
 })();
 </script>
 <script type="application/ld+json">
-{{ {
+{#- Google's merchant-listing rules (Search Console, 2026-10-07): image is
+    required, and shipping, returns and a brand are expected on the offer.
+    Every URL has to be absolute. Shipping mirrors payments.ship_cents() and
+    the returns mirror /policies (14 days, buyer pays return postage) -- change
+    either and change this with it. A piece with no price or a quoted shipping
+    band gets no figure here rather than a made-up one. -#}
+{%- set _host = request.host_url.rstrip('/') -%}
+{%- set _imgs = [] -%}
+{%- for im in w.images %}{% set _ = _imgs.append(_host ~ img_url(im.base, 'l', 'jpg')) %}{% endfor -%}
+{%- set _ship = cfg.get('ship_' ~ (w.ship_band or 'medium') ~ '_cents') if (w.ship_band or 'medium') != 'quote' else none -%}
+{%- set _ld = {
   "@context": "https://schema.org",
   "@type": "Product",
   "name": w.title,
   "description": _story or ((w.medium or "") ~ ((", " ~ w.dims) if w.dims else "")),
-  "offers": {
-    "@type": "Offer",
-    "priceCurrency": cfg.currency|upper,
-    "price": (w.price_cents / 100) if w.price_cents else 0,
-    "availability": "https://schema.org/InStock" if w.status == "available" else "https://schema.org/SoldOut"
+  "image": _imgs,
+  "url": _host ~ url_for('site.work', slug=w.slug),
+  "sku": w.slug,
+  "brand": {"@type": "Brand", "name": cfg.artist_name or cfg.site_title},
+} -%}
+{%- if w.price_cents -%}
+{%- set _offer = {
+  "@type": "Offer",
+  "url": _host ~ url_for('site.work', slug=w.slug),
+  "priceCurrency": cfg.currency|upper,
+  "price": w.price_cents / 100,
+  "itemCondition": "https://schema.org/NewCondition",
+  "availability": "https://schema.org/InStock" if w.status == "available" else "https://schema.org/SoldOut",
+  "hasMerchantReturnPolicy": {
+    "@type": "MerchantReturnPolicy",
+    "applicableCountry": ["US", "CA"],
+    "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+    "merchantReturnDays": 14,
+    "returnMethod": "https://schema.org/ReturnByMail",
+    "returnFees": "https://schema.org/ReturnFeesCustomerResponsibility",
+    "merchantReturnLink": _host ~ url_for('site.policies') ~ "#shipping-returns"
   }
-}|tojson }}
+} -%}
+{%- if _ship is not none -%}
+{%- set _ = _offer.update({"shippingDetails": [
+  {"@type": "OfferShippingDetails",
+   "shippingRate": {"@type": "MonetaryAmount", "currency": cfg.currency|upper, "value": (_ship|int) / 100},
+   "shippingDestination": {"@type": "DefinedRegion", "addressCountry": "US"}},
+  {"@type": "OfferShippingDetails",
+   "shippingRate": {"@type": "MonetaryAmount", "currency": cfg.currency|upper, "value": (_ship|int) / 100},
+   "shippingDestination": {"@type": "DefinedRegion", "addressCountry": "CA"}}
+]}) -%}
+{%- endif -%}
+{%- set _ = _ld.update({"offers": _offer}) -%}
+{%- endif -%}
+{{ _ld|tojson }}
 </script>
 {% endblock %}
